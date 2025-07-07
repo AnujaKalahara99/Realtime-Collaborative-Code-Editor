@@ -1,13 +1,17 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const { Queue } = require('bullmq');
+const Redis = require('ioredis');
+
+const connection = new Redis('redis://redis:6379');
+
 dotenv = require('dotenv');
 dotenv.config();
 
-const PORT = process.env.PORT | 3000;
+const PORT = process.env.PORT | 4000;
 
 const app = express();
-const queue = new Queue('code-execution');
+const queue = new Queue('code-execution', { connection });
 
 app.use(bodyParser.json());
 
