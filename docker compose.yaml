@@ -1,0 +1,17 @@
+services:
+  redis:
+    image: redis:lattest
+    ports:
+      - "6379:6379"
+
+  producer:
+    build: ./producer
+    ports:
+      - "4000:4000"
+    depends_on:
+      - redis
+
+  worker-js:
+    build: ./worker-js
+    depends_on:
+      - redis
