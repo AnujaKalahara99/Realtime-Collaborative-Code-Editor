@@ -28,4 +28,4 @@ app.post('/run', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log('Producer running on port 3000'));
+app.listen(PORT, () => console.log(`Producer running on port ${PORT}`));

@@ -1,7 +1,11 @@
 const { Worker } = require('bullmq');
 const Redis = require('ioredis');
 
-const connection = new Redis('redis://redis:6379');
+const redis = new Redis({
+  host: 'redis',
+  port: 6379,
+  maxRetriesPerRequest: null, //REQUIRED for BullMQ
+});
 
 new Worker('code-execution', async job => {
   if (job.data.language !== 'javascript') return;
@@ -15,4 +19,4 @@ new Worker('code-execution', async job => {
       resolve({ success: false, error: err.message });
     }
   });
-}, { connection });
+}, { redis });
