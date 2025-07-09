@@ -2,13 +2,13 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
+import dotenv from 'dotenv';
 
-const connection = new IORedis({ maxRetriesPerRequest: null });
-
-dotenv = require('dotenv');
 dotenv.config();
 
 const PORT = process.env.PORT | 4000;
+
+const connection = new IORedis({ maxRetriesPerRequest: null });
 
 const app = express();
 const queue = new Queue('code-execution', { connection });
