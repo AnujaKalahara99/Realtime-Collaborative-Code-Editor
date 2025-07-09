@@ -19,4 +19,4 @@ new Worker('code-execution', async job => {
       resolve({ success: false, error: err.message });
     }
   });
-}, { redis });
+}, { connection : redis });
