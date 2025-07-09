@@ -1,7 +1,12 @@
-import { Worker } from 'bullmq';
+import { Worker, RedisConnection } from 'bullmq';
 import IORedis from 'ioredis';
 
-const connection = new IORedis({ maxRetriesPerRequest: null });
+const redis = new IORedis('redis://redis:6379', {
+  maxRetriesPerRequest: null,
+});
+
+// Wrap in BullMQ's RedisConnection (REQUIRED)
+const connection = new RedisConnection(redis);
 
 new Worker('WorkerJs', async job => {
   if (job.data.language !== 'javascript') return;
