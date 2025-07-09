@@ -8,6 +8,7 @@ dotenv.config();
 
 const PORT = process.env.PORT | 4000;
 
+
 const app = express();
 app.use(bodyParser.json());
 
@@ -19,14 +20,27 @@ const queue = new Queue('code-execution', { connection });
 const queueEvents = new QueueEvents('code-execution', { connection });
 await queueEvents.waitUntilReady();
 
+// Dynamically get supported languges from Redis
+const keys = await connection.keys('lang:*');
+const activeLanguages = keys.map(k => k.split(':')[1]);
+
 app.post('/run', async (req, res) => {
   const { language, code, input } = req.body;
+
+  if (!activeLanguages.includes(language)) {
+    return res.status(400).json({
+      success: false,
+      error: `Language "${language}" not supported currently. Available: ${activeLangs.join(', ')}`
+    });
+  }
+
   const job = await queue.add('run-code', { language, code, input });
 
   try {
-    const result = await job.waitUntilFinished(queueEvents);
+    const result = await job.waitUntilFinished(queueEvents, 10000);
     res.send(result);
-  } catch (error) {
+  } 
+  catch (error) {
     res.status(500).json({ success: false, error: error.message || 'Job failed' });
   }
 });
