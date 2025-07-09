@@ -8,13 +8,16 @@ const connection = new IORedis('redis://redis:6379', {
   maxRetriesPerRequest: null,
 });
 
+//HAVE TO THINK ABOUT THIS BECAUSE PYTHON INTEGRATION IS HARD
+
 // Register this worker's language in Redis with TTL expires in 30s, rerun every 20s
 // This is used by the producer to know which workers are available for this language
-const registerLanguage = async () => {
-  await connection.set(`lang:${LANGUAGE}`, '1', 'EX', 30);
-};
-setInterval(registerLanguage, 20000);
-await registerLanguage();
+
+// const registerLanguage = async () => {
+//   await connection.set(`lang:${LANGUAGE}`, '1', 'EX', 30);
+// };
+// setInterval(registerLanguage, 20000);
+// await registerLanguage();
 
 
 new Worker(QUEUE_NAME, async job => {

@@ -7,7 +7,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const PORT = process.env.PORT | 4000;
-
+const SUPPORTED_LANGUAGES = ['javascript', 'python'];
 
 const app = express();
 app.use(bodyParser.json());
@@ -20,17 +20,19 @@ const queue = new Queue('code-execution', { connection });
 const queueEvents = new QueueEvents('code-execution', { connection });
 await queueEvents.waitUntilReady();
 
+//HAVE TO THINK ABOUT THIS BECAUSE PYTHON INTEGRATION IS HARD
+
 // Dynamically get supported languges from Redis
-const keys = await connection.keys('lang:*');
-const activeLanguages = keys.map(k => k.split(':')[1]);
+// const keys = await connection.keys('lang:*');
+// const activeLanguages = keys.map(k => k.split(':')[1]);
 
 app.post('/run', async (req, res) => {
   const { language, code, input } = req.body;
 
-  if (!activeLanguages.includes(language)) {
+  if (!SUPPORTED_LANGUAGES.includes(language)) {
     return res.status(400).json({
       success: false,
-      error: `Language "${language}" not supported currently. Available: ${activeLanguages.join(', ')}`
+      error: `Language "${language}" not supported currently. Available: ${SUPPORTED_LANGUAGES.join(', ')}`
     });
   }
 
