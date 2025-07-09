@@ -1,6 +1,6 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const { Queue } = require('bullmq');
+import express from 'express';
+import bodyParser from 'body-parser';
+import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
 
 const connection = new IORedis({ maxRetriesPerRequest: null });
