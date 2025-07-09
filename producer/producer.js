@@ -8,7 +8,9 @@ dotenv.config();
 
 const PORT = process.env.PORT | 4000;
 
-const connection = new IORedis({ maxRetriesPerRequest: null });
+const connection = new IORedis('redis://redis:6379', {
+  maxRetriesPerRequest: null
+});
 
 const app = express();
 const queue = new Queue('code-execution', { connection });
