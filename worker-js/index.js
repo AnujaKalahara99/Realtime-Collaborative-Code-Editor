@@ -5,10 +5,7 @@ const connection = new IORedis('redis://redis:6379', {
   maxRetriesPerRequest: null,
 });
 
-// Wrap in BullMQ's RedisConnection (REQUIRED)
-// const connection = new RedisConnection(redis);
-
-new Worker('WorkerJs', async job => {
+new Worker('code-execution', async job => {
   if (job.data.language !== 'javascript') return;
 
   return new Promise((resolve) => {
