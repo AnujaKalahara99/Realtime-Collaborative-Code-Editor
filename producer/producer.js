@@ -1,6 +1,6 @@
 import express from 'express';
 import bodyParser from 'body-parser';
-import { Queue } from 'bullmq';
+import { Queue, QueueEvents } from 'bullmq';
 import IORedis from 'ioredis';
 import dotenv from 'dotenv';
 
@@ -8,22 +8,23 @@ dotenv.config();
 
 const PORT = process.env.PORT | 4000;
 
+const app = express();
+app.use(bodyParser.json());
+
 const connection = new IORedis('redis://redis:6379', {
   maxRetriesPerRequest: null
 });
 
-const app = express();
 const queue = new Queue('code-execution', { connection });
-
-app.use(bodyParser.json());
+const queueEvents = new QueueEvents('code-execution', { connection });
+await queueEvents.waitUntilReady();
 
 app.post('/run', async (req, res) => {
   const { language, code, input } = req.body;
-
   const job = await queue.add('run-code', { language, code, input });
 
   try {
-    const result = await job.waitUntilFinished();
+    const result = await job.waitUntilFinished(queueEvents);
     res.send(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message || 'Job failed' });
