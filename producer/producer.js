@@ -1,9 +1,9 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const { Queue } = require('bullmq');
-const Redis = require('ioredis');
+import IORedis from 'ioredis';
 
-const connection = new Redis('redis://redis:6379');
+const connection = new IORedis({ maxRetriesPerRequest: null });
 
 dotenv = require('dotenv');
 dotenv.config();

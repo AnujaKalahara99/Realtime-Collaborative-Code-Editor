@@ -1,4 +1,4 @@
-const { Worker } = require('bullmq');
+import { Worker } from 'bullmq';
 import IORedis from 'ioredis';
 
 const connection = new IORedis({ maxRetriesPerRequest: null });
@@ -15,4 +15,4 @@ new Worker('WorkerJs', async job => {
       resolve({ success: false, error: err.message });
     }
   });
-}, { connection});
+}, {connection});
