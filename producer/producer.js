@@ -30,7 +30,7 @@ app.post('/run', async (req, res) => {
   if (!activeLanguages.includes(language)) {
     return res.status(400).json({
       success: false,
-      error: `Language "${language}" not supported currently. Available: ${activeLangs.join(', ')}`
+      error: `Language "${language}" not supported currently. Available: ${activeLanguages.join(', ')}`
     });
   }
 
