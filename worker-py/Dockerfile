@@ -1,9 +1,17 @@
-FROM python:3.11-slim
+FROM node:20-slim
 
+# Install Python
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+    
 WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
 
 COPY . .
 
-RUN pip install redis
-
-CMD ["python", "worker.py"]
+CMD [ "npm", "start" ]
