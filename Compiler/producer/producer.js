@@ -36,7 +36,19 @@ app.post('/run', async (req, res) => {
     });
   }
 
-  const job = await queue.add('run-code', { language, code, input });
+  let jobName;
+  switch (language) {
+    case 'python':
+      jobName = 'runpy';
+      break;
+    case 'javascript':
+      jobName = 'runjs';
+      break;
+    default:
+      break;
+  }
+
+  const job = await queue.add(jobName, { language, code, input });
 
   try {
     const result = await job.waitUntilFinished(queueEvents, 10000);

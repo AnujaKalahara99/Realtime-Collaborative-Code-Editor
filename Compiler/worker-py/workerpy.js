@@ -13,11 +13,14 @@ const connection = new IORedis('redis://redis:6379', {
 
 new Worker(
   QUEUE_NAME,
-  async job => {
-    const { language, code, input } = job.data;
+  {
+    "runpy":async job => {
+      const { language, code, input } = job.data;
+      console.log(`Processing job ${job.id} for language: ${language}`);
 
-    if (language === LANGUAGE) {
-      return runPython(code, input);
+      if (language === LANGUAGE) {
+        return runPython(code, input);
+      }
     }
   },
   { connection }

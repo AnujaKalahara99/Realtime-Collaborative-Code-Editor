@@ -19,17 +19,23 @@ const connection = new IORedis('redis://redis:6379', {
 // setInterval(registerLanguage, 20000);
 // await registerLanguage();
 
+new Worker(
+  QUEUE_NAME,
+  {
+    "runjs": async job => {
+      console.log(`Processing job ${job.data.id} for language: ${job.data.language}`);
+      if (job.data.language !== LANGUAGE) return;
 
-new Worker(QUEUE_NAME, async job => {
-  if (job.data.language !== LANGUAGE) return;
-
-  return new Promise((resolve) => {
-  try {
-      const fn = new Function('input', job.data.code);
-      const output = fn(job.data.input);
-      resolve({success: true, output: output.toString()});
-    } catch (err) {
-      resolve({ success: false, error: err.message });
+      return new Promise((resolve) => {
+      try {
+          const fn = new Function('input', job.data.code);
+          const output = fn(job.data.input);
+          resolve({success: true, output: output.toString()});
+        } catch (err) {
+          resolve({ success: false, error: err.message });
+        }
+      });
     }
-  });
-}, {connection});
+  },
+  { connection }
+);
