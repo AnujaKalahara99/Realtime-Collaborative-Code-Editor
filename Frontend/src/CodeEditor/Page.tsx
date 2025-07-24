@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { FileText, GitBranch, MessageCircle, Play } from "lucide-react";
-import ProjectManagementPanel from "./ProjectManagementPanel";
+import ProjectManagementPanel from "./ProjectManagementPanel/ProjectManagementPanel";
 import GitPanel from "./GitPanel";
 import LiveChatPanel from "./LiveChatPanel";
 import CompilerPanel from "./CompilerPanel";
@@ -8,6 +8,7 @@ import NavigationBar from "./NavigationBar";
 import StatusBar from "./StatusBar";
 import MonacoEditor from "./MonacoEditor";
 import { useTheme } from "../ThemeProvider";
+import type { FileNode } from "./ProjectManagementPanel/commonFileTypes";
 
 type Tab = {
   id: string;
@@ -62,6 +63,7 @@ const TabPanel: React.FC<TabPanelProps> = ({
 
 // Main Editor Component
 const CodeEditorPage = () => {
+  const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const [leftActiveTab, setLeftActiveTab] = useState("pm");
   const [rightActiveTab, setRightActiveTab] = useState("chat");
 
@@ -78,7 +80,11 @@ const CodeEditorPage = () => {
   const renderLeftPanel = () => {
     switch (leftActiveTab) {
       case "pm":
-        return <ProjectManagementPanel />;
+        return (
+          <ProjectManagementPanel
+            onFileSelect={(file) => setSelectedFile(file)}
+          />
+        );
       case "git":
         return <GitPanel />;
       default:
@@ -115,7 +121,7 @@ const CodeEditorPage = () => {
 
         {/* Main Editor Area */}
         <div className="flex-1 flex flex-col">
-          <MonacoEditor />
+          <MonacoEditor selectedFile={selectedFile} />
         </div>
 
         {/* Right Sidebar Panel */}
