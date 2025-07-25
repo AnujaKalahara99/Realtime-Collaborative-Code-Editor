@@ -30,7 +30,6 @@ class YjsCollaborationService {
   private initialize() {
     if (this.initialized) return;
 
-    // Create main project document
     this.projectDoc = new Y.Doc();
     
     // Create WebSocket provider
