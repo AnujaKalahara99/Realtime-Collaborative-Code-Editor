@@ -8,7 +8,7 @@ import NavigationBar from "./NavigationBar";
 import StatusBar from "./StatusBar";
 import MonacoEditor from "./MonacoEditor";
 import { useTheme } from "../ThemeProvider";
-import type { FileNode } from "./ProjectManagementPanel/commonFileTypes";
+import type { FileNode } from "./ProjectManagementPanel/file.types";
 
 type Tab = {
   id: string;

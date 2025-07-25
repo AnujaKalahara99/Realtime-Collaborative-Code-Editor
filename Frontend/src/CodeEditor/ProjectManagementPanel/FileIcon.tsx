@@ -1,5 +1,5 @@
 import { File, Folder, FolderOpen } from "lucide-react";
-import type { FileNode } from "./commonFileTypes";
+import type { FileNode } from "./file.types";
 
 const FileIcon = ({ node }: { node: FileNode }) => {
   if (node.type === "folder") {

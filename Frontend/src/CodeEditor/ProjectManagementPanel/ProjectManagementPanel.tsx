@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ContextMenuData, FileNode } from "./commonFileTypes";
+import type { ContextMenuData, FileNode } from "./file.types";
 import useFileTree from "./useFileTree";
 import FileTreeNode from "./FileTreeNode";
 import ExplorerHeader from "./ExplorerHeader";

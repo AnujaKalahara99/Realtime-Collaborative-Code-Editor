@@ -1,6 +1,6 @@
 import { Edit3, File, Folder, Trash2 } from "lucide-react";
 import { useTheme } from "../../ThemeProvider";
-import type { ContextMenuData } from "./commonFileTypes";
+import type { ContextMenuData } from "./file.types";
 
 interface ContextMenuProps {
   contextMenu: ContextMenuData;

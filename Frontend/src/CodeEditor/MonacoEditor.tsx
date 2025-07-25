@@ -1,98 +1,133 @@
 import { useRef, useEffect, useState } from "react";
 import { Editor } from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
-
-import * as Y from "yjs";
-import { WebsocketProvider } from "y-websocket";
 import { MonacoBinding } from "y-monaco";
-
+import {
+  collaborationService,
+  type CollaborationUser,
+} from "././YJSCollaborationService";
 import { useTheme } from "../ThemeProvider";
-import type { FileNode } from "./ProjectManagementPanel/commonFileTypes";
+import type { FileNode } from "./ProjectManagementPanel/file.types";
 
 interface MonacoEditorProps {
   selectedFile?: FileNode | null;
   initialValue?: string;
+  onFileContentChange?: (fileId: string, content: string) => void;
 }
 
 export default function MonacoEditor({
   selectedFile,
-  initialValue = "Select a file to start editing",
+  initialValue = "// Select a file to start editing",
+  onFileContentChange,
 }: MonacoEditorProps) {
   const { theme } = useTheme();
 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-  const ydocumentRef = useRef<Y.Doc | null>(null);
-  const providerRef = useRef<WebsocketProvider | null>(null);
-  const bindingRef = useRef<MonacoBinding | null>(null);
+  const currentBindingRef = useRef<MonacoBinding | null>(null);
   const currentFileRef = useRef<string | null>(null);
+  const contentUnsubscribeRef = useRef<(() => void) | null>(null);
 
   const [language, setLanguage] = useState<string>("plaintext");
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectedUsers, setConnectedUsers] = useState<CollaborationUser[]>([]);
 
-  // Initialize Yjs objects only once
+  // Subscribe to connection status and users
   useEffect(() => {
-    if (!ydocumentRef.current) {
-      ydocumentRef.current = new Y.Doc();
-      providerRef.current = new WebsocketProvider(
-        `ws://144.24.128.44:4455`,
-        "monaco",
-        ydocumentRef.current
-      );
-    }
+    const unsubscribeConnection =
+      collaborationService.onConnectionChange(setIsConnected);
+    const unsubscribeUsers =
+      collaborationService.onUsersChange(setConnectedUsers);
 
-    // Cleanup on unmount
     return () => {
-      if (bindingRef.current) {
-        bindingRef.current.destroy();
-        bindingRef.current = null;
-      }
-      if (providerRef.current) {
-        providerRef.current.destroy();
-        providerRef.current = null;
-      }
-      if (ydocumentRef.current) {
-        ydocumentRef.current.destroy();
-        ydocumentRef.current = null;
-      }
+      unsubscribeConnection();
+      unsubscribeUsers();
     };
   }, []);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (currentBindingRef.current) {
+        currentBindingRef.current.destroy();
+      }
+      if (contentUnsubscribeRef.current) {
+        contentUnsubscribeRef.current();
+      }
+    };
+  }, []); // Bind editor to a specific file
+  const bindEditorToFile = (file: FileNode) => {
+    if (!editorRef.current) return;
+
+    const editor = editorRef.current;
+    const model = editor.getModel();
+    if (!model) return;
+
+    // Destroy previous binding and content subscription
+    if (currentBindingRef.current) {
+      currentBindingRef.current.destroy();
+      currentBindingRef.current = null;
+    }
+    if (contentUnsubscribeRef.current) {
+      contentUnsubscribeRef.current();
+      contentUnsubscribeRef.current = null;
+    }
+
+    // Get the Y.Text for this file
+    const fileYText = collaborationService.getFileText(file.id);
+
+    // Initialize file content if needed
+    if (file.content) {
+      collaborationService.initializeFileContent(file.id, file.content);
+    }
+
+    // Set model content from Y.Text
+    const yjsContent = fileYText.toString();
+    if (model.getValue() !== yjsContent) {
+      model.setValue(yjsContent);
+    }
+
+    // Create Monaco binding for collaborative editing
+    const awareness = collaborationService.getAwareness();
+    if (awareness) {
+      currentBindingRef.current = new MonacoBinding(
+        fileYText,
+        model,
+        new Set([editor]),
+        awareness
+      );
+    }
+
+    // Subscribe to content changes
+    contentUnsubscribeRef.current = collaborationService.onFileContentChange(
+      file.id,
+      (content) => {
+        onFileContentChange?.(file.id, content);
+      }
+    );
+
+    currentFileRef.current = file.id;
+  };
+
   // Handle file changes
   useEffect(() => {
-    setLanguage(getLanguageFromName(selectedFile?.name || "plaintext"));
-
-    if (selectedFile && editorRef.current) {
-      const editor = editorRef.current;
-      const model = editor.getModel();
+    if (selectedFile && selectedFile.type === "file" && editorRef.current) {
+      setLanguage(getLanguageFromFileName(selectedFile.name));
 
       // If we're switching to a different file
       if (currentFileRef.current !== selectedFile.id) {
-        currentFileRef.current = selectedFile.id;
-
-        // Destroy previous binding
-        if (bindingRef.current) {
-          bindingRef.current.destroy();
-          bindingRef.current = null;
-        }
-
-        // Set the content for the new file
-        if (model) {
-          const content = selectedFile.content || "";
-          model.setValue(content);
-
-          // Create new Yjs binding for collaborative editing
-          if (ydocumentRef.current && providerRef.current) {
-            const type = ydocumentRef.current.getText(
-              `file-${selectedFile.id}`
-            );
-            bindingRef.current = new MonacoBinding(
-              type,
-              model,
-              new Set([editor]),
-              providerRef.current.awareness
-            );
-          }
-        }
+        bindEditorToFile(selectedFile);
       }
+    } else if (!selectedFile) {
+      // No file selected, cleanup
+      if (currentBindingRef.current) {
+        currentBindingRef.current.destroy();
+        currentBindingRef.current = null;
+      }
+      if (contentUnsubscribeRef.current) {
+        contentUnsubscribeRef.current();
+        contentUnsubscribeRef.current = null;
+      }
+      currentFileRef.current = null;
     }
   }, [selectedFile]);
 
@@ -101,41 +136,20 @@ export default function MonacoEditor({
   ): void => {
     editorRef.current = editorInstance;
 
-    // Set initial content
-    const model = editorInstance.getModel();
-    if (model) {
-      const content = selectedFile?.content || initialValue;
-      model.setValue(content);
-
-      // Set up initial Yjs binding if we have a selected file
-      if (selectedFile && ydocumentRef.current && providerRef.current) {
-        currentFileRef.current = selectedFile.id;
-        const type = ydocumentRef.current.getText(`file-${selectedFile.id}`);
-        bindingRef.current = new MonacoBinding(
-          type,
-          model,
-          new Set([editorInstance]),
-          providerRef.current.awareness
-        );
+    // If we have a selected file, bind it immediately
+    if (selectedFile && selectedFile.type === "file") {
+      bindEditorToFile(selectedFile);
+    } else {
+      // Set placeholder content
+      const model = editorInstance.getModel();
+      if (model) {
+        model.setValue(initialValue);
       }
     }
   };
 
-  // Get the current content to display
-  const getCurrentContent = () => {
-    if (selectedFile?.content !== undefined) {
-      return selectedFile.content;
-    }
-    return initialValue;
-  };
-
-  const getFileExtension = (filename: string) => {
-    const parts = filename.split(".");
-    return parts.length > 1 ? parts.pop()?.toLowerCase() : "";
-  };
-
-  const getLanguageFromName = (name: string) => {
-    const extension = getFileExtension(name);
+  const getLanguageFromFileName = (fileName: string): string => {
+    const extension = fileName.split(".").pop()?.toLowerCase();
     const languageMap: Record<string, string> = {
       js: "javascript",
       jsx: "javascript",
@@ -148,19 +162,85 @@ export default function MonacoEditor({
       html: "html",
       css: "css",
       scss: "scss",
+      sass: "sass",
+      less: "less",
+      xml: "xml",
+      yaml: "yaml",
+      yml: "yaml",
+      sql: "sql",
+      sh: "shell",
+      bash: "shell",
+      php: "php",
+      rb: "ruby",
+      go: "go",
+      rs: "rust",
+      cpp: "cpp",
+      c: "c",
+      cs: "csharp",
+      kt: "kotlin",
+      swift: "swift",
+      dart: "dart",
     };
-    return extension ? languageMap[extension] || "plaintext" : "plaintext";
+    return languageMap[extension || ""] || "plaintext";
+  };
+
+  // Get display content for the editor
+  const getDisplayContent = () => {
+    if (selectedFile?.type === "file") {
+      // For files, let the binding handle the content
+      return "";
+    }
+    return initialValue;
   };
 
   return (
     <div className="h-full flex flex-col">
       {/* File Tab/Header */}
-      {selectedFile && (
+      {selectedFile && selectedFile.type === "file" && (
         <div
-          className={`px-4 py-2 ${theme.surfaceSecondary} border-b ${theme.border} flex items-center gap-2`}
+          className={`px-4 py-2 ${theme.surfaceSecondary} border-b ${theme.border} flex items-center justify-between`}
         >
-          <span className={`text-sm ${theme.text}`}>{selectedFile.name}</span>
-          <span className={`text-xs ${theme.textMuted}`}>({language})</span>
+          <div className="flex items-center gap-2">
+            <span className={`text-sm ${theme.text}`}>{selectedFile.name}</span>
+            <span className={`text-xs ${theme.textMuted}`}>({language})</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Connection status */}
+            <div
+              className={`w-2 h-2 rounded-full ${
+                isConnected ? "bg-green-500" : "bg-red-500"
+              }`}
+              title={isConnected ? "Connected" : "Disconnected"}
+            />
+
+            {/* Connected users count */}
+            {connectedUsers.length > 0 && (
+              <div className="flex items-center gap-1">
+                <div className="flex -space-x-1">
+                  {connectedUsers.slice(0, 3).map((user, index) => (
+                    <div
+                      key={index}
+                      className="w-4 h-4 rounded-full border border-gray-600"
+                      style={{ backgroundColor: user.color }}
+                      title={user.name}
+                    />
+                  ))}
+                  {connectedUsers.length > 3 && (
+                    <div
+                      className={`w-4 h-4 rounded-full ${theme.surface} border ${theme.border} flex items-center justify-center text-xs`}
+                    >
+                      +{connectedUsers.length - 3}
+                    </div>
+                  )}
+                </div>
+                <span className={`text-xs ${theme.textMuted}`}>
+                  {connectedUsers.length} user
+                  {connectedUsers.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -172,7 +252,7 @@ export default function MonacoEditor({
           theme={theme.monacoTheme}
           // Use key to force re-render when file changes
           key={selectedFile?.id || "no-file"}
-          defaultValue={getCurrentContent()}
+          defaultValue={getDisplayContent()}
           onMount={handleEditorDidMount}
           options={{
             minimap: { enabled: true },
@@ -193,22 +273,40 @@ export default function MonacoEditor({
               comments: true,
               strings: true,
             },
-            // Show placeholder when no file is selected
-            readOnly: !selectedFile,
+            // Show read-only when no file is selected
+            readOnly: !selectedFile || selectedFile.type !== "file",
           }}
         />
       </div>
 
       {/* Placeholder when no file is selected */}
-      {!selectedFile && (
+      {(!selectedFile || selectedFile.type !== "file") && (
         <div
           className={`absolute inset-0 flex items-center justify-center ${theme.textMuted} pointer-events-none`}
         >
           <div className="text-center">
-            <p className="text-lg mb-2">No file selected</p>
-            <p className="text-sm">
-              Select a file from the explorer to start editing
+            <p className="text-lg mb-2">
+              {!selectedFile ? "No file selected" : "Folder selected"}
             </p>
+            <p className="text-sm">
+              {!selectedFile
+                ? "Select a file from the explorer to start editing"
+                : "Select a file (not a folder) to edit its contents"}
+            </p>
+
+            {/* Connection status in placeholder */}
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  isConnected ? "bg-green-500" : "bg-red-500"
+                }`}
+              />
+              <span className="text-xs">
+                {isConnected
+                  ? "Connected to collaboration server"
+                  : "Disconnected from server"}
+              </span>
+            </div>
           </div>
         </div>
       )}
