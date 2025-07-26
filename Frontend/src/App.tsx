@@ -1,63 +1,62 @@
-import { useState, useEffect, useRef} from 'react';
-import * as monaco from 'monaco-editor';
-import Editor from '@monaco-editor/react';
-import FileTree from './FileTree';
-import {readFile, createFolder, createFile } from './memoryWrapper';
-import { initRepo, writeAndCommit} from './gitWrapper';
-import { bindEditorToFile } from '././yjsProvider';
+import { useEffect, useState } from "react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { supabase } from "./superbase";
+import { type Session } from "@supabase/supabase-js";
+import Dashboard from "./components/Dashbord";
+import Login from "./components/Login";
+import Signup from "./components/Signup";
+import Codeeditor from "./Codeeditor";
 
-export default function App() {
-  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-  const [code, setCode] = useState('');
-  const [currentFile, setCurrentFile] = useState('');
+function App() {
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    initRepo();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+       if (session) upsertProfile(session.user);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const handleMount = (editor : monaco.editor.IStandaloneCodeEditor) => {
-    editorRef.current = editor;
-  };
+  async function upsertProfile(user: any) {
+    const { id, user_metadata, email } = user;
+    const full_name = user_metadata.full_name || "";
+    const avatar_url = user_metadata.avatar_url || "";
 
-  useEffect(() => {
-    if (editorRef.current && currentFile) {
-      bindEditorToFile(editorRef.current, currentFile);
-    }
-  }, [currentFile]);
+    const { error } = await supabase
+      .from("profiles")
+      .upsert({
+        id,
+        full_name,
+        email,
+        avatar_url,
+      }, { onConflict: "id" });
 
-  const onFileClick = async (path: string): Promise<void> => {
-    const content = await readFile(path);
-    setCode(content);
-    setCurrentFile(path);
-  };
-
-  const handleCommit = async () => {
-    if (!currentFile) return alert('No file selected');
-    await writeAndCommit(currentFile, code, 'Edit from UI');
-    alert('Committed!');
-  };
-
-  const handleNewFile = async () => {
-    const filename = prompt('Enter file path (e.g. src/utils/math.js):');
-    if (filename) {
-      await createFolder(filename.split('/').slice(0, -1).join('/'));
-      await createFile(filename, '');
-    }
-  };
+    if (error) console.error("Error upserting profile:", error.message);
+  }
 
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
-      <div style={{ width: '300px', borderRight: '1px solid #ccc', padding: '1rem', overflowY: 'auto' }}>
-        <button onClick={handleNewFile}>➕ New File</button>
-        <FileTree onFileClick={onFileClick} />
-      </div>
-      <div style={{ width: '1000px' }}>
-        <Editor height="100%" language="javascript"
-          onMount={handleMount}
-          value={code}
-          onChange={(value) => setCode(value ?? '')} />
-        <button onClick={handleCommit}>💾 Commit</button>
-      </div>
-    </div>
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route
+        path="/dashboard"
+        element={<Dashboard   type="user" session={session} />}
+      />
+      <Route
+        path="/"
+        element={<Login />}
+      />
+      <Route path="/codeeditor" element={<Codeeditor />} />
+    </Routes>
   );
 }
+
+export default App;
