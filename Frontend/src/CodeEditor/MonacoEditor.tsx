@@ -8,6 +8,7 @@ import {
 } from "././YJSCollaborationService";
 import { useTheme } from "../ThemeProvider";
 import type { FileNode } from "./ProjectManagementPanel/file.types";
+import CollaborativeCursor from "./CollaborativeCursor";
 
 interface MonacoEditorProps {
   selectedFile?: FileNode | null;
@@ -29,32 +30,57 @@ export default function MonacoEditor({
 
   const [language, setLanguage] = useState<string>("plaintext");
   const [isConnected, setIsConnected] = useState(false);
-  const [connectedUsers, setConnectedUsers] = useState<CollaborationUser[]>([]);
+  const [fileUsers, setFileUsers] = useState<CollaborationUser[]>([]);
 
-  // Subscribe to connection status and users
+  // Subscribe to connection status
   useEffect(() => {
     const unsubscribeConnection =
       collaborationService.onConnectionChange(setIsConnected);
-    const unsubscribeUsers =
-      collaborationService.onUsersChange(setConnectedUsers);
 
     return () => {
       unsubscribeConnection();
-      unsubscribeUsers();
     };
   }, []);
 
-  // Cleanup on unmount
   useEffect(() => {
-    return () => {
+    setFileUsers([]); //Clear prev file users
+
+    if (selectedFile && selectedFile.type === "file" && editorRef.current) {
+      setLanguage(getLanguageFromFileName(selectedFile.name));
+
+      // Switching to a different file
+      if (currentFileRef.current !== selectedFile.id) {
+        bindEditorToFile(selectedFile);
+      }
+
+      const updateUsers = () => {
+        const users = collaborationService.getUsersInFile(selectedFile.id);
+        setFileUsers(users);
+        console.log("Connected File users:", users);
+      };
+
+      const unsubscribeFileUsers =
+        collaborationService.onUsersChange(updateUsers);
+      updateUsers();
+
+      return () => {
+        unsubscribeFileUsers();
+      };
+    } else if (!selectedFile) {
+      // No file selected, cleanup
       if (currentBindingRef.current) {
         currentBindingRef.current.destroy();
+        currentBindingRef.current = null;
       }
       if (contentUnsubscribeRef.current) {
         contentUnsubscribeRef.current();
+        contentUnsubscribeRef.current = null;
       }
-    };
-  }, []); // Bind editor to a specific file
+      currentFileRef.current = null;
+    }
+  }, [selectedFile]);
+
+  // Bind editor to a specific file
   const bindEditorToFile = (file: FileNode) => {
     if (!editorRef.current) return;
 
@@ -108,35 +134,11 @@ export default function MonacoEditor({
     currentFileRef.current = file.id;
   };
 
-  // Handle file changes
-  useEffect(() => {
-    if (selectedFile && selectedFile.type === "file" && editorRef.current) {
-      setLanguage(getLanguageFromFileName(selectedFile.name));
-
-      // If we're switching to a different file
-      if (currentFileRef.current !== selectedFile.id) {
-        bindEditorToFile(selectedFile);
-      }
-    } else if (!selectedFile) {
-      // No file selected, cleanup
-      if (currentBindingRef.current) {
-        currentBindingRef.current.destroy();
-        currentBindingRef.current = null;
-      }
-      if (contentUnsubscribeRef.current) {
-        contentUnsubscribeRef.current();
-        contentUnsubscribeRef.current = null;
-      }
-      currentFileRef.current = null;
-    }
-  }, [selectedFile]);
-
   const handleEditorDidMount = (
     editorInstance: monaco.editor.IStandaloneCodeEditor
   ): void => {
     editorRef.current = editorInstance;
 
-    // If we have a selected file, bind it immediately
     if (selectedFile && selectedFile.type === "file") {
       bindEditorToFile(selectedFile);
     } else {
@@ -184,7 +186,6 @@ export default function MonacoEditor({
     return languageMap[extension || ""] || "plaintext";
   };
 
-  // Get display content for the editor
   const getDisplayContent = () => {
     if (selectedFile?.type === "file") {
       // For files, let the binding handle the content
@@ -195,6 +196,13 @@ export default function MonacoEditor({
 
   return (
     <div className="h-full flex flex-col">
+      <CollaborativeCursor
+        editor={editorRef.current}
+        selectedFile={
+          selectedFile ? { id: selectedFile.id, type: selectedFile.type } : null
+        }
+      />
+
       {/* File Tab/Header */}
       {selectedFile && selectedFile.type === "file" && (
         <div
@@ -215,10 +223,10 @@ export default function MonacoEditor({
             />
 
             {/* Connected users count */}
-            {connectedUsers.length > 0 && (
+            {fileUsers.length > 0 && (
               <div className="flex items-center gap-1">
                 <div className="flex -space-x-1">
-                  {connectedUsers.slice(0, 3).map((user, index) => (
+                  {fileUsers.slice(0, 3).map((user, index) => (
                     <div
                       key={index}
                       className="w-4 h-4 rounded-full border border-gray-600"
@@ -226,17 +234,17 @@ export default function MonacoEditor({
                       title={user.name}
                     />
                   ))}
-                  {connectedUsers.length > 3 && (
+                  {fileUsers.length > 3 && (
                     <div
                       className={`w-4 h-4 rounded-full ${theme.surface} border ${theme.border} flex items-center justify-center text-xs`}
                     >
-                      +{connectedUsers.length - 3}
+                      +{fileUsers.length - 3}
                     </div>
                   )}
                 </div>
                 <span className={`text-xs ${theme.textMuted}`}>
-                  {connectedUsers.length} user
-                  {connectedUsers.length !== 1 ? "s" : ""}
+                  {fileUsers.length} user
+                  {fileUsers.length !== 1 ? "s" : ""}
                 </span>
               </div>
             )}

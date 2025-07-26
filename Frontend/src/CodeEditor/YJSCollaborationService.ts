@@ -5,22 +5,38 @@ import type { FileNode } from "./ProjectManagementPanel/file.types";
 export interface CollaborationUser {
   name: string;
   color: string;
-  cursor?: unknown;
+  cursor?: {
+    line: number;
+    column: number;
+    selection?: {
+      startLine: number;
+      startColumn: number;
+      endLine: number;
+      endColumn: number;
+    };
+  };
 }
 
 // Centralized YJS Collaboration Service
 class YjsCollaborationService {
   private projectDoc: Y.Doc | null = null;
   private provider: WebsocketProvider | null = null;
-  private fileSystemMap: Y.Map<any> | null = null;
-  private fileTexts: Map<string, Y.Text> = new Map();
+  private fileSystemMap: Y.Map<any> | null = null; // Metadata for file system
+  private fileTexts: Map<string, Y.Text> = new Map(); // Actual file contents
   private initialized = false;
   private connectionCallbacks: Set<(connected: boolean) => void> = new Set();
-  private fileChangeCallbacks: Map<string, Set<(content: string) => void>> = new Map();
+  private fileChangeCallbacks: Map<string, Set<(content: string) => void>> =
+    new Map();
   private fileSystemCallbacks: Set<(files: FileNode[]) => void> = new Set();
   private userColors = [
-    '#30bced', '#6eeb83', '#ffbc42', '#ecd444', 
-    '#ee6352', '#9ac2c9', '#8acb88', '#1be7ff'
+    "#30bced",
+    "#6eeb83",
+    "#ffbc42",
+    "#ecd444",
+    "#ee6352",
+    "#9ac2c9",
+    "#8acb88",
+    "#1be7ff",
   ];
 
   constructor() {
@@ -31,27 +47,27 @@ class YjsCollaborationService {
     if (this.initialized) return;
 
     this.projectDoc = new Y.Doc();
-    
+
     // Create WebSocket provider
     this.provider = new WebsocketProvider(
-      'ws://144.24.128.44:4455',
-      'collaborative-code-editor',
+      "ws://144.24.128.44:4455",
+      "collaborative-code-editor",
       this.projectDoc
     );
 
     // Get file system map
-    this.fileSystemMap = this.projectDoc.getMap('fileSystem');
+    this.fileSystemMap = this.projectDoc.getMap("fileSystem");
 
     // Set up connection listeners
-    this.provider.on('status', (event: any) => {
-      const isConnected = event.status === 'connected';
-      this.connectionCallbacks.forEach(callback => callback(isConnected));
+    this.provider.on("status", (event: any) => {
+      const isConnected = event.status === "connected";
+      this.connectionCallbacks.forEach((callback) => callback(isConnected));
     });
 
     // Set up file system change listener
     this.fileSystemMap.observe(() => {
-      const files = this.fileSystemMap?.get('files') || [];
-      this.fileSystemCallbacks.forEach(callback => callback(files));
+      const files = this.fileSystemMap?.get("files") || [];
+      this.fileSystemCallbacks.forEach((callback) => callback(files));
     });
 
     // Set up awareness for user presence
@@ -64,22 +80,25 @@ class YjsCollaborationService {
     if (!this.provider) return;
 
     const awareness = this.provider.awareness;
-    
+
     // Set local user info
-    const userColor = this.userColors[Math.floor(Math.random() * this.userColors.length)];
-    awareness.setLocalStateField('user', {
+    const userColor =
+      this.userColors[Math.floor(Math.random() * this.userColors.length)];
+    awareness.setLocalStateField("user", {
       name: `User-${Math.random().toString(36).substr(2, 5)}`,
-      color: userColor
+      color: userColor,
     });
   }
 
   // Connection Management
-  public onConnectionChange(callback: (connected: boolean) => void): () => void {
+  public onConnectionChange(
+    callback: (connected: boolean) => void
+  ): () => void {
     this.connectionCallbacks.add(callback);
-    
+
     // Call immediately with current status
     callback(this.isConnected());
-    
+
     // Return unsubscribe function
     return () => {
       this.connectionCallbacks.delete(callback);
@@ -92,19 +111,19 @@ class YjsCollaborationService {
 
   // File System Management
   public getFileSystem(): FileNode[] {
-    return this.fileSystemMap?.get('files') || [];
+    return this.fileSystemMap?.get("files") || [];
   }
 
   public setFileSystem(files: FileNode[]): void {
-    this.fileSystemMap?.set('files', files);
+    this.fileSystemMap?.set("files", files);
   }
 
   public onFileSystemChange(callback: (files: FileNode[]) => void): () => void {
     this.fileSystemCallbacks.add(callback);
-    
+
     // Call immediately with current files
     callback(this.getFileSystem());
-    
+
     // Return unsubscribe function
     return () => {
       this.fileSystemCallbacks.delete(callback);
@@ -114,7 +133,7 @@ class YjsCollaborationService {
   // File Content Management
   public getFileText(fileId: string): Y.Text {
     if (!this.projectDoc) {
-      throw new Error('YJS not initialized');
+      throw new Error("YJS not initialized");
     }
 
     // Return existing Y.Text if we have it
@@ -131,7 +150,7 @@ class YjsCollaborationService {
 
   public initializeFileContent(fileId: string, content: string): void {
     const fileText = this.getFileText(fileId);
-    
+
     // Only initialize if the Y.Text is empty
     if (fileText.length === 0 && content) {
       fileText.insert(0, content);
@@ -143,9 +162,12 @@ class YjsCollaborationService {
     return fileText.toString();
   }
 
-  public onFileContentChange(fileId: string, callback: (content: string) => void): () => void {
+  public onFileContentChange(
+    fileId: string,
+    callback: (content: string) => void
+  ): () => void {
     const fileText = this.getFileText(fileId);
-    
+
     // Add callback to our map
     if (!this.fileChangeCallbacks.has(fileId)) {
       this.fileChangeCallbacks.set(fileId, new Set());
@@ -156,10 +178,10 @@ class YjsCollaborationService {
     if (this.fileChangeCallbacks.get(fileId)!.size === 1) {
       const observer = () => {
         const content = fileText.toString();
-        this.fileChangeCallbacks.get(fileId)?.forEach(cb => cb(content));
+        this.fileChangeCallbacks.get(fileId)?.forEach((cb) => cb(content));
       };
       fileText.observe(observer);
-      
+
       // Store observer for cleanup
       (fileText as any)._observer = observer;
     }
@@ -172,7 +194,7 @@ class YjsCollaborationService {
       const callbacks = this.fileChangeCallbacks.get(fileId);
       if (callbacks) {
         callbacks.delete(callback);
-        
+
         // If no more callbacks, remove observer
         if (callbacks.size === 0) {
           const observer = (fileText as any)._observer;
@@ -188,7 +210,7 @@ class YjsCollaborationService {
 
   public deleteFileContent(fileId: string): void {
     const fileText = this.getFileText(fileId);
-    
+
     // Clear the content
     if (fileText.length > 0) {
       fileText.delete(0, fileText.length);
@@ -207,8 +229,10 @@ class YjsCollaborationService {
   public setUserInfo(name: string, color?: string) {
     const awareness = this.getAwareness();
     if (awareness) {
-      const userColor = color || this.userColors[Math.floor(Math.random() * this.userColors.length)];
-      awareness.setLocalStateField('user', { name, color: userColor });
+      const userColor =
+        color ||
+        this.userColors[Math.floor(Math.random() * this.userColors.length)];
+      awareness.setLocalStateField("user", { name, color: userColor });
     }
   }
 
@@ -222,7 +246,7 @@ class YjsCollaborationService {
         users.push({
           name: state.user.name,
           color: state.user.color,
-          cursor: state.cursor
+          cursor: state.cursor,
         });
       }
     });
@@ -230,7 +254,34 @@ class YjsCollaborationService {
     return users;
   }
 
-  public onUsersChange(callback: (users: CollaborationUser[]) => void): () => void {
+  public getUsersInFile(fileId: string): CollaborationUser[] {
+    const awareness = this.getAwareness();
+    if (!awareness) return [];
+
+    const users: CollaborationUser[] = [];
+    awareness.getStates().forEach((state: any, clientId: number) => {
+      if (state.user && state.cursor && state.cursor.fileId === fileId) {
+        // Skip local user
+        if (clientId !== awareness.clientID) {
+          users.push({
+            name: state.user.name,
+            color: state.user.color,
+            cursor: {
+              line: state.cursor.line,
+              column: state.cursor.column,
+              selection: state.cursor.selection,
+            },
+          });
+        }
+      }
+    });
+
+    return users;
+  }
+
+  public onUsersChange(
+    callback: (users: CollaborationUser[]) => void
+  ): () => void {
     const awareness = this.getAwareness();
     if (!awareness) return () => {};
 
@@ -238,14 +289,37 @@ class YjsCollaborationService {
       callback(this.getConnectedUsers());
     };
 
-    awareness.on('change', handler);
-    
+    awareness.on("change", handler);
+
     // Call immediately with current users
     callback(this.getConnectedUsers());
 
     return () => {
-      awareness.off('change', handler);
+      awareness.off("change", handler);
     };
+  }
+
+  public updateCursorPosition(
+    fileId: string,
+    position: {
+      line: number;
+      column: number;
+      selection?: {
+        startLine: number;
+        startColumn: number;
+        endLine: number;
+        endColumn: number;
+      };
+    }
+  ): void {
+    const awareness = this.getAwareness();
+    if (awareness) {
+      awareness.setLocalStateField("cursor", {
+        fileId,
+        ...position,
+        timestamp: Date.now(),
+      });
+    }
   }
 
   // Cleanup
