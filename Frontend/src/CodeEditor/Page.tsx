@@ -32,7 +32,6 @@ const TabPanel: React.FC<TabPanelProps> = ({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Tab Headers */}
       <div
         className={`flex ${theme.surfaceSecondary} ${theme.border} border-b`}
       >
@@ -54,13 +53,11 @@ const TabPanel: React.FC<TabPanelProps> = ({
         ))}
       </div>
 
-      {/* Tab Content */}
       <div className="flex-1 overflow-hidden">{children}</div>
     </div>
   );
 };
 
-// Main Editor Component
 const CodeEditorPage = () => {
   const [leftActiveTab, setLeftActiveTab] = useState("pm");
   const [rightActiveTab, setRightActiveTab] = useState("chat");
@@ -87,13 +84,27 @@ const CodeEditorPage = () => {
   };
 
   const renderRightPanel = () => {
+    const username = "User"; //later need to replece with actual login user
     switch (rightActiveTab) {
       case "chat":
-        return <LiveChatPanel />;
+        return (
+          <LiveChatPanel
+            roomName="ChatSpace" //this is also need to change later
+            username={username}
+            wsUrl="ws://144.24.128.44:4455"
+          />
+        );
+
       case "compiler":
         return <CompilerPanel />;
       default:
-        return <LiveChatPanel />;
+        return (
+          <LiveChatPanel
+            roomName="ChatSpace"
+            username={username}
+            wsUrl="ws://144.24.128.44:4455"
+          />
+        );
     }
   };
 
@@ -102,7 +113,6 @@ const CodeEditorPage = () => {
       <NavigationBar />
 
       <div className="flex-1 flex">
-        {/* Left Sidebar Panel */}
         <div className="w-80 border-r border-gray-600">
           <TabPanel
             tabs={leftTabs}
@@ -113,12 +123,10 @@ const CodeEditorPage = () => {
           </TabPanel>
         </div>
 
-        {/* Main Editor Area */}
         <div className="flex-1 flex flex-col">
           <MonacoEditor />
         </div>
 
-        {/* Right Sidebar Panel */}
         <div className="w-80 border-l border-gray-600">
           <TabPanel
             tabs={rightTabs}
