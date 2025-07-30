@@ -6,7 +6,7 @@ import LiveChatPanel from "./LiveChatPanel";
 import CompilerPanel from "./CompilerPanel";
 import NavigationBar from "./NavigationBar";
 import StatusBar from "./StatusBar";
-import MonacoEditor from "./MonacoEditor";
+import MonacoEditor from "./MonacoEditor/MonacoEditor";
 import { useTheme } from "../ThemeProvider";
 import type { FileNode } from "./ProjectManagementPanel/file.types";
 

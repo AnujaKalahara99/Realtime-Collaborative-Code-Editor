@@ -5,9 +5,9 @@ import { MonacoBinding } from "y-monaco";
 import {
   collaborationService,
   type CollaborationUser,
-} from "././YJSCollaborationService";
-import { useTheme } from "../ThemeProvider";
-import type { FileNode } from "./ProjectManagementPanel/file.types";
+} from "../YJSCollaborationService";
+import { useTheme } from "../../ThemeProvider";
+import type { FileNode } from "../ProjectManagementPanel/file.types";
 import CollaborativeCursor from "./CollaborativeCursor";
 
 interface MonacoEditorProps {

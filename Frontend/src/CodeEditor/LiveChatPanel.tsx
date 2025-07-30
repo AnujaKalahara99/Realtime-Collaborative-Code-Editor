@@ -7,6 +7,7 @@ import {
   type ChangeEvent,
 } from "react";
 import { useYjsChat } from "../yjs/chatProvide";
+import { useTheme } from "../ThemeProvider";
 
 interface Message {
   id: string;
@@ -24,6 +25,7 @@ interface ChatSpaceProps {
 export function ChatSpace({ roomName, username, wsUrl }: ChatSpaceProps) {
   const [inputMessage, setInputMessage] = useState("");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
 
   const { messages, sendMessage } = useYjsChat({ roomName, username, wsUrl });
 
@@ -54,12 +56,20 @@ export function ChatSpace({ roomName, username, wsUrl }: ChatSpaceProps) {
   };
 
   return (
-    <div className="w-full max-w-md flex flex-col h-[500px] border rounded-lg bg-white shadow-sm">
-      <div className="pb-3 p-4 border-b">
-        <h2 className="text-lg font-semibold">Chat Room: {roomName}</h2>
-        <p className="text-sm text-gray-500">Logged in as: {username}</p>
+    <div
+      className={`w-full h-full max-w-md flex flex-col ${theme.border} border ${theme.surface} shadow-sm`}
+    >
+      {/* Header */}
+      <div className={`pb-3 p-4 ${theme.border} border-b`}>
+        <h2 className={`text-lg font-semibold ${theme.text}`}>
+          Chat Room: {roomName}
+        </h2>
+        <p className={`text-sm ${theme.textSecondary}`}>
+          Logged in as: {username}
+        </p>
       </div>
 
+      {/* Messages Area */}
       <div className="flex-1 overflow-hidden p-0">
         <div className="h-full w-full p-4 overflow-y-auto" ref={scrollAreaRef}>
           <div className="space-y-4">
@@ -70,12 +80,16 @@ export function ChatSpace({ roomName, username, wsUrl }: ChatSpaceProps) {
                   msg.user === username ? "justify-end" : "justify-start"
                 }`}
               >
+                {/* Other user avatar */}
                 {msg.user !== username && (
-                  <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-sm font-medium">
+                  <div
+                    className={`h-8 w-8 rounded-full ${theme.surfaceSecondary} flex items-center justify-center text-sm font-medium ${theme.text}`}
+                  >
                     {msg.user.substring(0, 2).toUpperCase()}
                   </div>
                 )}
 
+                {/* Message bubble */}
                 <div
                   className={`flex flex-col max-w-[70%] ${
                     msg.user === username ? "items-end" : "items-start"
@@ -85,17 +99,18 @@ export function ChatSpace({ roomName, username, wsUrl }: ChatSpaceProps) {
                     className={`rounded-lg px-4 py-2 text-sm ${
                       msg.user === username
                         ? "bg-blue-500 text-white"
-                        : "bg-gray-100 text-gray-900"
+                        : `${theme.surfaceSecondary} ${theme.text}`
                     }`}
                   >
                     <p>{msg.text}</p>
                   </div>
-                  <span className="text-xs text-gray-500 mt-1">
+                  <span className={`text-xs ${theme.textMuted} mt-1`}>
                     {msg.user === username ? "You" : msg.user} •{" "}
                     {new Date(msg.timestamp).toLocaleTimeString()}
                   </span>
                 </div>
 
+                {/* Current user avatar */}
                 {msg.user === username && (
                   <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-sm font-medium text-white">
                     {msg.user.substring(0, 2).toUpperCase()}
@@ -107,18 +122,21 @@ export function ChatSpace({ roomName, username, wsUrl }: ChatSpaceProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 pt-4 p-4 border-t">
+      {/* Input Area */}
+      <div
+        className={`flex items-center gap-2 pt-4 p-4 ${theme.border} border-t`}
+      >
         <input
           type="text"
           placeholder="Type your message..."
           value={inputMessage}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          className="flex-1 px-3 py-2 border text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={`flex-1 px-3 py-2 ${theme.border} border ${theme.input} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme.text}`}
         />
         <button
           onClick={handleSendMessage}
-          className="px-4 py-2 bg-blue-500 text-black rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={`px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${theme.hover}`}
         >
           Send
         </button>
