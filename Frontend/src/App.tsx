@@ -4,8 +4,8 @@ import CodeEditorPage from "./CodeEditor/Page";
 import { ThemeProvider } from "./ThemeProvider";
 import Login from "./components/login";
 import Signup from "./components/signup";
-import Dashboard from "./components/dashboard";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import Dashboard from "./Dashboard/Dashboard";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import { supabase } from "./database/superbase";
 function App() {
   const [session, setSession] = useState(null);
@@ -30,7 +30,8 @@ function App() {
     const full_name = user_metadata.full_name || "";
     const avatar_url = user_metadata.avatar_url || "";
 
-    const { error } = await supabase.from("profiles")
+    const { error } = await supabase
+      .from("profiles")
       .upsert({ id, full_name, email, avatar_url }, { onConflict: "id" });
 
     if (error) console.error("Error upserting profile:", error.message);

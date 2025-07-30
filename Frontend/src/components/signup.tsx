@@ -1,108 +1,13 @@
-// import React, { useState } from 'react';
-// import { supabase } from '../database/superbase';
-
-// const Signup: React.FC = () => {
-//   const [email, setEmail] = useState('');
-//   const [password, setPassword] = useState('');
-//   const [fullName, setFullName] = useState('');
-//   const [error, setError] = useState<string | null>(null);
-//   const [success, setSuccess] = useState(false);
-
-//   const handleSignup = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     setError(null);
-//     setSuccess(false);
-
-//     // Sign up user with Supabase Auth
-//     const { data, error: signUpError } = await supabase.auth.signUp({
-//       email,
-//       password,
-//       options: {
-//         data: {
-//           full_name: fullName,
-//           email:email,
-//           // Optionally set avatar_url here if available (e.g., from Google OAuth)
-//           avatar_url: null, // Will be updated later or via Supabase Storage
-//         },
-//       },
-//     });
-
-//     if (signUpError) {
-//       console.error('Signup error:', signUpError);
-//       return setError(signUpError.message);
-//     }
-
-//     if (data.user) {
-//       const { id } = data.user;
-//   console.log('User signed up:', id);
-//       // Insert profile into `profiles` table
-//       const { error: profileError } = await supabase.from('profiles').insert({
-//         id,
-//         full_name: fullName,
-//         email,
-//         avatar_url: null, // Set to null or a valid URL if available
-//       });
-
-//       if (profileError) {
-//         console.error('Profile error:', profileError);
-//         return setError(`Sign up succeeded but failed to save profile: ${profileError.message}`);
-//       }
-
-//       setSuccess(true);
-//     }
-//   };
-
-//   return (
-//     <div className="p-6 max-w-md mx-auto bg-white rounded-lg shadow-md">
-//       <h2 className="text-2xl font-bold mb-4 text-gray-800">Sign Up</h2>
-//       <form onSubmit={handleSignup} className="space-y-4">
-//         <input
-//           type="text"
-//           placeholder="Full Name"
-//           value={fullName}
-//           onChange={(e) => setFullName(e.target.value)}
-//           className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-//         />
-//         <input
-//           type="email"
-//           placeholder="Email"
-//           value={email}
-//           onChange={(e) => setEmail(e.target.value)}
-//           className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-//         />
-//         <input
-//           type="password"
-//           placeholder="Password"
-//           value={password}
-//           onChange={(e) => setPassword(e.target.value)}
-//           className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-//         />
-//         {error && <p className="text-red-600 text-sm">{error}</p>}
-//         {success && (
-//           <p className="text-green-600 text-sm">Signup successful! Please check your email to verify.</p>
-//         )}
-//         <button
-//           type="submit"
-//           className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition"
-//         >
-//           Sign Up
-//         </button>
-//       </form>
-//     </div>
-//   );
-// };
-
-// export default Signup;
-
-
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { supabase } from "../database/superbase";
 import { useTheme } from "../ThemeProvider";
+import { Mail, Lock, User, AlertCircle } from "lucide-react";
+import ThemeToggleButton from "./ThemeToggleBtn";
 
 function Signup() {
   const navigate = useNavigate();
-  const { theme, isDark, toggleTheme } = useTheme();
+  const { theme } = useTheme();
 
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
@@ -115,14 +20,18 @@ function Signup() {
     setError(null);
     setLoading(true);
 
-    // 1. Create user
+    // Create user
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
     });
 
     if (signUpError) {
-      console.error("Signup error:", signUpError.message);
       setError(signUpError.message);
       setLoading(false);
       return;
@@ -131,7 +40,7 @@ function Signup() {
     const userId = data.user?.id;
     const userEmail = data.user?.email;
 
-    // 2. Add to profiles table
+    // Add to profiles table
     if (userId) {
       const { error: profileError } = await supabase.from("profiles").insert({
         id: userId,
@@ -140,8 +49,7 @@ function Signup() {
       });
 
       if (profileError) {
-        console.error("Profile insert error:", profileError.message);
-        setError("Account created but profile setup failed.");
+        setError("Account created but profile setup failed");
       } else {
         navigate("/dashboard");
       }
@@ -151,83 +59,157 @@ function Signup() {
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center ${theme.background}`}>
-      <div className={`${theme.surface} p-8 rounded-xl shadow-2xl w-full max-w-md`}>
-        <div className="flex justify-between items-center mb-6">
-          <h1 className={`text-3xl font-bold text-center ${theme.text}`}>Sign Up</h1>
-          <button
-            onClick={toggleTheme}
-            className={`${theme.surfaceSecondary} p-2 rounded-full ${theme.hover} transition duration-300`}
-          >
-            {/* Theme toggle icon same as Login */}
-            {isDark ? (
-              <svg className="w-6 h-6" fill="none" stroke={theme.text} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            ) : (
-              <svg className="w-6 h-6" fill="none" stroke={theme.text} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
-            )}
-          </button>
+    <div
+      className={`min-h-screen flex items-center justify-center p-4 ${theme.surface}`}
+    >
+      <div className="w-full max-w-md space-y-8">
+        {/* Header */}
+        <div className="text-center">
+          <div className="flex items-center justify-center space-x-2 mb-6">
+            <h1 className={`text-3xl font-bold ${theme.text}`}>
+              Create Account
+            </h1>
+            <ThemeToggleButton size="medium" />
+          </div>
+          <p className={`text-sm ${theme.textSecondary}`}>
+            Sign up to get started with your workspace
+          </p>
         </div>
 
-        {error && (
-          <div className={`mb-6 p-4 ${isDark ? 'bg-red-900/80 text-red-200' : 'bg-red-100 text-red-700'} rounded-lg text-center`}>
-            {error}
-          </div>
-        )}
+        {/* Main Card */}
+        <div
+          className={`${theme.surfaceSecondary} ${theme.border} border p-6 shadow-sm`}
+        >
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-center gap-2">
+              <AlertCircle size={16} className="text-red-500" />
+              <span className="text-sm text-red-700 dark:text-red-300">
+                {error}
+              </span>
+            </div>
+          )}
 
-        <form onSubmit={handleSignup} className="space-y-6">
-          <div>
-            <label htmlFor="fullName" className={`block text-sm font-medium ${theme.textSecondary}`}>
-              Full Name
-            </label>
-            <input
-              id="fullName"
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-              className={`mt-1 w-full px-4 py-3 border ${theme.border} rounded-lg ${theme.surfaceSecondary} ${theme.text} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              placeholder="Enter your full name"
-            />
-          </div>
+          {/* Signup Form */}
+          <form onSubmit={handleSignup} className="space-y-4">
+            <div>
+              <label
+                htmlFor="fullName"
+                className={`block text-sm font-medium ${theme.text} mb-2`}
+              >
+                Full Name
+              </label>
+              <div className="relative">
+                <User
+                  size={18}
+                  className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme.textMuted}`}
+                />
+                <input
+                  id="fullName"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                  className={`w-full pl-10 pr-4 py-3 ${theme.input} ${theme.border} border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme.text} transition-colors`}
+                  placeholder="Enter your full name"
+                />
+              </div>
+            </div>
 
-          <div>
-            <label htmlFor="email" className={`block text-sm font-medium ${theme.textSecondary}`}>Email</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className={`mt-1 w-full px-4 py-3 border ${theme.border} rounded-lg ${theme.surfaceSecondary} ${theme.text} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              placeholder="Enter your email"
-            />
-          </div>
+            <div>
+              <label
+                htmlFor="email"
+                className={`block text-sm font-medium ${theme.text} mb-2`}
+              >
+                Email
+              </label>
+              <div className="relative">
+                <Mail
+                  size={18}
+                  className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme.textMuted}`}
+                />
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className={`w-full pl-10 pr-4 py-3 ${theme.input} ${theme.border} border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme.text} transition-colors`}
+                  placeholder="Enter your email"
+                />
+              </div>
+            </div>
 
-          <div>
-            <label htmlFor="password" className={`block text-sm font-medium ${theme.textSecondary}`}>Password</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className={`mt-1 w-full px-4 py-3 border ${theme.border} rounded-lg ${theme.surfaceSecondary} ${theme.text} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              placeholder="Create a strong password"
-            />
-          </div>
+            <div>
+              <label
+                htmlFor="password"
+                className={`block text-sm font-medium ${theme.text} mb-2`}
+              >
+                Password
+              </label>
+              <div className="relative">
+                <Lock
+                  size={18}
+                  className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme.textMuted}`}
+                />
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className={`w-full pl-10 pr-4 py-3 ${theme.input} ${theme.border} border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme.text} transition-colors`}
+                  placeholder="Create a strong password"
+                />
+              </div>
+              <p className={`mt-1 text-xs ${theme.textMuted}`}>
+                Password must be at least 6 characters long
+              </p>
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full ${theme.statusBar} ${theme.statusText} py-3 rounded-lg ${theme.hover} transition duration-300 font-semibold text-lg`}
-          >
-            {loading ? "Creating account..." : "Sign Up"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white py-3 font-medium transition-colors"
+            >
+              {loading ? "Creating Account..." : "Create Account"}
+            </button>
+          </form>
+
+          {/* Sign In Link */}
+          <div className="mt-6 text-center">
+            <span className={`text-sm ${theme.textSecondary}`}>
+              Already have an account?{" "}
+              <button
+                onClick={() => navigate("/login")}
+                className="text-blue-500 hover:text-blue-600 font-medium transition-colors"
+              >
+                Sign in
+              </button>
+            </span>
+          </div>
+        </div>
+
+        {/* Terms Notice */}
+        <div className="text-center">
+          <p className={`text-xs ${theme.textMuted}`}>
+            By creating an account, you agree to our{" "}
+            <a
+              href="#"
+              className="text-blue-500 hover:text-blue-600 transition-colors"
+            >
+              Terms of Service
+            </a>{" "}
+            and{" "}
+            <a
+              href="#"
+              className="text-blue-500 hover:text-blue-600 transition-colors"
+            >
+              Privacy Policy
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );

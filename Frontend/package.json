@@ -11,11 +11,13 @@
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
+    "@supabase/supabase-js": "^2.53.0",
     "@tailwindcss/vite": "^4.1.11",
     "lucide-react": "^0.525.0",
     "monaco-editor": "^0.52.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-router": "^7.7.1",
     "tailwindcss": "^4.1.11",
     "y-monaco": "^0.1.6",
     "y-websocket": "^3.0.0",
