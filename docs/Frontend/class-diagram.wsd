@@ -1,0 +1,140 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam style strictuml
+
+package "App Structure" {
+  class App {
+    +ThemeProvider
+    +CodeEditorPage
+  }
+
+  class CodeEditorPage {
+    -selectedFile: FileNode
+    -leftActiveTab: string
+    -rightActiveTab: string
+    +renderLeftPanel()
+    +renderRightPanel()
+  }
+
+  class CompilerPanel
+' React Component: NavigationBar
+class NavigationBar {
+  - theme: Theme
+  - isConnected: boolean
+  - connectedUsers: CollaborationUser[]
+  + useEffect(): void
+  + toggleTheme(): void
+}
+  class StatusBar
+  class GitPanel
+  class LiveChatPanel
+' React Component: ProjectManagementPanel
+class ProjectManagementPanel {
+  - files: FileNode[]
+  - selectedFile: string
+  - contextMenu: ContextMenuData
+  + handleFileSelect(file: FileNode): void
+  + handleCreateFile(): void
+  + handleCreateFolder(): void
+  + handleRename(): void
+  + handleDelete(): void
+}
+  class TabPanel
+}
+
+package "Theming" {
+  class ThemeProvider {
+    -isDark: boolean
+    -themes: Theme[]
+    +toggleTheme()
+  }
+
+  class ThemeContext {
+    +theme: Theme
+    +isDark: boolean
+    +toggleTheme()
+  }
+
+  class Theme {
+    +background
+    +surface
+    +monacoTheme
+    +text
+    +hover
+    ...
+  }
+
+  ThemeProvider --> ThemeContext
+  ThemeContext --> Theme
+}
+
+package "Editor" {
+  class MonacoEditor {
+    -editorRef: IStandaloneCodeEditor
+    -currentFileRef: string
+    +bindEditorToFile(file: FileNode)
+    +getLanguageFromFileName(name: string): string
+    +getDisplayContent(): string
+  }
+
+  class MonacoBinding {
+    +destroy()
+  }
+
+  class FileNode {
+    <<interface>>
+    +id: string
+    +name: string
+    +type: "file"|"folder"
+    +content: string
+  }
+
+' Core Service: YjsCollaborationService
+class YjsCollaborationService {
+  - projectDoc: Y.Doc
+  - provider: WebsocketProvider
+  - fileSystemMap: Y.Map<string, any>
+  - fileTexts: Map<string, Y.Text>
+  - initialized: boolean
+  - connectionCallbacks: Set<Function>
+  - usersCallbacks: Set<Function>
+  + getFileSystem(): FileNode[]
+  + getFileText(fileId: string): Y.Text
+  + onConnectionChange(cb: Function): Function
+  + onUsersChange(cb: Function): Function
+  + setFileSystem(files: FileNode[]): void
+  + destroy(): void
+}
+
+  class CollaborationUser {
+    +id: string
+    +name: string
+    +color: string
+  }
+}
+
+
+' Relationships
+MonacoEditor --> MonacoBinding
+MonacoEditor --> FileNode
+MonacoEditor --> YjsCollaborationService
+App --> ThemeProvider
+App --> CodeEditorPage
+CodeEditorPage --> MonacoEditor
+CodeEditorPage --> TabPanel
+CodeEditorPage --> CompilerPanel
+CodeEditorPage --> NavigationBar
+CodeEditorPage --> StatusBar
+CodeEditorPage --> ProjectManagementPanel
+CodeEditorPage --> GitPanel
+CodeEditorPage --> LiveChatPanel
+MonacoEditor --> ThemeContext
+NavigationBar --> CollaborationUser : uses
+NavigationBar --> YjsCollaborationService : calls
+ProjectManagementPanel --> FileNode : displays
+ProjectManagementPanel --> YjsCollaborationService : updates
+ProjectManagementPanel --> ContextMenuData : manages
+YjsCollaborationService --> FileNode : stores
+YjsCollaborationService --> CollaborationUser : tracks
+
+@enduml
