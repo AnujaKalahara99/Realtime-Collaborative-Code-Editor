@@ -17,17 +17,29 @@ export interface CollaborationUser {
   };
 }
 
+export interface Message {
+  id: string;
+  user: string;
+  text: string;
+  timestamp: number;
+}
+
 // Centralized YJS Collaboration Service
 class YjsCollaborationService {
   private projectDoc: Y.Doc | null = null;
   private provider: WebsocketProvider | null = null;
   private fileSystemMap: Y.Map<any> | null = null; // Metadata for file system
   private fileTexts: Map<string, Y.Text> = new Map(); // Actual file contents
+  private chatArray: Y.Array<Message> | null = null;
+
   private initialized = false;
+
   private connectionCallbacks: Set<(connected: boolean) => void> = new Set();
   private fileChangeCallbacks: Map<string, Set<(content: string) => void>> =
     new Map();
   private fileSystemCallbacks: Set<(files: FileNode[]) => void> = new Set();
+  private chatCallbacks: Set<(messages: Message[]) => void> = new Set();
+
   private userColors = [
     "#30bced",
     "#6eeb83",
@@ -55,8 +67,8 @@ class YjsCollaborationService {
       this.projectDoc
     );
 
-    // Get file system map
     this.fileSystemMap = this.projectDoc.getMap("fileSystem");
+    this.chatArray = this.projectDoc.getArray("chat");
 
     // Set up connection listeners
     this.provider.on("status", (event: any) => {
@@ -219,6 +231,73 @@ class YjsCollaborationService {
     // Clean up callbacks
     this.fileChangeCallbacks.delete(fileId);
     this.fileTexts.delete(fileId);
+  }
+
+  // Chat Management
+  public getChatArray(): Y.Array<Message> {
+    if (!this.projectDoc) {
+      throw new Error("YJS not initialized");
+    }
+    return this.chatArray!;
+  }
+
+  public getChatMessages(): Message[] {
+    return this.chatArray?.toArray() || [];
+  }
+
+  public sendChatMessage(text: string): void {
+    if (!this.chatArray || !text.trim()) return;
+
+    const awareness = this.getAwareness();
+    const currentUser = awareness?.getLocalState()?.user;
+    const username = currentUser?.name || "Anonymous";
+
+    const newMessage: Message = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      user: username,
+      text: text.trim(),
+      timestamp: Date.now(),
+    };
+
+    this.chatArray.push([newMessage]);
+  }
+
+  public onChatChange(callback: (messages: Message[]) => void): () => void {
+    if (!this.chatArray) {
+      throw new Error("Chat not initialized");
+    }
+
+    this.chatCallbacks.add(callback);
+
+    if (this.chatCallbacks.size === 1) {
+      const observer = () => {
+        const messages = this.chatArray?.toArray() || [];
+        this.chatCallbacks.forEach((cb) => cb(messages));
+      };
+      this.chatArray.observe(observer);
+
+      (this.chatArray as any)._observer = observer;
+    }
+
+    callback(this.getChatMessages());
+
+    return () => {
+      this.chatCallbacks.delete(callback);
+
+      if (this.chatCallbacks.size === 0) {
+        const observer = (this.chatArray as any)._observer;
+        if (observer) {
+          this.chatArray?.unobserve(observer);
+          delete (this.chatArray as any)._observer;
+        }
+      }
+    };
+  }
+
+  public clearChat(): void {
+    if (this.chatArray && this.chatArray.length > 0) {
+      this.chatArray.delete(0, this.chatArray.length);
+    }
   }
 
   // User Awareness
