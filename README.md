@@ -35,7 +35,7 @@ This is a realtime collaborative code editor and compiler project with a fronten
    ```bash
     cd WS_Server
     npm install
-    npm start
+    npm  run dev
 
 3. set the .env file in the Frontend
    ``` bash
