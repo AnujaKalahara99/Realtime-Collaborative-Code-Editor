@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node ./src/server.js"
+    "start": "node ./src/server.js",
+    "dev": "nodemon ./src/server.js"
   },
   "keywords": [],
   "author": "Anuja",
@@ -13,7 +14,8 @@
   "description": "",
   "dependencies": {
     "@y/protocols": "^1.0.6-1",
-    "lib0": "^0.2.102"
+    "lib0": "^0.2.102",
+    "nodemon": "^3.1.10"
   },
   "devDependencies": {
     "@types/node": "^24.0.1",
