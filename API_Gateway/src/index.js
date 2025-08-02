@@ -5,6 +5,8 @@ config();
 import setupProxies from "./proxy.js";
 import ROUTES from "./routes.js";
 import setupAuth from "./auth.js";
+import setupLogging from "./logging.js";
+import setupRateLimit from "./ratelimit.js";
 
 const app = express();
 
@@ -14,6 +16,9 @@ const corsConfig = {
 };
 
 app.use(cors(corsConfig));
+// app.use(express.json());
+setupLogging(app);
+setupRateLimit(app, ROUTES);
 setupAuth(app, ROUTES);
 setupProxies(app, ROUTES);
 

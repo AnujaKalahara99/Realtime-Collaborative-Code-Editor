@@ -21,117 +21,80 @@ function Dashboard({ session }: Props) {
   const user = session.user;
   const name = user.user_metadata.full_name || user.email;
 
-  const projectID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  // Fetch workspaces for the current user
   useEffect(() => {
     const fetchWorkspaces = async () => {
       try {
-        const { data, error } = await supabase
-          .from("workspaces")
-          .select(
-            `
-            id,
-            name,
-            created_at,
-            workspace_members!inner(user_id)
-          `
-          )
-          .eq("workspace_members.user_id", user.id);
-
-        if (error) {
-          console.error("Error fetching workspaces:", error);
-          return;
-        }
-
-        if (data) {
-          const workspaceList: Workspace[] = data.map((item) => ({
-            id: item.id,
-            name: item.name,
-            lastModified: new Date(item.created_at).toLocaleString("en-US", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-            owner: name,
-          }));
-          setWorkspaces(workspaceList);
-        }
+        fetch("http://localhost:4000/codespaces", {
+          method: "GET",
+          headers: {
+            Authorization: getToken(),
+          },
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.codespaces) {
+              const workspaceList: Workspace[] = data.codespaces.map(
+                (item) => ({
+                  id: item.id,
+                  name: item.name,
+                  lastModified: new Date(item.created_at).toLocaleString(
+                    "en-US",
+                    {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }
+                  ),
+                  owner: name,
+                })
+              );
+              setWorkspaces(workspaceList);
+            }
+          });
       } catch (error) {
         console.error("Unexpected error:", error);
       }
     };
 
     fetchWorkspaces();
-  }, [user.id, name]);
-
-  useEffect(() => {
-    console.log(`Project ID: ${projectID}`);
-    fetch("http://localhost:4000/auth", {
-      method: "POST",
-      headers: {
-        // This is the token that we get from Supabase.
-        Authorization: getToken(),
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => console.log(data));
   }, []);
 
   const createWorkspace = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newWorkspaceName.trim()) {
       try {
-        // Insert new workspace
-        const { data: workspaceData, error: workspaceError } = await supabase
-          .from("workspaces")
-          .insert({
+        fetch("http://localhost:4000/codespaces", {
+          method: "POST",
+          headers: {
+            Authorization: getToken(),
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
             name: newWorkspaceName,
-            created_at: new Date().toISOString(),
-          })
-          .select()
-          .single();
-
-        if (workspaceError) {
-          console.error("Error creating workspace:", workspaceError);
-          return;
-        }
-
-        if (workspaceData) {
-          // Insert workspace member
-          const { error: memberError } = await supabase
-            .from("workspace_members")
-            .insert({
-              workspace_id: workspaceData.id,
-              user_id: user.id,
-              role: "user", // Trigger will set to 'admin' if first member
-              joined_at: new Date().toISOString(),
-            });
-
-          if (memberError) {
-            console.error("Error adding workspace member:", memberError);
-            return;
-          }
-
-          // Update local state
-          const newWorkspace: Workspace = {
-            id: workspaceData.id,
-            name: workspaceData.name,
-            lastModified: "Just now",
-            owner: name,
-          };
-          setWorkspaces([newWorkspace, ...workspaces]);
-          setNewWorkspaceName("");
-          setIsModalOpen(false);
-        }
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.codespace) {
+              const newWorkspace: Workspace = {
+                id: data.codespace.id,
+                name: data.codespace.name,
+                lastModified: data.codespace.lastModified,
+                owner: name,
+              };
+              setWorkspaces([newWorkspace, ...workspaces]);
+              setNewWorkspaceName("");
+              setIsModalOpen(false);
+            }
+          });
       } catch (error) {
         console.error("Unexpected error:", error);
       }

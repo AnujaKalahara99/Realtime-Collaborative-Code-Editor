@@ -1,11 +1,27 @@
 const ROUTES = [
   {
+    url: "/codespaces",
+    auth: true,
+    creditCheck: false,
+    rateLimit: {
+      windowMs: 60 * 1000,
+      limit: 100,
+    },
+    proxy: {
+      target: "http://localhost:5000/codespaces",
+      changeOrigin: true,
+      pathRewrite: {
+        [`^/codespaces`]: "",
+      },
+    },
+  },
+  {
     url: "/free",
     auth: false,
     creditCheck: false,
     rateLimit: {
       windowMs: 15 * 60 * 1000,
-      max: 5,
+      limit: 5,
     },
     proxy: {
       target: "http://144.24.128.44:4001/run",

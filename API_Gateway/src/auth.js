@@ -23,7 +23,9 @@ const setupAuth = (app, routes) => {
         }
 
         req.user = decoded;
-        console.log(`User authenticated: ${decoded.email}`);
+        req.headers["x-user-id"] = decoded.sub;
+        req.headers["x-user-email"] = decoded.email;
+        req.headers["x-user-role"] = "admin";
         next();
       });
     };
