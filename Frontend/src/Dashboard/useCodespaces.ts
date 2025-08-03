@@ -13,6 +13,7 @@ export const useCodespaces = (session: Session) => {
     }-auth-token`;
     const sessionDataString = localStorage.getItem(storageKey);
     const sessionData = JSON.parse(sessionDataString || "null");
+    console.log(sessionData);
     return sessionData?.access_token;
   };
 
@@ -84,6 +85,25 @@ export const useCodespaces = (session: Session) => {
     }
     return false;
   };
+  const deleteCodespace = async (id: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`http://localhost:4000/codespaces/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: getToken(),
+          "Content-Type": "application/json",
+        },
+      });
 
-  return { codespaces, createCodespace };
+      if (response.ok) {
+        setCodespaces((prev) => prev.filter((c) => c.id !== id));
+        return true;
+      }
+    } catch (error) {
+      console.error("Error deleting codespace:", error);
+    }
+    return false;
+  };
+
+  return { codespaces, createCodespace, deleteCodespace };
 };

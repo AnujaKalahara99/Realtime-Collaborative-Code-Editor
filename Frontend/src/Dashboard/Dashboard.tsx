@@ -16,8 +16,7 @@ type Props = {
 
 const Dashboard = ({ session }: Props) => {
   const { theme } = useTheme();
-  const { codespaces, createCodespace } = useCodespaces(session);
-
+  const { codespaces, createCodespace, deleteCodespace } = useCodespaces(session);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,14 +41,15 @@ const Dashboard = ({ session }: Props) => {
           setViewMode={setViewMode}
         />
 
-        <CodespaceGrid
-          codespaces={filteredCodespaces}
-          viewMode={viewMode}
-          onCreateWorkspace={() => setIsModalOpen(true)}
-        />
+      <CodespaceGrid
+        codespaces={filteredCodespaces}
+        viewMode={viewMode}
+        onCreateWorkspace={() => setIsModalOpen(true)}
+        onDeleteWorkspace={deleteCodespace} 
+/>
+
 
         <EmptyState searchQuery={searchQuery} />
-
         <CreateCodespaceModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
