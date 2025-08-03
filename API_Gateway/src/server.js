@@ -2,11 +2,11 @@ import express from "express";
 import cors from "cors";
 import { config } from "dotenv";
 config();
-import setupProxies from "./proxy.js";
+import setupProxies from "./middleware/proxy.js";
 import ROUTES from "./routes.js";
-import setupAuth from "./auth.js";
-import setupLogging from "./logging.js";
-import setupRateLimit from "./ratelimit.js";
+import setupAuth from "./middleware/auth.js";
+import setupLogging from "./middleware/logging.js";
+import setupRateLimit from "./middleware/ratelimit.js";
 
 const app = express();
 
@@ -27,7 +27,8 @@ app.get("/health", (req, res) => {
 });
 
 const PORT = process.env.PORT || 4000;
+const HOST = process.env.HOST || "localhost";
 
-app.listen(PORT, () => {
-  console.log(`API Gateway is running on port ${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`API Gateway is running on http://${HOST}:${PORT}`);
 });

@@ -29,7 +29,7 @@ const TitleBar = ({ Session }: { Session: Session }) => {
         <div className="flex items-center justify-between h-16">
           {/* Left side */}
           <div className="flex items-center space-x-4">
-            <h1 className={`text-2xl font-medium ${theme.text}`}>Workspaces</h1>
+            <h1 className={`text-2xl font-medium ${theme.text}`}>Codespaces</h1>
           </div>
 
           {/* Right side */}

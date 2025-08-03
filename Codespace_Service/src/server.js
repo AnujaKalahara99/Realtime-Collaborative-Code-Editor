@@ -17,8 +17,9 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 4000;
+const HOST = process.env.HOST || "localhost";
 
-app.listen(PORT, () => {
-  console.log(`Codespace Service running on port ${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Codespace Service running on http://${HOST}:${PORT}`);
 });
