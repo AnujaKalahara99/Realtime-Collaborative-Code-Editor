@@ -5,6 +5,7 @@ import {
   collaborationService,
   type CollaborationUser,
 } from "./YJSCollaborationService";
+import Avatar from "../components/Avatar";
 
 const NavigationBar = () => {
   const { theme, toggleTheme, isDark } = useTheme();
@@ -26,7 +27,7 @@ const NavigationBar = () => {
 
   return (
     <div
-      className={`h-8 ${theme.background} ${theme.border} border-b flex items-center px-4 justify-between`}
+      className={`h-10 ${theme.background} ${theme.border} border-b flex items-center px-4 justify-between`}
     >
       <div className={`text-xs ${theme.textMuted}`}>
         Menu bar and top status will go here
@@ -45,11 +46,12 @@ const NavigationBar = () => {
           <div className="flex items-center gap-1">
             <div className="flex -space-x-1">
               {connectedUsers.slice(0, 3).map((user, index) => (
-                <div
+                <Avatar
                   key={index}
-                  className="w-4 h-4 rounded-full border border-gray-600"
-                  style={{ backgroundColor: user.color }}
-                  title={user.name}
+                  name={user.name}
+                  src={user.avatar}
+                  color={user.color}
+                  size="small"
                 />
               ))}
               {connectedUsers.length > 3 && (

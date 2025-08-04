@@ -6,14 +6,21 @@ import {
   type KeyboardEvent,
   type ChangeEvent,
 } from "react";
-import { useCollaboration, type Message } from "./YJSCollaborationService";
+import {
+  useCollaboration,
+  type CollaborationUser,
+  type Message,
+} from "./YJSCollaborationService";
 import { useTheme } from "../ThemeProvider";
 import { ChevronRight } from "lucide-react";
+import Avatar from "../components/Avatar";
 
 export function ChatSpace() {
   const [inputMessage, setInputMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
-  const [currentUser, setCurrentUser] = useState<string>("");
+  const [currentUser, setCurrentUser] = useState<CollaborationUser | null>(
+    null
+  );
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
 
@@ -24,7 +31,7 @@ export function ChatSpace() {
     const awareness = collaboration.getAwareness();
     if (awareness) {
       const user = awareness.getLocalState()?.user;
-      setCurrentUser(user?.name || "Anonymous");
+      setCurrentUser(user);
     }
   }, [collaboration]);
 
@@ -61,31 +68,14 @@ export function ChatSpace() {
     setInputMessage(e.target.value);
   };
 
-  const getAvatarColor = (username: string) => {
-    // Generate consistent color based on username
-    const colors = [
-      "bg-red-500",
-      "bg-blue-500",
-      "bg-green-500",
-      "bg-yellow-500",
-      "bg-purple-500",
-      "bg-pink-500",
-      "bg-indigo-500",
-      "bg-teal-500",
-    ];
-    let hash = 0;
-    for (let i = 0; i < username.length; i++) {
-      hash = username.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-  };
-
   return (
     <div className={`flex flex-col ${theme.border} border ${theme.surface}`}>
       {/* Header */}
       <div className={`flex-shrink-0 h-20 pb-3 p-4 ${theme.border} border-b`}>
         <h2 className={`text-lg font-semibold ${theme.text}`}>Team Chat</h2>
-        <p className={`text-sm ${theme.textSecondary}`}>You: {currentUser}</p>
+        <p className={`text-sm ${theme.textSecondary}`}>
+          You: {currentUser?.name || "Anonymous"}
+        </p>
       </div>
 
       {/* Messages Area */}
@@ -96,7 +86,7 @@ export function ChatSpace() {
         >
           <div className="space-y-3">
             {messages.map((msg: Message) => {
-              const isCurrentUser = msg.user === currentUser;
+              const isCurrentUser = msg.user === currentUser?.name;
 
               return (
                 <div
@@ -107,14 +97,12 @@ export function ChatSpace() {
                       : "justify-start"
                   }`}
                 >
-                  {/* Avatar */}
-                  <div
-                    className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium text-white flex-shrink-0 ${
-                      isCurrentUser ? "bg-blue-500" : getAvatarColor(msg.user)
-                    }`}
-                  >
-                    {msg.user.substring(0, 2).toUpperCase()}
-                  </div>
+                  <Avatar
+                    name={msg.user}
+                    src={msg.avatar}
+                    color={isCurrentUser ? "#3B82F6" : undefined} // Blue for current user
+                    size="medium"
+                  />
 
                   {/* Message bubble */}
                   <div
