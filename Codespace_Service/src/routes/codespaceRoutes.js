@@ -16,6 +16,8 @@ router.get("/", CodespaceController.getCodespaces);
 
 router.get("/:id", validateCodespaceId, CodespaceController.getCodespaceById);
 
+router.post("/:id/share",CodespaceController.shareCodespace);
+
 router.post("/", validateCodespaceData, CodespaceController.createCodespace);
 
 router.put(

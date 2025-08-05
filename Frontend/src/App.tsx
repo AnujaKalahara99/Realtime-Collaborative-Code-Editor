@@ -55,6 +55,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/codeeditor/:id" element={<CodeEditorPage />} />
           <Route
             path="/codeeditor"
             element={
@@ -64,6 +65,7 @@ function App() {
             }
           />
           <Route path="/" element={<Login />} />
+
         </Routes>
       </Router>
     </ThemeProvider>

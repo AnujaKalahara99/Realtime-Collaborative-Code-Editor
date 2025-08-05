@@ -82,7 +82,7 @@ export class CodespaceService {
       .from("workspaces")
       .update({
         name,
-        updated_at: new Date().toISOString(),
+        // updated_at: new Date().toISOString(),
       })
       .eq("id", codespaceId)
       .select()
@@ -167,4 +167,47 @@ export class CodespaceService {
 
     return data;
   }
+
+ static async shareCodespace(codespaceId, email) {
+  const { data: userData, error: userError } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("email", email.trim())
+    .single();
+
+  if (userError || !userData) {
+    console.error("Error finding user by email:", userError?.message || "User not found");
+    throw new Error("User not found");
+  }
+
+  const targetUserId = userData.id;
+
+  // Optionally: prevent duplicate insert
+  const { data: existingMember } = await supabase
+    .from("workspace_members")
+    .select("*")
+    .eq("workspace_id", codespaceId)
+    .eq("user_id", targetUserId)
+    .maybeSingle();
+
+  if (existingMember) {
+    throw new Error("User is already a member of the codespace");
+  }
+
+  const { error } = await supabase
+    .from("workspace_members")
+    .insert({
+      workspace_id: codespaceId,
+      user_id: targetUserId,
+      role: "Developer",
+      joined_at: new Date().toISOString(),
+    });
+
+  if (error) {
+    console.error("Error inserting into workspace_members:", error.message);
+    throw error;
+  }
+
+  return true;
+}
 }

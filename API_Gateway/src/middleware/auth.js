@@ -13,7 +13,7 @@ const setupAuth = (app, routes) => {
       const token = req.headers.authorization;
 
       if (!token) {
-        return res.status(401).json({ error: "Unauthorized" });
+        return res.status(401).json({ error: "Unauthorized token" });
       }
 
       jwt.verify(token, hmacSecret, (err, decoded) => {

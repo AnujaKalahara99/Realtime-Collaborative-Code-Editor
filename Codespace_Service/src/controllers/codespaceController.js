@@ -40,6 +40,7 @@ export class CodespaceController {
         name,
         req.user.id
       );
+      console.log(codespace);
 
       res.json({
         codespace,
@@ -108,4 +109,36 @@ export class CodespaceController {
       next(error);
     }
   }
+
+  
+static async shareCodespace(req, res, next) { 
+  try {
+    const { id } = req.params;
+    const { email } = req.body;
+
+    // Validate email format
+    if (!email || !email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({
+        error: "Invalid email format",
+        code: "INVALID_EMAIL",
+      });
+    }
+
+    await CodespaceService.shareCodespace(id, email);
+
+    res.json({
+      message: "Codespace shared successfully",
+    });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        error: error.message,
+        code: error.code,
+      });
+    }
+    next(error);
+  }
+};
+
 }
+
