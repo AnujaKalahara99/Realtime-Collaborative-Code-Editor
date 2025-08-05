@@ -1,5 +1,4 @@
 
-
 import { useNavigate } from "react-router-dom";
 import { FileText, MoreVertical, Trash2, Share2, Edit } from "lucide-react";
 import { useTheme } from "../ThemeProvider";
@@ -7,7 +6,7 @@ import { type Codespace, type ViewMode } from "./codespace.types";
 import { useState } from "react";
 
 interface Props {
-  codespace: Codespace ;
+  codespace: Codespace;
   viewMode: ViewMode;
   onDelete?: () => void;
   onShare?: (newEmail: string) => void;
@@ -18,7 +17,10 @@ function CodespaceCard({ codespace, viewMode, onDelete, onShare, onEdit }: Props
   const { theme } = useTheme();
   const [showMenu, setShowMenu] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false); 
   const [emailInput, setEmailInput] = useState("");
+  const [nameInput, setNameInput] = useState(codespace.name); 
+  const [displayName, setDisplayName] = useState(codespace.name); 
   const navigate = useNavigate();
 
   const toggleMenu = (e: React.MouseEvent) => {
@@ -40,13 +42,19 @@ function CodespaceCard({ codespace, viewMode, onDelete, onShare, onEdit }: Props
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const newName = window.prompt("Enter new codespace name:", codespace.name);
-    if (newName && newName.trim()) {
-      onEdit?.(newName.trim());
+    setNameInput(displayName); 
+    setEditModalOpen(true); 
+    setShowMenu(false);
+  };
+
+  const submitEdit = () => {
+    if (nameInput.trim()) {
+      setDisplayName(nameInput.trim()); 
+      onEdit?.(nameInput.trim()); 
+      setEditModalOpen(false); 
     } else {
       alert("Codespace name cannot be empty");
     }
-    setShowMenu(false);
   };
 
   const handleClick = () => {
@@ -100,7 +108,7 @@ function CodespaceCard({ codespace, viewMode, onDelete, onShare, onEdit }: Props
                 viewMode === "grid" ? "text-lg mb-2" : "text-base"
               }`}
             >
-              {codespace.name}
+              {displayName}
             </h3>
             <div
               className={`text-sm ${theme.textMuted} ${
@@ -142,7 +150,7 @@ function CodespaceCard({ codespace, viewMode, onDelete, onShare, onEdit }: Props
             {onShare && (
               <button
                 onClick={handleShare}
-                className="flex items-center gap-2 text-sm text-green-600 hover:text-green-700 w-full px-3 py-2 rounded-md hover:bg-green-50 dark:hover:bg-green-900/50"
+                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 w-full px-3 py-2 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/50"
               >
                 <Share2 size={14} /> Share
               </button>
@@ -187,9 +195,37 @@ function CodespaceCard({ codespace, viewMode, onDelete, onShare, onEdit }: Props
           </div>
         </div>
       )}
+
+      {editModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-sm">
+            <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Edit Codespace Name</h2>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
+              placeholder="Enter new name"
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setEditModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-sm rounded hover:bg-gray-400 dark:hover:bg-gray-500"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitEdit}
+                className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
 
 export default CodespaceCard;
-
