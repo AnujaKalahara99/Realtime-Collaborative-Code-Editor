@@ -114,7 +114,7 @@ class YjsCollaborationService {
               ],
             avatar,
           });
-        }
+        } 
       });
     // Set local user info
     // const userColor =
