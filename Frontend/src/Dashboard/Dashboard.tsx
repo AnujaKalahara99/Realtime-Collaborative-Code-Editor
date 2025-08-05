@@ -20,7 +20,7 @@ const Dashboard = ({ session }: Props) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+   console.log(codespaces)
   const filteredCodespaces = codespaces.filter((codespace: Codespace) =>
     codespace.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
