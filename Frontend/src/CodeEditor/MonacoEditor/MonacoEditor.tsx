@@ -25,7 +25,7 @@ export default function MonacoEditor({
 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const currentBindingRef = useRef<MonacoBinding | null>(null);
-  const currentFileRef = useRef<FileNode | null>(null);
+  const currentFileRef = useRef<string | null>(null);
   const contentUnsubscribeRef = useRef<(() => void) | null>(null);
 
   const [language, setLanguage] = useState<string>("plaintext");
@@ -34,6 +34,8 @@ export default function MonacoEditor({
 
   // Subscribe to connection status
   useEffect(() => {
+    console.log(selectedFile);
+
     const unsubscribeConnection =
       collaborationService.onConnectionChange(setIsConnected);
 
@@ -42,51 +44,21 @@ export default function MonacoEditor({
     };
   }, []);
 
-  // useEffect(() => {
-  //   const handleVisibilityChange = () => {
-  //     console.log(
-  //       !document.hidden,
-  //       currentFileRef.current,
-  //       editorRef.current,
-  //       selectedFile
-  //     );
-  //     if (
-  //       !document.hidden &&
-  //       currentFileRef.current &&
-  //       editorRef.current &&
-  //       !selectedFile
-  //     ) {
-  //       bindEditorToFile(currentFileRef.current);
-  //     }
-  //   };
-
-  //   document.addEventListener("visibilitychange", handleVisibilityChange);
-  //   return () =>
-  //     document.removeEventListener("visibilitychange", handleVisibilityChange);
-  // }, [selectedFile]);
-
   useEffect(() => {
-    const handleWindowFocus = () => {
-      if (currentFileRef.current && editorRef.current && !selectedFile) {
-        bindEditorToFile(currentFileRef.current);
-      }
-    };
-
-    window.addEventListener("focus", handleWindowFocus);
-    return () => window.removeEventListener("focus", handleWindowFocus);
-  }, [selectedFile]);
-
-  useEffect(() => {
-    setFileUsers([]);
+    setFileUsers([]); //Clear prev file users
 
     if (selectedFile && selectedFile.type === "file" && editorRef.current) {
       setLanguage(getLanguageFromFileName(selectedFile.name));
-      currentFileRef.current = selectedFile;
-      bindEditorToFile(selectedFile);
+
+      // Switching to a different file
+      if (currentFileRef.current !== selectedFile.id) {
+        bindEditorToFile(selectedFile);
+      }
 
       const updateUsers = () => {
         const users = collaborationService.getUsersInFile(selectedFile.id);
         setFileUsers(users);
+        console.log("Connected File users:", users);
       };
 
       const unsubscribeFileUsers =
@@ -96,12 +68,8 @@ export default function MonacoEditor({
       return () => {
         unsubscribeFileUsers();
       };
-    } else if (!selectedFile && currentFileRef.current && editorRef.current) {
-      // If no selectedFile but we have a current file, keep it bound
-      setLanguage(getLanguageFromFileName(currentFileRef.current.name));
-      bindEditorToFile(currentFileRef.current);
     } else if (!selectedFile) {
-      // Clean up only if we truly have no file
+      // No file selected, cleanup
       if (currentBindingRef.current) {
         currentBindingRef.current.destroy();
         currentBindingRef.current = null;
@@ -110,6 +78,7 @@ export default function MonacoEditor({
         contentUnsubscribeRef.current();
         contentUnsubscribeRef.current = null;
       }
+      currentFileRef.current = null;
     }
   }, [selectedFile]);
 
@@ -163,6 +132,8 @@ export default function MonacoEditor({
         onFileContentChange?.(file.id, content);
       }
     );
+
+    currentFileRef.current = file.id;
   };
 
   const handleEditorDidMount = (
@@ -172,8 +143,6 @@ export default function MonacoEditor({
 
     if (selectedFile && selectedFile.type === "file") {
       bindEditorToFile(selectedFile);
-    } else if (currentFileRef.current) {
-      bindEditorToFile(currentFileRef.current);
     } else {
       // Set placeholder content
       const model = editorInstance.getModel();
@@ -227,24 +196,22 @@ export default function MonacoEditor({
     return initialValue;
   };
 
-  const displayFile = selectedFile || currentFileRef.current;
-
   return (
     <div className="h-full flex flex-col">
       <CollaborativeCursor
         editor={editorRef.current}
         selectedFile={
-          displayFile ? { id: displayFile.id, type: displayFile.type } : null
+          selectedFile ? { id: selectedFile.id, type: selectedFile.type } : null
         }
       />
 
       {/* File Tab/Header */}
-      {displayFile && displayFile.type === "file" && (
+      {selectedFile && selectedFile.type === "file" && (
         <div
           className={`px-4 py-2 ${theme.surfaceSecondary} border-b ${theme.border} flex items-center justify-between`}
         >
           <div className="flex items-center gap-2">
-            <span className={`text-sm ${theme.text}`}>{displayFile.name}</span>
+            <span className={`text-sm ${theme.text}`}>{selectedFile.name}</span>
             <span className={`text-xs ${theme.textMuted}`}>({language})</span>
           </div>
 
@@ -294,7 +261,7 @@ export default function MonacoEditor({
           language={language}
           theme={theme.monacoTheme}
           // Use key to force re-render when file changes
-          key={displayFile?.id || "no-file"}
+          key={selectedFile?.id || "no-file"}
           defaultValue={getDisplayContent()}
           onMount={handleEditorDidMount}
           options={{
@@ -317,22 +284,22 @@ export default function MonacoEditor({
               strings: true,
             },
             // Show read-only when no file is selected
-            readOnly: !displayFile || displayFile.type !== "file",
+            readOnly: !selectedFile || selectedFile.type !== "file",
           }}
         />
       </div>
 
       {/* Placeholder when no file is selected */}
-      {(!displayFile || displayFile.type !== "file") && (
+      {(!selectedFile || selectedFile.type !== "file") && (
         <div
           className={`absolute inset-0 flex items-center justify-center ${theme.textMuted} pointer-events-none`}
         >
           <div className="text-center">
             <p className="text-lg mb-2">
-              {!displayFile ? "No file selected" : "Folder selected"}
+              {!selectedFile ? "No file selected" : "Folder selected"}
             </p>
             <p className="text-sm">
-              {!displayFile
+              {!selectedFile
                 ? "Select a file from the explorer to start editing"
                 : "Select a file (not a folder) to edit its contents"}
             </p>
