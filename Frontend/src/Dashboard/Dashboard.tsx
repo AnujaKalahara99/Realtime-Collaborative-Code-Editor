@@ -16,7 +16,7 @@ type Props = {
 
 const Dashboard = ({ session }: Props) => {
   const { theme } = useTheme();
-  const { codespaces, createCodespace, deleteCodespace, shareCodespace, editCodespace } = useCodespaces(session);
+  const { codespaces, createCodespace, deleteCodespace, shareCodespacebyemail, editCodespace } = useCodespaces(session);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,7 +47,7 @@ const Dashboard = ({ session }: Props) => {
         onCreateWorkspace={() => setIsModalOpen(true)}
         onDeleteWorkspace={deleteCodespace} 
         onEditWorkspace={editCodespace}
-        onShareWorkspace={shareCodespace}
+        onShareWorkspace={shareCodespacebyemail}
 />
 
 

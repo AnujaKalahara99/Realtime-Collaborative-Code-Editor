@@ -57,7 +57,7 @@ function App() {
             }
           />
           <Route path="/codeeditor/:id" element={<CodeEditorPage />} />
-           <Route path="/codespace/sharebyemail/:id" element={<CodespaceInvitation />} />
+           <Route path="/codespace/sharebyemail/:invitationId" element={<CodespaceInvitation />} />
           <Route
             path="/codeeditor"
             element={
