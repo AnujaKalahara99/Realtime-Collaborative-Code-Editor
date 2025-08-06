@@ -87,90 +87,15 @@ const ProjectManagementPanel = ({
   } = useFileTree(initialFiles);
 
   // UI state - Initialize selectedFile from sessionStorage
-  const [selectedFile, setSelectedFile] = useState<string | null>(() => {
-    const saved = sessionStorage.getItem("selectedFileId");
-    return saved || null;
-  });
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuData | null>(null);
   const [editingNode, setEditingNode] = useState<string | null>(null);
-
-  // Persist selectedFile to sessionStorage and call parent callback
-  useEffect(() => {
-    if (selectedFile) {
-      sessionStorage.setItem("selectedFileId", selectedFile);
-
-      // Find the full FileNode and call parent callback
-      const findNodeByIdRecursive = (
-        nodes: FileNode[],
-        id: string
-      ): FileNode | null => {
-        for (const node of nodes) {
-          if (node.id === id) return node;
-          if (node.children) {
-            const found = findNodeByIdRecursive(node.children, id);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-
-      const fileNode = findNodeByIdRecursive(files, selectedFile);
-      if (fileNode) {
-        onFileSelect?.(fileNode);
-      }
-    } else {
-      sessionStorage.removeItem("selectedFileId");
-      onFileSelect?.(null);
-    }
-  }, [selectedFile, files, onFileSelect]);
-
-  // Restore file selection on component mount if we have files
-  useEffect(() => {
-    const savedFileId = sessionStorage.getItem("selectedFileId");
-    if (savedFileId && files.length > 0) {
-      const findNodeByIdRecursive = (
-        nodes: FileNode[],
-        id: string
-      ): FileNode | null => {
-        for (const node of nodes) {
-          if (node.id === id) return node;
-          if (node.children) {
-            const found = findNodeByIdRecursive(node.children, id);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-
-      const fileNode = findNodeByIdRecursive(files, savedFileId);
-      if (fileNode && fileNode.type === "file") {
-        setSelectedFile(savedFileId);
-      } else {
-        // File no longer exists, clear the selection
-        sessionStorage.removeItem("selectedFileId");
-        setSelectedFile(null);
-      }
-    }
-  }, [files]);
-
-  // Add visibility change listener for debugging
-  // useEffect(() => {
-  //   const handleVisibilityChange = () => {
-  //     if (document.visibilityState === "visible") {
-  //       console.log("ProjectPanel - Tab visible, selectedFile:", selectedFile);
-  //     }
-  //   };
-
-  //   document.addEventListener("visibilitychange", handleVisibilityChange);
-  //   return () => {
-  //     document.removeEventListener("visibilitychange", handleVisibilityChange);
-  //   };
-  // }, [selectedFile]);
 
   // Event handlers
   const handleFileSelect = (node: FileNode) => {
     if (node.type === "file") {
       setSelectedFile(node.id);
+      onFileSelect?.(node);
     }
   };
 
