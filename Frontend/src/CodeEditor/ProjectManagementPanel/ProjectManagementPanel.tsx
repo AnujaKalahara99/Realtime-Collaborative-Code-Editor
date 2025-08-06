@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { ContextMenuData, FileNode } from "./file.types";
 import useFileTree from "./useFileTree";
 import FileTreeNode from "./FileTreeNode";

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { collaborationService } from "../YJSCollaborationService";
 import type { FileNode } from "./file.types";
 import { v4 as uuidv4 } from "uuid";
@@ -8,6 +8,16 @@ export const useFileTree = (initialFiles: FileNode[]) => {
   const [files, setFiles] = useState<FileNode[]>(initialFiles);
   const [isConnected, setIsConnected] = useState(false);
 
+  const handleFileSystemChange = useCallback((newFiles: FileNode[]) => {
+    setFiles((prevFiles) => {
+      // Only update if files actually changed
+      if (JSON.stringify(prevFiles) !== JSON.stringify(newFiles)) {
+        return newFiles;
+      }
+      return prevFiles;
+    });
+  }, []);
+
   useEffect(() => {
     // Subscribe to connection changes
     const unsubscribeConnection =
@@ -15,9 +25,10 @@ export const useFileTree = (initialFiles: FileNode[]) => {
 
     // Subscribe to file system changes
     const unsubscribeFileSystem = collaborationService.onFileSystemChange(
-      (newFiles) => {
-        setFiles(newFiles);
-      }
+      // (newFiles) => {
+      //   setFiles(newFiles);
+      // }
+      handleFileSystemChange
     );
 
     // Initialize file system if empty

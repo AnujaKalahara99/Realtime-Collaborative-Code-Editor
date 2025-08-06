@@ -56,6 +56,15 @@ class YjsCollaborationService {
     "#1be7ff",
   ];
 
+  // If URL is like /codeeditor/a780e619-7c04-45cf-a030-702b20441649
+  private getCodespaceIdFromUrl(): string {
+    const pathSegments = window.location.pathname.split("/");
+    const codespaceId = pathSegments[pathSegments.length - 1];
+    console.log("Extracted codespace ID from URL:", codespaceId);
+
+    return codespaceId;
+  }
+
   constructor() {
     this.initialize();
   }
@@ -69,7 +78,7 @@ class YjsCollaborationService {
     this.provider = new WebsocketProvider(
       "ws://144.24.128.44:4455",
       // "ws://localhost:4455",
-      "a780e619-7c04-45cf-a030-702b20441649",
+      this.getCodespaceIdFromUrl(),
       this.projectDoc
     );
 
@@ -132,10 +141,8 @@ class YjsCollaborationService {
   ): () => void {
     this.connectionCallbacks.add(callback);
 
-    // Call immediately with current status
     callback(this.isConnected());
 
-    // Return unsubscribe function
     return () => {
       this.connectionCallbacks.delete(callback);
     };

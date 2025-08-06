@@ -40,7 +40,6 @@ export class CodespaceController {
         name,
         req.user.id
       );
-      console.log(codespace);
 
       res.json({
         codespace,
@@ -81,7 +80,11 @@ export class CodespaceController {
       const { id } = req.params;
       const { email, role } = req.body;
 
-      if (!email || !email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (
+        !email ||
+        !email.trim() ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+      ) {
         return res.status(400).json({
           error: "Invalid email format",
           code: "INVALID_EMAIL",
@@ -89,7 +92,12 @@ export class CodespaceController {
       }
       console.log("Sharing codespace by email:", id, email, req.user.id);
 
-      const result = await CodespaceService.shareCodespaceByEmail(id, email, req.user.id, role);
+      const result = await CodespaceService.shareCodespaceByEmail(
+        id,
+        email,
+        req.user.id,
+        role
+      );
 
       res.json({
         message: "Invitation sent successfully",
@@ -139,59 +147,58 @@ export class CodespaceController {
     }
   }
 
+  static async shareCodespace(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { email } = req.body;
 
-  
-static async shareCodespace(req, res, next) { 
-  try {
-    const { id } = req.params;
-    const { email } = req.body;
+      // Validate email format
+      if (
+        !email ||
+        !email.trim() ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+      ) {
+        return res.status(400).json({
+          error: "Invalid email format",
+          code: "INVALID_EMAIL",
+        });
+      }
 
-    // Validate email format
-    if (!email || !email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({
-        error: "Invalid email format",
-        code: "INVALID_EMAIL",
+      await CodespaceService.shareCodespace(id, email);
+
+      res.json({
+        message: "Codespace shared successfully",
       });
+    } catch (error) {
+      if (error.statusCode) {
+        return res.status(error.statusCode).json({
+          error: error.message,
+          code: error.code,
+        });
+      }
+      next(error);
     }
-
-    await CodespaceService.shareCodespace(id, email);
-
-    res.json({
-      message: "Codespace shared successfully",
-    });
-  } catch (error) {
-    if (error.statusCode) {
-      return res.status(error.statusCode).json({
-        error: error.message,
-        code: error.code,
-      });
-    }
-    next(error);
   }
-};
 
-static async acceptInvitation(req, res, next) {
-  try {
-    const { invitationId } = req.params;
-    
+  static async acceptInvitation(req, res, next) {
+    try {
+      const { invitationId } = req.params;
 
-    const result = await CodespaceService.acceptInvitation(invitationId);
+      const result = await CodespaceService.acceptInvitation(invitationId);
 
-    res.json({
-      message: 'Invitation accepted successfully',
-      invitation: result.invitation,
-      member: result.member,
-    });
-  } catch (error) {
-    if (error.statusCode) {
-      return res.status(error.statusCode).json({
-        error: error.message,
-        code: error.code,
+      res.json({
+        message: "Invitation accepted successfully",
+        invitation: result.invitation,
+        member: result.member,
       });
+    } catch (error) {
+      if (error.statusCode) {
+        return res.status(error.statusCode).json({
+          error: error.message,
+          code: error.code,
+        });
+      }
+      next(error);
     }
-    next(error);
   }
 }
-
-}
-

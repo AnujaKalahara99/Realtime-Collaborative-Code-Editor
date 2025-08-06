@@ -1,5 +1,4 @@
-
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { FileText, MoreVertical, Trash2, Share2, Edit } from "lucide-react";
 import { useTheme } from "../ThemeProvider";
 import { type Codespace, type ViewMode } from "./codespace.types";
@@ -13,13 +12,21 @@ interface Props {
   onEdit?: (newName: string) => void;
 }
 
-function CodespaceCard({ codespace, viewMode, onDelete, onShare, onEdit }: Props) {
+function CodespaceCard({
+  codespace,
+  viewMode,
+  onDelete,
+  onShare,
+  onEdit,
+}: Props) {
   const { theme } = useTheme();
   const [showMenu, setShowMenu] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [emailInput, setEmailInput] = useState("");
-  const [roleInput, setRoleInput] = useState<"Developer" | "Admin">("Developer"); // New state for role
+  const [roleInput, setRoleInput] = useState<"Developer" | "Admin">(
+    "Developer"
+  ); // New state for role
   const [nameInput, setNameInput] = useState(codespace.name);
   const [displayName, setDisplayName] = useState(codespace.name);
   const navigate = useNavigate();
@@ -80,7 +87,9 @@ function CodespaceCard({ codespace, viewMode, onDelete, onShare, onEdit }: Props
       <div
         onClick={handleClick}
         onMouseLeave={handleMouseLeave}
-        className={`${theme.surfaceSecondary} rounded-lg ${theme.border} border ${
+        className={`${theme.surfaceSecondary} rounded-lg ${
+          theme.border
+        } border ${
           theme.hover
         } cursor-pointer transition-all duration-200 hover:shadow-md relative ${
           viewMode === "grid"
@@ -114,7 +123,9 @@ function CodespaceCard({ codespace, viewMode, onDelete, onShare, onEdit }: Props
             </h3>
             <div
               className={`text-sm ${theme.textMuted} ${
-                viewMode === "grid" ? "space-y-1" : "flex items-center space-x-4"
+                viewMode === "grid"
+                  ? "space-y-1"
+                  : "flex items-center space-x-4"
               }`}
             >
               <p>Modified {codespace.lastModified}</p>
@@ -137,7 +148,9 @@ function CodespaceCard({ codespace, viewMode, onDelete, onShare, onEdit }: Props
         {showMenu && (
           <div
             className={`${theme.surface} absolute right-4 ${
-              viewMode === "grid" ? "top-[calc(100%+8px)]" : "top-[calc(100%+4px)]"
+              viewMode === "grid"
+                ? "top-[calc(100%+8px)]"
+                : "top-[calc(100%+4px)]"
             } z-50 border ${theme.border} rounded-md shadow-lg p-2 w-48`}
             onClick={(e) => e.stopPropagation()}
           >
@@ -172,7 +185,9 @@ function CodespaceCard({ codespace, viewMode, onDelete, onShare, onEdit }: Props
       {shareModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-sm">
-            <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Share Codespace</h2>
+            <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
+              Share Codespace
+            </h2>
             <input
               type="email"
               className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white mb-4"
@@ -183,7 +198,9 @@ function CodespaceCard({ codespace, viewMode, onDelete, onShare, onEdit }: Props
             <select
               className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
               value={roleInput}
-              onChange={(e) => setRoleInput(e.target.value as "Developer" | "Admin")}
+              onChange={(e) =>
+                setRoleInput(e.target.value as "Developer" | "Admin")
+              }
             >
               <option value="Developer">Developer</option>
               <option value="Admin">Admin</option>
@@ -209,7 +226,9 @@ function CodespaceCard({ codespace, viewMode, onDelete, onShare, onEdit }: Props
       {editModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-sm">
-            <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Edit Codespace Name</h2>
+            <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
+              Edit Codespace Name
+            </h2>
             <input
               type="text"
               className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
