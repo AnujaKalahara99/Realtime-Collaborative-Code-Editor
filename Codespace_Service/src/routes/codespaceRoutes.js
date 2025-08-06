@@ -26,7 +26,7 @@ router.put(
   validateCodespaceData,
   CodespaceController.updateCodespace
 );
-
+router.post("/:id/sharebyemail", validateCodespaceId, CodespaceController.shareCodespaceByEmail);
 router.delete("/:id", validateCodespaceId, CodespaceController.deleteCodespace);
-
+router.put("/accept-invitation/:invitationId", CodespaceController.acceptInvitation);
 export default router;
