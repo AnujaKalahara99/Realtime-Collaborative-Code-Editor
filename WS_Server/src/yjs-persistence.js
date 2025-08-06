@@ -11,137 +11,83 @@ const supabase = createClient(
 export class YjsPersistence {
   constructor() {
     this.docs = new Map();
-    this.updateCounters = new Map();
-    this.saveIntervals = new Map();
-
-    // Configuration
-    this.SAVE_INTERVAL = parseInt(process.env.SAVE_INTERVAL || "10000"); // 10 seconds
-    this.UPDATES_THRESHOLD = parseInt(process.env.UPDATES_THRESHOLD || "20"); // 20 updates
+    this.saveTimeouts = new Map();
+    this.SAVE_DELAY = 3000; // 3 seconds
   }
 
   async bindState(workspaceId, ydoc) {
     console.log(`Binding state for workspace: ${workspaceId}`);
     this.docs.set(workspaceId, ydoc);
-    this.updateCounters.set(workspaceId, 0);
 
-    await this.loadState(workspaceId, ydoc);
+    await this.loadFromDatabase(workspaceId, ydoc);
     this.setupUpdateHandler(workspaceId, ydoc);
-    this.startPeriodicSave(workspaceId, ydoc);
   }
 
-  async loadState(workspaceId, ydoc) {
-    console.log(`Loading state for workspace: ${workspaceId}`);
-    // Load YJS updates first
-    const { data: updates } = await supabase
-      .from("yjs_updates")
-      .select("update_data")
-      .eq("workspace_id", workspaceId)
-      .order("created_at", { ascending: true });
+  async loadFromDatabase(workspaceId, ydoc) {
+    try {
+      const { data: files, error } = await supabase
+        .from("files")
+        .select("id, name, file_type, storage_path, content")
+        .eq("workspace_id", workspaceId);
 
-    if (updates) {
-      updates.forEach(({ update_data }) => {
-        const uint8Array = new Uint8Array(update_data);
-        Y.applyUpdate(ydoc, uint8Array, "persistence");
-      });
-    }
+      if (error) {
+        console.error(`Error loading files for ${workspaceId}:`, error);
+        return;
+      }
 
-    await this.initializeFromDatabase(workspaceId, ydoc);
-  }
+      console.log(
+        `Loading ${files?.length || 0} files for workspace: ${workspaceId}`
+      );
 
-  async initializeFromDatabase(workspaceId, ydoc) {
-    const { data: files } = await supabase
-      .from("files")
-      .select("id, name, file_type, storage_path, content")
-      .eq("workspace_id", workspaceId);
+      if (files && files.length > 0) {
+        const fileSystemMap = ydoc.getMap("fileSystem");
 
-    console.log(`Initializing files for workspace: ${workspaceId}`, files);
+        const filesArray = files.map((file) => ({
+          id: file.id,
+          name: file.name,
+          type: file.file_type,
+          path: file.storage_path,
+        }));
 
-    if (files && files.length > 0) {
-      const fileSystemMap = ydoc.getMap("fileSystem");
+        fileSystemMap.set("files", filesArray);
 
-      const filesArray = files.map((file) => ({
-        id: file.id,
-        name: file.name,
-        type: file.file_type,
-        path: file.storage_path,
-      }));
-
-      fileSystemMap.set("files", filesArray);
-
-      files.forEach((file) => {
-        if (file.content) {
-          const fileText = ydoc.getText(`file-${file.id}`);
-          if (fileText.length === 0) {
-            fileText.insert(0, file.content);
+        files.forEach((file) => {
+          if (file.content) {
+            const fileText = ydoc.getText(`file-${file.id}`);
+            if (fileText.length === 0) {
+              fileText.insert(0, file.content);
+            }
           }
-        }
-      });
+        });
+      }
+    } catch (error) {
+      console.error(
+        `Failed to load from database for workspace ${workspaceId}:`,
+        error
+      );
     }
   }
 
   setupUpdateHandler(workspaceId, ydoc) {
-    ydoc.on("update", async (update, origin) => {
+    ydoc.on("update", (update, origin) => {
       if (origin !== "persistence") {
-        await this.saveUpdate(workspaceId, update);
-
-        // Increment update counter
-        const currentCount = this.updateCounters.get(workspaceId) || 0;
-        this.updateCounters.set(workspaceId, currentCount + 1);
-
-        // Check if we should save based on update count
-        if (currentCount + 1 >= this.UPDATES_THRESHOLD) {
-          await this.syncToDatabase(workspaceId, ydoc);
-          this.updateCounters.set(workspaceId, 0); // Reset counter
-        }
+        this.debouncedSave(workspaceId, ydoc);
       }
     });
   }
 
-  startPeriodicSave(workspaceId, ydoc) {
-    // Clear existing interval if any
-    if (this.saveIntervals.has(workspaceId)) {
-      clearInterval(this.saveIntervals.get(workspaceId));
+  debouncedSave(workspaceId, ydoc) {
+    // Clear existing timeout
+    if (this.saveTimeouts.has(workspaceId)) {
+      clearTimeout(this.saveTimeouts.get(workspaceId));
     }
 
-    // Start new interval
-    const intervalId = setInterval(async () => {
-      try {
-        await this.syncToDatabase(workspaceId, ydoc);
-        this.updateCounters.set(workspaceId, 0); // Reset counter after periodic save
-      } catch (error) {
-        console.error(
-          `Periodic save failed for workspace ${workspaceId}:`,
-          error
-        );
-      }
-    }, this.SAVE_INTERVAL);
+    // Set new timeout
+    const timeoutId = setTimeout(async () => {
+      await this.syncToDatabase(workspaceId, ydoc);
+    }, this.SAVE_DELAY);
 
-    this.saveIntervals.set(workspaceId, intervalId);
-  }
-
-  stopPeriodicSave(workspaceId) {
-    if (this.saveIntervals.has(workspaceId)) {
-      clearInterval(this.saveIntervals.get(workspaceId));
-      this.saveIntervals.delete(workspaceId);
-    }
-  }
-
-  async saveUpdate(workspaceId, update) {
-    try {
-      const res = await supabase.from("yjs_updates").insert({
-        workspace_id: workspaceId,
-        update_data: Array.from(update),
-      });
-      console.log(
-        `Saving update for workspace: ${workspaceId} and response :`,
-        res
-      );
-    } catch (error) {
-      console.error(
-        `Failed to save update for workspace ${workspaceId}:`,
-        error
-      );
-    }
+    this.saveTimeouts.set(workspaceId, timeoutId);
   }
 
   async syncToDatabase(workspaceId, ydoc) {
@@ -149,13 +95,28 @@ export class YjsPersistence {
       const fileSystemMap = ydoc.getMap("fileSystem");
       const files = fileSystemMap.get("files") || [];
 
-      // Helper function to build file path from nested file tree
+      // Get all files (including nested ones)
+      const getAllFiles = (fileTree) => {
+        const allFiles = [];
+        const traverse = (items) => {
+          for (const item of items) {
+            if (item.type === "file") {
+              allFiles.push(item);
+            } else if (item.type === "folder" && item.children) {
+              traverse(item.children);
+            }
+          }
+        };
+        traverse(fileTree);
+        return allFiles;
+      };
+
+      // Build file path
       const buildFilePath = (targetFileId, fileTree, currentPath = "") => {
         for (const item of fileTree) {
           if (item.id === targetFileId && item.type === "file") {
             return currentPath + item.name;
           }
-
           if (item.type === "folder" && item.children) {
             const foundPath = buildFilePath(
               targetFileId,
@@ -168,23 +129,17 @@ export class YjsPersistence {
         return null;
       };
 
-      for (const file of files) {
-        if (!file.id || file.type == "folder") continue;
+      const allFiles = getAllFiles(files);
+      console.log(
+        `Syncing ${allFiles.length} files for workspace ${workspaceId}`
+      );
+
+      for (const file of allFiles) {
+        if (!file.id) continue;
 
         const fileText = ydoc.getText(`file-${file.id}`);
         const content = fileText.toString();
-
         const filePath = buildFilePath(file.id, files) || file.name;
-
-        console.log(`Syncing file ${file.name} for workspace ${workspaceId}`);
-        console.log("fileSystemMap :", fileSystemMap.toJSON());
-
-        console.log(`Syncing file Properties :`, {
-          id: file.id,
-          name: file.name,
-          type: file.type,
-          path: filePath,
-        });
 
         const { data: existingFile } = await supabase
           .from("files")
@@ -193,36 +148,40 @@ export class YjsPersistence {
           .single();
 
         if (!existingFile) {
-          const res = await supabase.from("files").insert({
+          // Insert new file
+          const { error } = await supabase.from("files").insert({
             id: file.id,
             workspace_id: workspaceId,
             name: file.name,
-            file_type: file.type,
+            file_type: file.type || "file",
             storage_path: filePath,
             content: content,
             created_by: "4e4f8c26-6557-4578-a05c-612d1ebef6ee",
           });
 
-          console.log(
-            `Inserted new file ${file.name} for workspace ${workspaceId}:`,
-            res
-          );
+          if (error) {
+            console.error(`Error inserting file ${file.id}:`, error);
+          } else {
+            console.log(`✅ Inserted file: ${file.name}`);
+          }
         } else {
-          const res = await supabase
+          // Update existing file
+          const { error } = await supabase
             .from("files")
             .update({
               name: file.name,
-              file_type: file.type,
-              storage_path: file.path,
+              file_type: file.type || "file",
+              storage_path: filePath,
               content: content,
               updated_at: new Date().toISOString(),
             })
             .eq("id", file.id);
 
-          console.log(
-            `Updated file ${file.name} for workspace ${workspaceId}:`,
-            res
-          );
+          if (error) {
+            console.error(`Error updating file ${file.id}:`, error);
+          } else {
+            console.log(`✅ Updated file: ${file.name}`);
+          }
         }
       }
     } catch (error) {
@@ -234,19 +193,17 @@ export class YjsPersistence {
   }
 
   async writeState(workspaceId, ydoc) {
-    // Stop periodic saving
-    this.stopPeriodicSave(workspaceId);
+    // Clear any pending save
+    if (this.saveTimeouts.has(workspaceId)) {
+      clearTimeout(this.saveTimeouts.get(workspaceId));
+      this.saveTimeouts.delete(workspaceId);
+    }
 
-    // Final sync to database
+    // Final sync
     await this.syncToDatabase(workspaceId, ydoc);
 
     // Cleanup
     this.docs.delete(workspaceId);
-    this.updateCounters.delete(workspaceId);
-  }
-
-  getDocument(workspaceId) {
-    return this.docs.get(workspaceId);
   }
 }
 
