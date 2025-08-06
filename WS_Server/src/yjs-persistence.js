@@ -1,9 +1,11 @@
+import { config } from "dotenv";
+config();
 import { createClient } from "@supabase/supabase-js";
 import * as Y from "yjs";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_ANON_KEY
 );
 
 export class YjsPersistence {
@@ -13,11 +15,12 @@ export class YjsPersistence {
     this.saveIntervals = new Map();
 
     // Configuration
-    this.SAVE_INTERVAL = parseInt(process.env.SAVE_INTERVAL || "30000"); // 30 seconds
-    this.UPDATES_THRESHOLD = parseInt(process.env.UPDATES_THRESHOLD || "50"); // 50 updates
+    this.SAVE_INTERVAL = parseInt(process.env.SAVE_INTERVAL || "10000"); // 10 seconds
+    this.UPDATES_THRESHOLD = parseInt(process.env.UPDATES_THRESHOLD || "20"); // 20 updates
   }
 
   async bindState(workspaceId, ydoc) {
+    console.log(`Binding state for workspace: ${workspaceId}`);
     this.docs.set(workspaceId, ydoc);
     this.updateCounters.set(workspaceId, 0);
 
@@ -27,6 +30,7 @@ export class YjsPersistence {
   }
 
   async loadState(workspaceId, ydoc) {
+    console.log(`Loading state for workspace: ${workspaceId}`);
     // Load YJS updates first
     const { data: updates } = await supabase
       .from("yjs_updates")
@@ -49,6 +53,8 @@ export class YjsPersistence {
       .from("files")
       .select("id, name, file_type, storage_path, content")
       .eq("workspace_id", workspaceId);
+
+    console.log(`Initializing files for workspace: ${workspaceId}`, files);
 
     if (files && files.length > 0) {
       const fileSystemMap = ydoc.getMap("fileSystem");
@@ -122,10 +128,14 @@ export class YjsPersistence {
 
   async saveUpdate(workspaceId, update) {
     try {
-      await supabase.from("yjs_updates").insert({
+      const res = await supabase.from("yjs_updates").insert({
         workspace_id: workspaceId,
         update_data: Array.from(update),
       });
+      console.log(
+        `Saving update for workspace: ${workspaceId} and response :`,
+        res
+      );
     } catch (error) {
       console.error(
         `Failed to save update for workspace ${workspaceId}:`,
@@ -139,11 +149,42 @@ export class YjsPersistence {
       const fileSystemMap = ydoc.getMap("fileSystem");
       const files = fileSystemMap.get("files") || [];
 
+      // Helper function to build file path from nested file tree
+      const buildFilePath = (targetFileId, fileTree, currentPath = "") => {
+        for (const item of fileTree) {
+          if (item.id === targetFileId && item.type === "file") {
+            return currentPath + item.name;
+          }
+
+          if (item.type === "folder" && item.children) {
+            const foundPath = buildFilePath(
+              targetFileId,
+              item.children,
+              currentPath + item.name + "/"
+            );
+            if (foundPath) return foundPath;
+          }
+        }
+        return null;
+      };
+
       for (const file of files) {
-        if (!file.id) continue;
+        if (!file.id || file.type == "folder") continue;
 
         const fileText = ydoc.getText(`file-${file.id}`);
         const content = fileText.toString();
+
+        const filePath = buildFilePath(file.id, files) || file.name;
+
+        console.log(`Syncing file ${file.name} for workspace ${workspaceId}`);
+        console.log("fileSystemMap :", fileSystemMap.toJSON());
+
+        console.log(`Syncing file Properties :`, {
+          id: file.id,
+          name: file.name,
+          type: file.type,
+          path: filePath,
+        });
 
         const { data: existingFile } = await supabase
           .from("files")
@@ -152,17 +193,22 @@ export class YjsPersistence {
           .single();
 
         if (!existingFile) {
-          await supabase.from("files").insert({
+          const res = await supabase.from("files").insert({
             id: file.id,
             workspace_id: workspaceId,
             name: file.name,
             file_type: file.type,
-            storage_path: file.path,
+            storage_path: filePath,
             content: content,
-            created_by: file.createdBy,
+            created_by: "4e4f8c26-6557-4578-a05c-612d1ebef6ee",
           });
+
+          console.log(
+            `Inserted new file ${file.name} for workspace ${workspaceId}:`,
+            res
+          );
         } else {
-          await supabase
+          const res = await supabase
             .from("files")
             .update({
               name: file.name,
@@ -172,6 +218,11 @@ export class YjsPersistence {
               updated_at: new Date().toISOString(),
             })
             .eq("id", file.id);
+
+          console.log(
+            `Updated file ${file.name} for workspace ${workspaceId}:`,
+            res
+          );
         }
       }
     } catch (error) {

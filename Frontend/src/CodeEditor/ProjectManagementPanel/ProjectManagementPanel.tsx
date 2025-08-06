@@ -14,65 +14,66 @@ const ProjectManagementPanel = ({
   const { theme } = useTheme();
 
   // Initial mock data
-  const initialFiles: FileNode[] = [
-    {
-      id: "1",
-      name: "src",
-      type: "folder",
-      isExpanded: true,
-      children: [
-        {
-          id: "2",
-          name: "components",
-          type: "folder",
-          isExpanded: false,
-          children: [
-            {
-              id: "3",
-              name: "Button.tsx",
-              type: "file",
-              content:
-                "export const Button = () => {\n  return <button>Click me</button>;\n};",
-            },
-            {
-              id: "4",
-              name: "Input.tsx",
-              type: "file",
-              content:
-                'export const Input = () => {\n  return <input type="text" />;\n};',
-            },
-          ],
-        },
-        {
-          id: "5",
-          name: "App.tsx",
-          type: "file",
-          content:
-            'import React from "react";\n\nfunction App() {\n  return (\n    <div className="App">\n      <h1>Hello World</h1>\n    </div>\n  );\n}\n\nexport default App;',
-        },
-        {
-          id: "6",
-          name: "index.tsx",
-          type: "file",
-          content:
-            'import React from "react";\nimport ReactDOM from "react-dom/client";\nimport App from "./App";\n\nconst root = ReactDOM.createRoot(document.getElementById("root"));\nroot.render(<App />);',
-        },
-      ],
-    },
-    {
-      id: "7",
-      name: "package.json",
-      type: "file",
-      content:
-        '{\n  "name": "my-project",\n  "version": "1.0.0",\n  "dependencies": {\n    "react": "^18.0.0"\n  }\n}',
-    },
-    {
-      id: "8",
-      name: "README.md",
-      type: "file",
-      content: "# My Project\n\nThis is a sample project.",
-    },
-  ];
+  const initialFiles: FileNode[] = [];
+  // const initialFiles: FileNode[] = [
+  //   {
+  //     id: "550e8400-e29b-41d4-a716-446655440001",
+  //     name: "src",
+  //     type: "folder",
+  //     isExpanded: true,
+  //     children: [
+  //       {
+  //         id: "550e8400-e29b-41d4-a716-446655440002",
+  //         name: "components",
+  //         type: "folder",
+  //         isExpanded: false,
+  //         children: [
+  //           {
+  //             id: "550e8400-e29b-41d4-a716-446655440003",
+  //             name: "Button.tsx",
+  //             type: "file",
+  //             content:
+  //               "export const Button = () => {\n  return <button>Click me</button>;\n};",
+  //           },
+  //           {
+  //             id: "550e8400-e29b-41d4-a716-446655440004",
+  //             name: "Input.tsx",
+  //             type: "file",
+  //             content:
+  //               'export const Input = () => {\n  return <input type="text" />;\n};',
+  //           },
+  //         ],
+  //       },
+  //       {
+  //         id: "550e8400-e29b-41d4-a716-446655440005",
+  //         name: "App.tsx",
+  //         type: "file",
+  //         content:
+  //           'import React from "react";\n\nfunction App() {\n  return (\n    <div className="App">\n      <h1>Hello World</h1>\n    </div>\n  );\n}\n\nexport default App;',
+  //       },
+  //       {
+  //         id: "550e8400-e29b-41d4-a716-446655440006",
+  //         name: "index.tsx",
+  //         type: "file",
+  //         content:
+  //           'import React from "react";\nimport ReactDOM from "react-dom/client";\nimport App from "./App";\n\nconst root = ReactDOM.createRoot(document.getElementById("root"));\nroot.render(<App />);',
+  //       },
+  //     ],
+  //   },
+  //   {
+  //     id: "550e8400-e29b-41d4-a716-446655440007",
+  //     name: "package.json",
+  //     type: "file",
+  //     content:
+  //       '{\n  "name": "my-project",\n  "version": "1.0.0",\n  "dependencies": {\n    "react": "^18.0.0"\n  }\n}',
+  //   },
+  //   {
+  //     id: "550e8400-e29b-41d4-a716-446655440008",
+  //     name: "README.md",
+  //     type: "file",
+  //     content: "# My Project\n\nThis is a sample project.",
+  //   },
+  // ];
 
   // File tree operations
   const {

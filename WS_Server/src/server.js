@@ -12,12 +12,12 @@ setPersistence({
   writeState: async (docName, ydoc) => {
     await yjsPersistence.writeState(docName, ydoc);
   },
-  provider: yjsPersistence
+  provider: yjsPersistence,
 });
 
 const wss = new WebSocket.Server({ noServer: true });
 const host = process.env.HOST || "localhost";
-const port = number.parseInt(process.env.PORT || "1234");
+const port = number.parseInt(process.env.PORT || "4455");
 
 const server = http.createServer((_request, response) => {
   response.writeHead(200, { "Content-Type": "text/plain" });
