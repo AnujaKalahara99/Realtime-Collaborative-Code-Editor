@@ -4,7 +4,7 @@ export interface Codespace {
   lastModified: string;
   created_at: string;
   owner: string;
-  role?: string; // Optional field for role
+  role?: string; 
 }
 
 export type ViewMode = "grid" | "list";
