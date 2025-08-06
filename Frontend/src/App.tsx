@@ -5,6 +5,7 @@ import { ThemeProvider } from "./ThemeProvider";
 import Login from "./components/login";
 import Signup from "./components/signup";
 import Dashboard from "./Dashboard/Dashboard";
+import CodespaceInvitation from "./Dashboard/AcceptInvite";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import { supabase } from "./database/superbase";
 import { type Session, type User } from "@supabase/supabase-js";
@@ -65,6 +66,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/codeeditor/:id" element={<CodeEditorPage />} />
+           <Route path="/codespace/sharebyemail/:invitationId" element={<CodespaceInvitation />} />
           <Route
             path="/codeeditor"
             element={
@@ -74,6 +77,7 @@ function App() {
             }
           />
           <Route path="/" element={<Login />} />
+
         </Routes>
       </Router>
     </ThemeProvider>

@@ -10,7 +10,6 @@ const TitleBar = ({ Session }: { Session: Session }) => {
   const { theme } = useTheme();
 
   const user = Session.user;
-  //   const name = user.user_metadata.full_name || user.email;
   const avatar = user.user_metadata.avatar_url;
 
   const signOut = async () => {
@@ -27,12 +26,10 @@ const TitleBar = ({ Session }: { Session: Session }) => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Left side */}
           <div className="flex items-center space-x-4">
             <h1 className={`text-2xl font-medium ${theme.text}`}>Codespaces</h1>
           </div>
 
-          {/* Right side */}
           <div className="flex items-center space-x-3">
             <button
               onClick={goToCodeEditor}

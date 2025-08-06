@@ -16,12 +16,11 @@ type Props = {
 
 const Dashboard = ({ session }: Props) => {
   const { theme } = useTheme();
-  const { codespaces, createCodespace } = useCodespaces(session);
-
+  const { codespaces, createCodespace, deleteCodespace, shareCodespacebyemail, editCodespace } = useCodespaces(session);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+   console.log(codespaces)
   const filteredCodespaces = codespaces.filter((codespace: Codespace) =>
     codespace.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -42,14 +41,17 @@ const Dashboard = ({ session }: Props) => {
           setViewMode={setViewMode}
         />
 
-        <CodespaceGrid
-          codespaces={filteredCodespaces}
-          viewMode={viewMode}
-          onCreateWorkspace={() => setIsModalOpen(true)}
-        />
+      <CodespaceGrid
+        codespaces={filteredCodespaces}
+        viewMode={viewMode}
+        onCreateWorkspace={() => setIsModalOpen(true)}
+        onDeleteWorkspace={deleteCodespace} 
+        onEditWorkspace={editCodespace}
+        onShareWorkspace={shareCodespacebyemail}
+/>
+
 
         <EmptyState searchQuery={searchQuery} />
-
         <CreateCodespaceModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}

@@ -10,7 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/codespaces", codespaceRoutes);
-app.use("/codespaces", memberRoutes);
+ app.use("/codespaces", memberRoutes);
 app.use(errorHandler);
 
 app.get("/health", (req, res) => {

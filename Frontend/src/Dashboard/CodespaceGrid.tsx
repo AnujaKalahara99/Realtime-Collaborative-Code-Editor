@@ -1,3 +1,4 @@
+
 import { type Codespace, type ViewMode } from "./codespace.types";
 import CreateCodespaceCard from "./CreateCodespaceCard";
 import CodespaceCard from "./CodespaceCard";
@@ -6,9 +7,19 @@ interface Props {
   codespaces: Codespace[];
   viewMode: ViewMode;
   onCreateWorkspace: () => void;
+  onDeleteWorkspace: (id: string) => Promise<boolean>;
+  onShareWorkspace: (id: string, newEmail: string,newrole:string) => Promise<boolean>;
+  onEditWorkspace: (id: string, newName: string) => Promise<boolean>; // Update signature
 }
 
-function CodespaceGrid({ codespaces, viewMode, onCreateWorkspace }: Props) {
+function CodespaceGrid({
+  codespaces,
+  viewMode,
+  onCreateWorkspace,
+  onDeleteWorkspace,
+  onShareWorkspace,
+  onEditWorkspace,
+}: Props) {
   return (
     <div
       className={`${
@@ -24,10 +35,12 @@ function CodespaceGrid({ codespaces, viewMode, onCreateWorkspace }: Props) {
           key={codespace.id}
           codespace={codespace}
           viewMode={viewMode}
+          onDelete={() => onDeleteWorkspace(codespace.id)}
+          onShare={(newEmail,newrole) => onShareWorkspace(codespace.id, newEmail, newrole)} // Assuming "viewer" is the default role
+          onEdit={(newName) => onEditWorkspace(codespace.id, newName)} // Pass newName
         />
       ))}
     </div>
   );
 }
-
 export default CodespaceGrid;

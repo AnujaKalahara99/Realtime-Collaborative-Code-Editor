@@ -1,68 +1,240 @@
-import { FileText, MoreVertical } from "lucide-react";
+
+import { useNavigate } from "react-router-dom";
+import { FileText, MoreVertical, Trash2, Share2, Edit } from "lucide-react";
 import { useTheme } from "../ThemeProvider";
 import { type Codespace, type ViewMode } from "./codespace.types";
+import { useState } from "react";
 
 interface Props {
   codespace: Codespace;
   viewMode: ViewMode;
+  onDelete?: () => void;
+  onShare?: (email: string, role: "Developer" | "Admin") => void; // Updated to include role
+  onEdit?: (newName: string) => void;
 }
 
-function CodespaceCard({ codespace, viewMode }: Props) {
+function CodespaceCard({ codespace, viewMode, onDelete, onShare, onEdit }: Props) {
   const { theme } = useTheme();
+  const [showMenu, setShowMenu] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [roleInput, setRoleInput] = useState<"Developer" | "Admin">("Developer"); // New state for role
+  const [nameInput, setNameInput] = useState(codespace.name);
+  const [displayName, setDisplayName] = useState(codespace.name);
+  const navigate = useNavigate();
+
+  const toggleMenu = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu((prev) => !prev);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete?.();
+    setShowMenu(false);
+  };
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShareModalOpen(true);
+    setShowMenu(false);
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNameInput(displayName);
+    setEditModalOpen(true);
+    setShowMenu(false);
+  };
+
+  const submitEdit = () => {
+    if (nameInput.trim()) {
+      setDisplayName(nameInput.trim());
+      onEdit?.(nameInput.trim());
+      setEditModalOpen(false);
+    } else {
+      alert("Codespace name cannot be empty");
+    }
+  };
+
+  const handleClick = () => {
+    navigate(`/codeeditor/${codespace.id}`);
+  };
+
+  const handleMouseLeave = () => {
+    setShowMenu(false);
+  };
+
+  const submitShare = () => {
+    if (emailInput.trim()) {
+      onShare?.(emailInput.trim(), roleInput); // Pass both email and role
+      setEmailInput("");
+      setRoleInput("Developer"); // Reset role to default
+      setShareModalOpen(false);
+    }
+  };
 
   return (
-    <div
-      className={`${theme.surfaceSecondary} rounded-lg ${theme.border} border ${
-        theme.hover
-      } cursor-pointer transition-all duration-200 hover:shadow-md ${
-        viewMode === "grid"
-          ? "p-6 min-h-[200px] flex flex-col"
-          : "p-4 flex items-center justify-between"
-      }`}
-    >
+    <>
       <div
-        className={`${
-          viewMode === "grid" ? "flex-1" : "flex items-center space-x-4"
+        onClick={handleClick}
+        onMouseLeave={handleMouseLeave}
+        className={`${theme.surfaceSecondary} rounded-lg ${theme.border} border ${
+          theme.hover
+        } cursor-pointer transition-all duration-200 hover:shadow-md relative ${
+          viewMode === "grid"
+            ? "p-6 min-h-[200px] flex flex-col"
+            : "p-4 flex items-center justify-between"
         }`}
       >
         <div
-          className={`${theme.surfaceSecondary} rounded-lg p-3 w-fit ${
-            viewMode === "list" ? "!p-2" : ""
+          className={`${
+            viewMode === "grid" ? "flex-1" : "flex items-center space-x-4"
           }`}
         >
-          <FileText
-            size={viewMode === "grid" ? 32 : 20}
-            className="text-blue-500"
-          />
-        </div>
-
-        <div className={`${viewMode === "grid" ? "mt-4" : ""}`}>
-          <h3
-            className={`font-medium ${theme.text} ${
-              viewMode === "grid" ? "text-lg mb-2" : "text-base"
-            }`}
-          >
-            {codespace.name}
-          </h3>
           <div
-            className={`text-sm ${theme.textMuted} ${
-              viewMode === "grid" ? "space-y-1" : "flex items-center space-x-4"
+            className={`${theme.surfaceSecondary} rounded-lg p-3 w-fit ${
+              viewMode === "list" ? "!p-2" : ""
             }`}
           >
-            <p>Modified {codespace.lastModified}</p>
-            <p>{codespace.owner}</p>
+            <FileText
+              size={viewMode === "grid" ? 32 : 20}
+              className="text-blue-500"
+            />
+          </div>
+
+          <div className={`${viewMode === "grid" ? "mt-4" : ""}`}>
+            <h3
+              className={`font-medium ${theme.text} ${
+                viewMode === "grid" ? "text-lg mb-2" : "text-base"
+              }`}
+            >
+              {displayName}
+            </h3>
+            <div
+              className={`text-sm ${theme.textMuted} ${
+                viewMode === "grid" ? "space-y-1" : "flex items-center space-x-4"
+              }`}
+            >
+              <p>Modified {codespace.lastModified}</p>
+              <p>{codespace.role}</p>
+            </div>
           </div>
         </div>
+
+        {(onDelete || onEdit || onShare) && (
+          <button
+            onClick={toggleMenu}
+            className={`${theme.hover} p-2 rounded-lg transition-colors ${
+              viewMode === "grid" ? "self-end mt-4" : ""
+            } hover:bg-gray-100 dark:hover:bg-gray-700`}
+          >
+            <MoreVertical size={16} className={theme.textMuted} />
+          </button>
+        )}
+
+        {showMenu && (
+          <div
+            className={`${theme.surface} absolute right-4 ${
+              viewMode === "grid" ? "top-[calc(100%+8px)]" : "top-[calc(100%+4px)]"
+            } z-50 border ${theme.border} rounded-md shadow-lg p-2 w-48`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {onEdit && (
+              <button
+                onClick={handleEdit}
+                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 w-full px-3 py-2 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/50"
+              >
+                <Edit size={14} /> Edit
+              </button>
+            )}
+            {onShare && (
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 w-full px-3 py-2 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/50"
+              >
+                <Share2 size={14} /> Share
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={handleDelete}
+                className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 w-full px-3 py-2 rounded-md hover:bg-red-50 dark:hover:bg-red-900/50"
+              >
+                <Trash2 size={14} /> Delete
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      <button
-        className={`${theme.hover} p-2 rounded-lg transition-colors ${
-          viewMode === "grid" ? "self-end mt-4" : ""
-        }`}
-      >
-        <MoreVertical size={16} className={theme.textMuted} />
-      </button>
-    </div>
+      {shareModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-sm">
+            <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Share Codespace</h2>
+            <input
+              type="email"
+              className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white mb-4"
+              placeholder="Enter email"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+            />
+            <select
+              className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
+              value={roleInput}
+              onChange={(e) => setRoleInput(e.target.value as "Developer" | "Admin")}
+            >
+              <option value="Developer">Developer</option>
+              <option value="Admin">Admin</option>
+            </select>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setShareModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-sm rounded hover:bg-gray-400 dark:hover:bg-gray-500"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitShare}
+                className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+              >
+                Share
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-sm">
+            <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Edit Codespace Name</h2>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
+              placeholder="Enter new name"
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setEditModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-sm rounded hover:bg-gray-400 dark:hover:bg-gray-500"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitEdit}
+                className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
