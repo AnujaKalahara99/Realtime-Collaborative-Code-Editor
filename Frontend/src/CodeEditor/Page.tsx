@@ -60,6 +60,8 @@ const TabPanel: React.FC<TabPanelProps> = ({
 };
 
 const CodeEditorPage = () => {
+  console.log("CodeEditorPage rendered");
+
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const [leftActiveTab, setLeftActiveTab] = useState("pm");
   const [rightActiveTab, setRightActiveTab] = useState("chat");

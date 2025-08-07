@@ -1,10 +1,13 @@
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import type { FileNode } from "./ProjectManagementPanel/file.types";
+import { type Session } from "@supabase/supabase-js";
+import { supabase } from "../database/superbase";
 
 export interface CollaborationUser {
   name: string;
   color: string;
+  avatar?: string;
   cursor?: {
     line: number;
     column: number;
@@ -21,6 +24,8 @@ export interface Message {
   id: string;
   user: string;
   text: string;
+  color: string;
+  avatar?: string;
   timestamp: number;
 }
 
@@ -62,8 +67,9 @@ class YjsCollaborationService {
 
     // Create WebSocket provider
     this.provider = new WebsocketProvider(
-      "ws://144.24.128.44:4455",
-      "collaborative-code-editor",
+      // "ws://144.24.128.44:4455",
+      "ws://localhost:4455",
+      "a780e619-7c04-45cf-a030-702b20441649",
       this.projectDoc
     );
 
@@ -92,14 +98,32 @@ class YjsCollaborationService {
     if (!this.provider) return;
 
     const awareness = this.provider.awareness;
+    supabase.auth
+      .getSession()
+      .then(({ data }: { data: { session: Session | null } }) => {
+        const session = data.session;
+        if (session) {
+          const user = session.user;
+          const name = user.user_metadata.full_name || user.email;
+          const avatar = user.user_metadata.avatar_url || "";
 
+          awareness.setLocalStateField("user", {
+            name,
+            color:
+              this.userColors[
+                Math.floor(Math.random() * this.userColors.length)
+              ],
+            avatar,
+          });
+        }
+      });
     // Set local user info
-    const userColor =
-      this.userColors[Math.floor(Math.random() * this.userColors.length)];
-    awareness.setLocalStateField("user", {
-      name: `User-${Math.random().toString(36).substr(2, 5)}`,
-      color: userColor,
-    });
+    // const userColor =
+    //   this.userColors[Math.floor(Math.random() * this.userColors.length)];
+    // awareness.setLocalStateField("user", {
+    //   name: `User-${Math.random().toString(36).substr(2, 5)}`,
+    //   color: userColor,
+    // });
   }
 
   // Connection Management
@@ -255,6 +279,8 @@ class YjsCollaborationService {
     const newMessage: Message = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       user: username,
+      color: currentUser?.color || "#aac25f",
+      avatar: currentUser?.avatar,
       text: text.trim(),
       timestamp: Date.now(),
     };
@@ -305,13 +331,13 @@ class YjsCollaborationService {
     return this.provider?.awareness || null;
   }
 
-  public setUserInfo(name: string, color?: string) {
+  public setUserInfo(name: string, color?: string, avatar?: string): void {
     const awareness = this.getAwareness();
     if (awareness) {
       const userColor =
         color ||
         this.userColors[Math.floor(Math.random() * this.userColors.length)];
-      awareness.setLocalStateField("user", { name, color: userColor });
+      awareness.setLocalStateField("user", { name, color: userColor, avatar });
     }
   }
 
@@ -326,6 +352,7 @@ class YjsCollaborationService {
           name: state.user.name,
           color: state.user.color,
           cursor: state.cursor,
+          avatar: state.user.avatar,
         });
       }
     });
@@ -365,6 +392,11 @@ class YjsCollaborationService {
     if (!awareness) return () => {};
 
     const handler = () => {
+      console.log(
+        "Awareness changed, updating connected users",
+        this.getConnectedUsers()
+      );
+
       callback(this.getConnectedUsers());
     };
 

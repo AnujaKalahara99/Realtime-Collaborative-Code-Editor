@@ -7,25 +7,35 @@ import Signup from "./components/signup";
 import Dashboard from "./Dashboard/Dashboard";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import { supabase } from "./database/superbase";
+import { type Session, type User } from "@supabase/supabase-js";
+
 function App() {
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
+      // console.log("Initial session retrieved:", !!session);
       setSession(session);
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      // Only update if session actually changed
+      setSession((prevSession) => {
+        if (prevSession?.access_token !== session?.access_token) {
+          // console.log("Session actually changed:", event);
+          return session;
+        }
+        return prevSession;
+      });
       if (session) upsertProfile(session.user);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  async function upsertProfile(user) {
+  async function upsertProfile(user: User) {
     const { id, user_metadata, email } = user;
     const full_name = user_metadata.full_name || "";
     const avatar_url = user_metadata.avatar_url || "";
@@ -37,7 +47,7 @@ function App() {
     if (error) console.error("Error upserting profile:", error.message);
   }
 
-  function ProtectedRoute({ children }) {
+  function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return session ? children : <Navigate to="/login" />;
   }
 
@@ -51,7 +61,7 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard session={session} />
+                {session && <Dashboard session={session} />}
               </ProtectedRoute>
             }
           />

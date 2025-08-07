@@ -13,13 +13,15 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@supabase/supabase-js": "^2.53.0",
     "@y/protocols": "^1.0.6-1",
-    "lib0": "^0.2.102",
-    "nodemon": "^3.1.10"
+    "dotenv": "^17.2.1",
+    "lib0": "^0.2.102"
   },
   "devDependencies": {
     "@types/node": "^24.0.1",
     "@types/ws": "^8.5.10",
+    "nodemon": "^3.1.10",
     "rollup": "^4.39.0",
     "standard": "^17.1.2",
     "typescript": "^5.8.3",

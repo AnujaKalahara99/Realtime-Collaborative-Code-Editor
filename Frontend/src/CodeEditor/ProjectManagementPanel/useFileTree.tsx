@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { collaborationService } from "../YJSCollaborationService";
 import type { FileNode } from "./file.types";
+import { v4 as uuidv4 } from "uuid";
 
 // Simplified File Tree Operations Hook using centralized YJS service
 export const useFileTree = (initialFiles: FileNode[]) => {
@@ -107,7 +108,7 @@ export const useFileTree = (initialFiles: FileNode[]) => {
     name: string = "new-file.txt"
   ) => {
     const newFile: FileNode = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: uuidv4(),
       name,
       type: "file",
       content: "",

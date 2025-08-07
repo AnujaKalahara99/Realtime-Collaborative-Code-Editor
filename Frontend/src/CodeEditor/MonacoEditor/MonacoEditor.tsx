@@ -34,6 +34,8 @@ export default function MonacoEditor({
 
   // Subscribe to connection status
   useEffect(() => {
+    console.log(selectedFile);
+
     const unsubscribeConnection =
       collaborationService.onConnectionChange(setIsConnected);
 

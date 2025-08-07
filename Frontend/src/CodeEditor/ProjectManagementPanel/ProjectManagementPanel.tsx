@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ContextMenuData, FileNode } from "./file.types";
 import useFileTree from "./useFileTree";
 import FileTreeNode from "./FileTreeNode";
@@ -14,70 +14,12 @@ const ProjectManagementPanel = ({
   const { theme } = useTheme();
 
   // Initial mock data
-  const initialFiles: FileNode[] = [
-    {
-      id: "1",
-      name: "src",
-      type: "folder",
-      isExpanded: true,
-      children: [
-        {
-          id: "2",
-          name: "components",
-          type: "folder",
-          isExpanded: false,
-          children: [
-            {
-              id: "3",
-              name: "Button.tsx",
-              type: "file",
-              content:
-                "export const Button = () => {\n  return <button>Click me</button>;\n};",
-            },
-            {
-              id: "4",
-              name: "Input.tsx",
-              type: "file",
-              content:
-                'export const Input = () => {\n  return <input type="text" />;\n};',
-            },
-          ],
-        },
-        {
-          id: "5",
-          name: "App.tsx",
-          type: "file",
-          content:
-            'import React from "react";\n\nfunction App() {\n  return (\n    <div className="App">\n      <h1>Hello World</h1>\n    </div>\n  );\n}\n\nexport default App;',
-        },
-        {
-          id: "6",
-          name: "index.tsx",
-          type: "file",
-          content:
-            'import React from "react";\nimport ReactDOM from "react-dom/client";\nimport App from "./App";\n\nconst root = ReactDOM.createRoot(document.getElementById("root"));\nroot.render(<App />);',
-        },
-      ],
-    },
-    {
-      id: "7",
-      name: "package.json",
-      type: "file",
-      content:
-        '{\n  "name": "my-project",\n  "version": "1.0.0",\n  "dependencies": {\n    "react": "^18.0.0"\n  }\n}',
-    },
-    {
-      id: "8",
-      name: "README.md",
-      type: "file",
-      content: "# My Project\n\nThis is a sample project.",
-    },
-  ];
+  const initialFiles: FileNode[] = [];
 
   // File tree operations
   const {
     files,
-    // findNodeById,
+    findNodeById,
     toggleExpanded,
     createFile,
     createFolder,
@@ -85,7 +27,7 @@ const ProjectManagementPanel = ({
     removeNode,
   } = useFileTree(initialFiles);
 
-  // UI state
+  // UI state - Initialize selectedFile from sessionStorage
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuData | null>(null);
   const [editingNode, setEditingNode] = useState<string | null>(null);
