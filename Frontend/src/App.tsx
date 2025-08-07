@@ -11,7 +11,7 @@ import { supabase } from "./database/superbase";
 import { type Session, type User } from "@supabase/supabase-js";
 
 function App() {
-  console.log("App component rendered");
+  // console.log("App component rendered");
 
   const [session, setSession] = useState<Session | null>(null);
   // prevent duplicate updates based on the access token.

@@ -3,7 +3,7 @@ import { Editor } from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
 import { MonacoBinding } from "y-monaco";
 import {
-  collaborationService,
+  useCollaboration,
   type CollaborationUser,
 } from "././YJSCollaborationService";
 import { useTheme } from "../ThemeProvider";
@@ -31,6 +31,7 @@ export default function MonacoEditor({
   const [language, setLanguage] = useState<string>("plaintext");
   const [isConnected, setIsConnected] = useState(false);
   const [fileUsers, setFileUsers] = useState<CollaborationUser[]>([]);
+  const collaborationService = useCollaboration();
 
   // Subscribe to connection status
   useEffect(() => {

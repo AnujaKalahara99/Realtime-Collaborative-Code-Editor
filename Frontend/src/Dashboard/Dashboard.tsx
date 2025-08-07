@@ -15,7 +15,7 @@ type Props = {
 };
 
 const Dashboard = ({ session }: Props) => {
-  console.log("Dashboard rendered");
+  // console.log("Dashboard rendered");
 
   const { theme } = useTheme();
   const {
@@ -36,10 +36,10 @@ const Dashboard = ({ session }: Props) => {
     return await createCodespace(name);
   };
   useEffect(() => {
-    console.log("Session changed on Dashboard:");
+    // console.log("Session changed on Dashboard:");
   }, [session]);
   useEffect(() => {
-    console.log("Codespaces changed on Dashboard:");
+    // console.log("Codespaces changed on Dashboard:");
   }, [codespaces]);
   return (
     <div className={`min-h-screen ${theme.surface}`}>
