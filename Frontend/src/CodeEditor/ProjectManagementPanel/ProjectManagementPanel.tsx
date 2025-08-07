@@ -11,6 +11,8 @@ const ProjectManagementPanel = ({
 }: {
   onFileSelect?: (file: FileNode) => void;
 }) => {
+  console.log("ProjectManagementPanel rendered");
+
   const { theme } = useTheme();
 
   // Initial mock data

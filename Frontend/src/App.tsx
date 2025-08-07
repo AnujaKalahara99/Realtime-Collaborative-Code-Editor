@@ -1,5 +1,5 @@
 import "./App.css";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import CodeEditorPage from "./CodeEditor/Page";
 import { ThemeProvider } from "./ThemeProvider";
 import Login from "./components/login";
@@ -11,30 +11,32 @@ import { supabase } from "./database/superbase";
 import { type Session, type User } from "@supabase/supabase-js";
 
 function App() {
+  console.log("App component rendered");
+
   const [session, setSession] = useState<Session | null>(null);
+  // prevent duplicate updates based on the access token.
+  const lastTokenRef = useRef<string | undefined>();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      // console.log("Initial session retrieved:", !!session);
-      setSession(session);
-    });
-
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      // Only update if session actually changed
-      setSession((prevSession) => {
-        if (prevSession?.access_token !== session?.access_token) {
-          // console.log("Session actually changed:", event);
-          return session;
-        }
-        return prevSession;
-      });
-      if (session) upsertProfile(session.user);
-    });
+      const currentToken = session?.access_token;
 
+      // Only update if token actually changed
+      if (lastTokenRef.current !== currentToken) {
+        console.log("Session updated:", session);
+        lastTokenRef.current = currentToken;
+        setSession(session);
+        if (session) upsertProfile(session.user);
+      }
+    });
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    console.log("Session changed on App");
+  }, [session]);
 
   async function upsertProfile(user: User) {
     const { id, user_metadata, email } = user;
@@ -67,7 +69,10 @@ function App() {
             }
           />
           <Route path="/codeeditor/:id" element={<CodeEditorPage />} />
-           <Route path="/codespace/sharebyemail/:invitationId" element={<CodespaceInvitation />} />
+          <Route
+            path="/codespace/sharebyemail/:invitationId"
+            element={<CodespaceInvitation />}
+          />
           <Route
             path="/codeeditor"
             element={
@@ -77,7 +82,6 @@ function App() {
             }
           />
           <Route path="/" element={<Login />} />
-
         </Routes>
       </Router>
     </ThemeProvider>
