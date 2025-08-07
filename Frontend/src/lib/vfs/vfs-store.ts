@@ -21,16 +21,19 @@ export class VFSStore {
     return parts.some((part) => EXCLUDED_FILES.includes(part));
   }
 
-  private emitChange(event: VFSChangeEvent) {
-    this.listeners.forEach((listener) => listener(event));
-  }
-
   on(event: "change", listener: (event: VFSChangeEvent) => void) {
     this.listeners.push(listener);
   }
 
   off(event: "change", listener: (event: VFSChangeEvent) => void) {
-    this.listeners = this.listeners.filter((l) => l !== listener);
+    const index = this.listeners.indexOf(listener);
+    if (index > -1) {
+      this.listeners.splice(index, 1);
+    }
+  }
+
+  private emitChange(event: VFSChangeEvent) {
+    this.listeners.forEach((listener) => listener(event));
   }
 
   addFile(path: string, content: string): VFSFile | null {

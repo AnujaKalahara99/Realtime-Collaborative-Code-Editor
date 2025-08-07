@@ -10,20 +10,19 @@ export interface VFSEntry {
 export interface VFSFile extends VFSEntry {
   type: "file";
   content: string;
+  id?: string;
 }
 
 export interface VFSDirectory extends VFSEntry {
   type: "directory";
-  children: string[];
+  children: string[]; // Names of children entries;
+  id?: string;
 }
 
-export interface VFSFile extends VFSEntry {
-  type: "file";
-  content: string;
-}
 export interface VFSTreeDirectory extends VFSEntry {
   type: "directory";
   children: VFSEntry[]; // Full VFSEntry objects for tree view
+  id?: string;
 }
 
 export interface VFSChangeEvent {
