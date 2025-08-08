@@ -525,9 +525,7 @@ class YjsCollaborationService {
     }
   }
 
-  // Cleanup
   public destroy(): void {
-    // Clean up all callbacks
     this.connectionCallbacks.clear();
     this.fileSystemCallbacks.clear();
     this.fileChangeCallbacks.clear();
@@ -543,21 +541,18 @@ class YjsCollaborationService {
 
 let collaborationService: YjsCollaborationService | null = null;
 
-// React hook for using the collaboration service
 export const useCollaboration = () => {
-  console.log("Using collaboration service");
+  // console.log("Using collaboration service");
 
   if (!collaborationService) {
     collaborationService = new YjsCollaborationService();
   }
 
-  // Always check if reinitialize is needed when the hook is called
   collaborationService.checkAndReinitialize();
 
   return collaborationService;
 };
 
-// Add a cleanup function to be called when leaving the code editor
 export const disconnectCollaboration = () => {
   if (collaborationService) {
     collaborationService.cleanup();

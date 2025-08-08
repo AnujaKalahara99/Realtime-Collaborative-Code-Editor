@@ -7,42 +7,78 @@ import { v4 as uuidv4 } from "uuid";
 export const useFileTree = (initialFiles: FileNode[]) => {
   const [files, setFiles] = useState<FileNode[]>(initialFiles);
   const [isConnected, setIsConnected] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const collaborationService = useCollaboration();
-
-  const handleFileSystemChange = useCallback((newFiles: FileNode[]) => {
-    setFiles((prevFiles) => {
-      // Only update if files actually changed
-      if (JSON.stringify(prevFiles) !== JSON.stringify(newFiles)) {
-        return newFiles;
-      }
-      return prevFiles;
-    });
-  }, []);
 
   useEffect(() => {
     // Subscribe to connection changes
-    const unsubscribeConnection =
-      collaborationService.onConnectionChange(setIsConnected);
+    const unsubscribeConnection = collaborationService.onConnectionChange(
+      (connected) => {
+        setIsConnected(connected);
+
+        if (connected && !isInitialized) {
+          // Wait a bit for initial sync, then check files
+          setTimeout(() => {
+            const currentFiles = collaborationService.getFileSystem();
+            console.log("Files after connection:", currentFiles);
+
+            if (currentFiles.length === 0) {
+              console.log("No files found, setting initial files");
+              collaborationService.setFileSystem(initialFiles);
+            } else {
+              console.log("Files already exist, using synced files");
+              setFiles(currentFiles);
+            }
+            setIsInitialized(true);
+          }, 500); // Wait for initial sync
+        }
+      }
+    );
 
     // Subscribe to file system changes
     const unsubscribeFileSystem = collaborationService.onFileSystemChange(
-      // (newFiles) => {
-      //   setFiles(newFiles);
-      // }
-      handleFileSystemChange
+      (newFiles) => setFiles(newFiles)
     );
 
-    // Initialize file system if empty
-    const currentFiles = collaborationService.getFileSystem();
-    if (currentFiles.length === 0) {
-      collaborationService.setFileSystem(initialFiles);
+    // Check if already connected
+    if (collaborationService.isConnected()) {
+      const currentFiles = collaborationService.getFileSystem();
+      if (currentFiles.length > 0) {
+        setFiles(currentFiles);
+        setIsInitialized(true);
+      }
     }
 
     return () => {
       unsubscribeConnection();
       unsubscribeFileSystem();
     };
-  }, [initialFiles]);
+  }, [initialFiles, collaborationService, isInitialized]);
+
+  // useEffect(() => {
+  //   // Subscribe to connection changes
+  //   const unsubscribeConnection =
+  //     collaborationService.onConnectionChange(setIsConnected);
+
+  //   // Subscribe to file system changes
+  //   const unsubscribeFileSystem = collaborationService.onFileSystemChange(
+  //     // (newFiles) => {
+  //     //   setFiles(newFiles);
+  //     // }
+  //     handleFileSystemChange
+  //   );
+
+  //   // Initialize file system if empty
+  //   const currentFiles = collaborationService.getFileSystem();
+  //   if (currentFiles.length === 0) {
+  //     collaborationService.setFileSystem(initialFiles);
+  //   }
+
+  //   return () => {
+  //     unsubscribeConnection();
+  //     unsubscribeFileSystem();
+  //   };
+  // }, [initialFiles]);
 
   // Helper functions for tree operations
   const findNodeById = (nodes: FileNode[], id: string): FileNode | null => {

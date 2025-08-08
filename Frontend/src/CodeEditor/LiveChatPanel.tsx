@@ -26,12 +26,24 @@ export function ChatSpace() {
 
   const collaboration = useCollaboration();
 
-  // Get current user from awareness
   useEffect(() => {
     const awareness = collaboration.getAwareness();
     if (awareness) {
       const user = awareness.getLocalState()?.user;
       setCurrentUser(user);
+
+      // Listen for awareness changes to catch when user is set asynchronously
+      const handleAwarenessChange = () => {
+        const updatedUser = awareness.getLocalState()?.user;
+        if (updatedUser) {
+          setCurrentUser(updatedUser);
+        }
+      };
+
+      awareness.on("change", handleAwarenessChange);
+      return () => {
+        awareness.off("change", handleAwarenessChange);
+      };
     }
   }, [collaboration]);
 
