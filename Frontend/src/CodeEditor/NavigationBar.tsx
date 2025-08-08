@@ -1,18 +1,20 @@
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, ArrowLeft } from "lucide-react";
 import { useTheme } from "../ThemeProvider";
 import { useEffect, useState } from "react";
 import {
-  collaborationService,
+  useCollaboration,
   type CollaborationUser,
 } from "./YJSCollaborationService";
 import Avatar from "../components/Avatar";
+import { useNavigate } from "react-router";
 
 const NavigationBar = () => {
   const { theme, toggleTheme, isDark } = useTheme();
   const [isConnected, setIsConnected] = useState(false);
   const [connectedUsers, setConnectedUsers] = useState<CollaborationUser[]>([]);
+  const collaborationService = useCollaboration();
+  const navigate = useNavigate();
 
-  // Subscribe to connection status and users
   useEffect(() => {
     const unsubscribeConnection =
       collaborationService.onConnectionChange(setIsConnected);
@@ -25,12 +27,23 @@ const NavigationBar = () => {
     };
   }, []);
 
+  const handleBackToDashboard = () => {
+    navigate("/dashboard");
+  };
+
   return (
     <div
       className={`h-10 ${theme.background} ${theme.border} border-b flex items-center px-4 justify-between`}
     >
-      <div className={`text-xs ${theme.textMuted}`}>
-        Menu bar and top status will go here
+      <div className="flex items-center gap-3">
+        <button
+          onClick={handleBackToDashboard}
+          className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${theme.textMuted} ${theme.hover} transition-colors border ${theme.border}`}
+          title="Back to Dashboard"
+        >
+          <ArrowLeft size={12} className={`${theme.textSecondary}`} />
+          Dashboard
+        </button>
       </div>
       <div className="flex items-center gap-2">
         {/* Connection status */}

@@ -29,7 +29,6 @@ export interface Message {
   timestamp: number;
 }
 
-// Centralized YJS Collaboration Service
 class YjsCollaborationService {
   private projectDoc: Y.Doc | null = null;
   private provider: WebsocketProvider | null = null;
@@ -38,6 +37,8 @@ class YjsCollaborationService {
   private chatArray: Y.Array<Message> | null = null;
 
   private initialized = false;
+  private currentCodespaceId: string | null = null;
+  private isInitialSyncComplete = false;
 
   private connectionCallbacks: Set<(connected: boolean) => void> = new Set();
   private fileChangeCallbacks: Map<string, Set<(content: string) => void>> =
@@ -56,42 +57,107 @@ class YjsCollaborationService {
     "#1be7ff",
   ];
 
+  // If URL is like /codeeditor/a780e619-7c04-45cf-a030-702b20441649
+  private getCodespaceIdFromUrl(): string {
+    const pathSegments = window.location.pathname.split("/");
+    const codespaceId = pathSegments[pathSegments.length - 1];
+    console.log("Extracted codespace ID from URL:", codespaceId);
+
+    return codespaceId;
+  }
+
   constructor() {
     this.initialize();
   }
 
   private initialize() {
-    if (this.initialized) return;
+    const newCodespaceId = this.getCodespaceIdFromUrl();
+
+    // Check if we need to reinitialize due to codespace ID change
+    if (this.initialized && this.currentCodespaceId === newCodespaceId) {
+      return;
+    }
+
+    // Clean up existing connections if reinitializing
+    if (this.initialized) {
+      this.cleanup();
+    }
+
+    this.currentCodespaceId = newCodespaceId;
+    this.isInitialSyncComplete = false;
 
     this.projectDoc = new Y.Doc();
 
-    // Create WebSocket provider
     this.provider = new WebsocketProvider(
-      // "ws://144.24.128.44:4455",
-      "ws://localhost:4455",
-      "a780e619-7c04-45cf-a030-702b20441649",
+      "ws://144.24.128.44:4455",
+      // "ws://localhost:4455",
+      this.currentCodespaceId,
       this.projectDoc
     );
 
     this.fileSystemMap = this.projectDoc.getMap("fileSystem");
     this.chatArray = this.projectDoc.getArray("chat");
 
-    // Set up connection listeners
     this.provider.on("status", (event: any) => {
       const isConnected = event.status === "connected";
       this.connectionCallbacks.forEach((callback) => callback(isConnected));
     });
 
-    // Set up file system change listener
-    this.fileSystemMap.observe(() => {
+    // Set up initial sync detection
+    this.provider.on("synced", () => {
+      console.log("Initial sync completed");
+      this.isInitialSyncComplete = true;
+
+      // Trigger callbacks with the now-available data
       const files = this.fileSystemMap?.get("files") || [];
       this.fileSystemCallbacks.forEach((callback) => callback(files));
+
+      const messages = this.chatArray?.toArray() || [];
+      this.chatCallbacks.forEach((callback) => callback(messages));
     });
 
-    // Set up awareness for user presence
+    this.fileSystemMap.observe(() => {
+      // Only trigger if initial sync is complete or if we have actual data
+      const files = this.fileSystemMap?.get("files") || [];
+      if (this.isInitialSyncComplete || files.length > 0) {
+        this.fileSystemCallbacks.forEach((callback) => callback(files));
+      }
+    });
+
     this.setupAwareness();
 
     this.initialized = true;
+  }
+
+  private cleanup() {
+    // Clean up file texts
+    this.fileTexts.forEach((fileText, fileId) => {
+      const observer = (fileText as any)._observer;
+      if (observer) {
+        fileText.unobserve(observer);
+      }
+    });
+    this.fileTexts.clear();
+
+    // Clean up chat observer
+    if (this.chatArray) {
+      const observer = (this.chatArray as any)._observer;
+      if (observer) {
+        this.chatArray.unobserve(observer);
+        delete (this.chatArray as any)._observer;
+      }
+    }
+
+    // Destroy provider and document
+    if (this.provider) {
+      this.provider.destroy();
+      this.provider = null;
+    }
+
+    if (this.projectDoc) {
+      this.projectDoc.destroy();
+      this.projectDoc = null;
+    }
   }
 
   private setupAwareness() {
@@ -117,25 +183,30 @@ class YjsCollaborationService {
           });
         }
       });
-    // Set local user info
-    // const userColor =
-    //   this.userColors[Math.floor(Math.random() * this.userColors.length)];
-    // awareness.setLocalStateField("user", {
-    //   name: `User-${Math.random().toString(36).substr(2, 5)}`,
-    //   color: userColor,
-    // });
+  }
+
+  // Method to check if codespace ID has changed and reinitialize if needed
+  public checkAndReinitialize(): void {
+    const currentUrlCodespaceId = this.getCodespaceIdFromUrl();
+    if (currentUrlCodespaceId !== this.currentCodespaceId) {
+      console.log("Codespace ID changed, reinitializing...", {
+        old: this.currentCodespaceId,
+        new: currentUrlCodespaceId,
+      });
+      this.initialize();
+    }
   }
 
   // Connection Management
   public onConnectionChange(
     callback: (connected: boolean) => void
   ): () => void {
+    this.checkAndReinitialize();
+
     this.connectionCallbacks.add(callback);
 
-    // Call immediately with current status
     callback(this.isConnected());
 
-    // Return unsubscribe function
     return () => {
       this.connectionCallbacks.delete(callback);
     };
@@ -147,37 +218,42 @@ class YjsCollaborationService {
 
   // File System Management
   public getFileSystem(): FileNode[] {
+    this.checkAndReinitialize();
     return this.fileSystemMap?.get("files") || [];
   }
 
   public setFileSystem(files: FileNode[]): void {
+    this.checkAndReinitialize();
     this.fileSystemMap?.set("files", files);
   }
 
   public onFileSystemChange(callback: (files: FileNode[]) => void): () => void {
+    this.checkAndReinitialize();
+
     this.fileSystemCallbacks.add(callback);
 
-    // Call immediately with current files
-    callback(this.getFileSystem());
+    // Only call immediately if initial sync is complete or if we have data
+    const files = this.getFileSystem();
+    if (this.isInitialSyncComplete || files.length > 0) {
+      callback(files);
+    }
 
-    // Return unsubscribe function
     return () => {
       this.fileSystemCallbacks.delete(callback);
     };
   }
 
-  // File Content Management
   public getFileText(fileId: string): Y.Text {
+    this.checkAndReinitialize();
+
     if (!this.projectDoc) {
       throw new Error("YJS not initialized");
     }
 
-    // Return existing Y.Text if we have it
     if (this.fileTexts.has(fileId)) {
       return this.fileTexts.get(fileId)!;
     }
 
-    // Create new Y.Text for this file
     const fileText = this.projectDoc.getText(`file-${fileId}`);
     this.fileTexts.set(fileId, fileText);
 
@@ -187,7 +263,6 @@ class YjsCollaborationService {
   public initializeFileContent(fileId: string, content: string): void {
     const fileText = this.getFileText(fileId);
 
-    // Only initialize if the Y.Text is empty
     if (fileText.length === 0 && content) {
       fileText.insert(0, content);
     }
@@ -202,6 +277,8 @@ class YjsCollaborationService {
     fileId: string,
     callback: (content: string) => void
   ): () => void {
+    this.checkAndReinitialize();
+
     const fileText = this.getFileText(fileId);
 
     // Add callback to our map
@@ -259,6 +336,8 @@ class YjsCollaborationService {
 
   // Chat Management
   public getChatArray(): Y.Array<Message> {
+    this.checkAndReinitialize();
+
     if (!this.projectDoc) {
       throw new Error("YJS not initialized");
     }
@@ -289,6 +368,8 @@ class YjsCollaborationService {
   }
 
   public onChatChange(callback: (messages: Message[]) => void): () => void {
+    this.checkAndReinitialize();
+
     if (!this.chatArray) {
       throw new Error("Chat not initialized");
     }
@@ -305,7 +386,11 @@ class YjsCollaborationService {
       (this.chatArray as any)._observer = observer;
     }
 
-    callback(this.getChatMessages());
+    // Only call immediately if initial sync is complete or if we have data
+    const messages = this.getChatMessages();
+    if (this.isInitialSyncComplete || messages.length > 0) {
+      callback(messages);
+    }
 
     return () => {
       this.chatCallbacks.delete(callback);
@@ -388,6 +473,8 @@ class YjsCollaborationService {
   public onUsersChange(
     callback: (users: CollaborationUser[]) => void
   ): () => void {
+    this.checkAndReinitialize();
+
     const awareness = this.getAwareness();
     if (!awareness) return () => {};
 
@@ -439,35 +526,28 @@ class YjsCollaborationService {
     this.connectionCallbacks.clear();
     this.fileSystemCallbacks.clear();
     this.fileChangeCallbacks.clear();
+    this.chatCallbacks.clear();
 
-    // Clean up file texts
-    this.fileTexts.forEach((fileText, fileId) => {
-      const observer = (fileText as any)._observer;
-      if (observer) {
-        fileText.unobserve(observer);
-      }
-    });
-    this.fileTexts.clear();
-
-    // Destroy provider and document
-    if (this.provider) {
-      this.provider.destroy();
-      this.provider = null;
-    }
-
-    if (this.projectDoc) {
-      this.projectDoc.destroy();
-      this.projectDoc = null;
-    }
+    this.cleanup();
 
     this.initialized = false;
+    this.currentCodespaceId = null;
+    this.isInitialSyncComplete = false;
   }
 }
 
-// Create singleton instance
-export const collaborationService = new YjsCollaborationService();
+let collaborationService: YjsCollaborationService | null = null;
 
 // React hook for using the collaboration service
 export const useCollaboration = () => {
+  console.log("Using collaboration service");
+
+  if (!collaborationService) {
+    collaborationService = new YjsCollaborationService();
+  }
+
+  // Always check if reinitialize is needed when the hook is called
+  collaborationService.checkAndReinitialize();
+
   return collaborationService;
 };

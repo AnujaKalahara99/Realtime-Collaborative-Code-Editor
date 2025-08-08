@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { type Session } from "@supabase/supabase-js";
 import { useTheme } from "../ThemeProvider";
 import TitleBar from "./TitleBar";
@@ -15,13 +15,19 @@ type Props = {
 };
 
 const Dashboard = ({ session }: Props) => {
-  const { theme } = useTheme();
-  const { codespaces, createCodespace } = useCodespaces(session);
+  // console.log("Dashboard rendered");
 
+  const { theme } = useTheme();
+  const {
+    codespaces,
+    createCodespace,
+    deleteCodespace,
+    shareCodespacebyemail,
+    editCodespace,
+  } = useCodespaces(session);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [isModalOpen, setIsModalOpen] = useState(false);
-
   const filteredCodespaces = codespaces.filter((codespace: Codespace) =>
     codespace.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -29,7 +35,12 @@ const Dashboard = ({ session }: Props) => {
   const handleCreateCodespace = async (name: string) => {
     return await createCodespace(name);
   };
-
+  useEffect(() => {
+    // console.log("Session changed on Dashboard:");
+  }, [session]);
+  useEffect(() => {
+    // console.log("Codespaces changed on Dashboard:");
+  }, [codespaces]);
   return (
     <div className={`min-h-screen ${theme.surface}`}>
       <TitleBar Session={session} />
@@ -46,10 +57,12 @@ const Dashboard = ({ session }: Props) => {
           codespaces={filteredCodespaces}
           viewMode={viewMode}
           onCreateWorkspace={() => setIsModalOpen(true)}
+          onDeleteWorkspace={deleteCodespace}
+          onEditWorkspace={editCodespace}
+          onShareWorkspace={shareCodespacebyemail}
         />
 
         <EmptyState searchQuery={searchQuery} />
-
         <CreateCodespaceModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}

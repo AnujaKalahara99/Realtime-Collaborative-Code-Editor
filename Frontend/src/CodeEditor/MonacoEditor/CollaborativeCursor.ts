@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as monaco from "monaco-editor";
 import {
-  collaborationService,
+  useCollaboration,
   type CollaborationUser,
 } from "../YJSCollaborationService";
 import "./CollaborativeCursor.css";
@@ -26,6 +26,7 @@ export default function CollaborativeCursor({
   const nameWidgetsRef = useRef<Map<string, monaco.editor.IContentWidget>>(
     new Map()
   );
+  const collaborationService = useCollaboration();
 
   useEffect(() => {
     if (!editor || !selectedFile || selectedFile.type !== "file") {
