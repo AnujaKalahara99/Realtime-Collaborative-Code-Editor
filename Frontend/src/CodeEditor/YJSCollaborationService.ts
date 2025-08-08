@@ -89,7 +89,8 @@ class YjsCollaborationService {
     this.projectDoc = new Y.Doc();
 
     this.provider = new WebsocketProvider(
-      "ws://144.24.128.44:4455",
+      // "ws://144.24.128.44:4455",
+      "ws://localhost:4000/ws",
       // "ws://localhost:4455",
       this.currentCodespaceId,
       this.projectDoc
