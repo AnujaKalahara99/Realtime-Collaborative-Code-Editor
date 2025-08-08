@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   useCollaboration,
   type CollaborationUser,
+  disconnectCollaboration, // Add this import
 } from "./YJSCollaborationService";
 import Avatar from "../components/Avatar";
 import { useNavigate } from "react-router";
@@ -28,6 +29,8 @@ const NavigationBar = () => {
   }, []);
 
   const handleBackToDashboard = () => {
+    // Disconnect collaboration service before navigating
+    disconnectCollaboration();
     navigate("/dashboard");
   };
 

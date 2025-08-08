@@ -61,7 +61,7 @@ class YjsCollaborationService {
   private getCodespaceIdFromUrl(): string {
     const pathSegments = window.location.pathname.split("/");
     const codespaceId = pathSegments[pathSegments.length - 1];
-    console.log("Extracted codespace ID from URL:", codespaceId);
+    // console.log("Extracted codespace ID from URL:", codespaceId);
 
     return codespaceId;
   }
@@ -130,7 +130,7 @@ class YjsCollaborationService {
     this.initialized = true;
   }
 
-  private cleanup() {
+  public cleanup() {
     // Clean up file texts
     this.fileTexts.forEach((fileText, fileId) => {
       const observer = (fileText as any)._observer;
@@ -159,6 +159,10 @@ class YjsCollaborationService {
       this.projectDoc.destroy();
       this.projectDoc = null;
     }
+
+    // Reset references
+    this.fileSystemMap = null;
+    this.chatArray = null;
   }
 
   private setupAwareness() {
@@ -551,4 +555,11 @@ export const useCollaboration = () => {
   collaborationService.checkAndReinitialize();
 
   return collaborationService;
+};
+
+// Add a cleanup function to be called when leaving the code editor
+export const disconnectCollaboration = () => {
+  if (collaborationService) {
+    collaborationService.cleanup();
+  }
 };

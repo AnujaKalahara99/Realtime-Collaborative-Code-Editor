@@ -60,7 +60,7 @@ const TabPanel: React.FC<TabPanelProps> = ({
 };
 
 const CodeEditorPage = () => {
-  console.log("CodeEditorPage rendered");
+  // console.log("CodeEditorPage rendered");
 
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const [leftActiveTab, setLeftActiveTab] = useState("pm");
@@ -119,7 +119,6 @@ const CodeEditorPage = () => {
   return (
     <div className="h-screen bg-gray-900 flex flex-col">
       <NavigationBar />
-
       <div className="flex-1 flex">
         <div className="w-80 border-r border-gray-600">
           <TabPanel
