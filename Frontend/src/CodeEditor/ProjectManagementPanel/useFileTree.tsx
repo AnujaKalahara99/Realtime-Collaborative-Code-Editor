@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useCollaboration } from "../YJSCollaborationService";
+import { useCollaboration } from "../YJSCollaborationService.duplicate";
 import type { FileNode } from "./file.types";
 import { v4 as uuidv4 } from "uuid";
 

@@ -10,7 +10,7 @@ import {
   useCollaboration,
   type CollaborationUser,
   type Message,
-} from "./YJSCollaborationService";
+} from "./YJSCollaborationService.duplicate";
 import { useTheme } from "../ThemeProvider";
 import { ChevronRight } from "lucide-react";
 import Avatar from "../components/Avatar";

@@ -5,7 +5,7 @@ import {
   useCollaboration,
   type CollaborationUser,
   disconnectCollaboration, // Add this import
-} from "./YJSCollaborationService";
+} from "./YJSCollaborationService.duplicate";
 import Avatar from "../components/Avatar";
 import { useNavigate } from "react-router";
 
