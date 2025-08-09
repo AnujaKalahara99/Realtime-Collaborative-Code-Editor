@@ -1,0 +1,196 @@
+import type React from "react";
+import { useState, useRef, useEffect } from "react";
+import { Send, Bot } from "lucide-react"; // Lucide icons are fine
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm"; // For GitHub Flavored Markdown (tables, task lists)
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export default function AskAIPanel() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+
+    const userMessage: Message = { role: "user", content: input };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ messages: [...messages, userMessage] }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("Failed to get reader from response body.");
+      }
+
+      let assistantResponseContent = "";
+      setMessages((prev) => [...prev, { role: "assistant", content: "" }]); // Add empty assistant message
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = new TextDecoder().decode(value);
+        assistantResponseContent += chunk;
+        setMessages((prev) => {
+          const lastMessage = prev[prev.length - 1];
+          if (lastMessage.role === "assistant") {
+            return [
+              ...prev.slice(0, -1),
+              { ...lastMessage, content: assistantResponseContent },
+            ];
+          }
+          return prev; // Should not happen if logic is correct
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching AI response:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Error: Could not get a response from the AI.",
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-2xl h-[600px] flex flex-col rounded-xl border bg-white text-gray-900 shadow-lg">
+      {/* CardHeader */}
+      <div className="flex flex-col space-y-1.5 p-6 border-b">
+        <h3 className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight">
+          <Bot className="w-6 h-6" /> Ask AI Assistant
+        </h3>
+      </div>
+
+      {/* CardContent */}
+      <div className="flex-1 flex flex-col p-4 pt-0">
+        {/* ScrollArea */}
+        <div className="flex-1 pr-4 overflow-y-auto">
+          <div className="space-y-4">
+            {messages.length === 0 && (
+              <div className="text-center text-gray-500 py-8">
+                Start a conversation with your coding AI assistant!
+              </div>
+            )}
+            {messages.map((msg, index) => (
+              <div
+                key={index}
+                className={`flex items-start gap-3 ${
+                  msg.role === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
+                {msg.role === "assistant" && (
+                  <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-700">
+                    AI
+                    {/* <img src="/placeholder.svg?height=32&width=32" alt="AI Avatar" className="aspect-square h-full w-full" /> */}
+                  </div>
+                )}
+                <div
+                  className={`max-w-[80%] rounded-lg p-3 ${
+                    msg.role === "user"
+                      ? "bg-blue-600 text-white" // Mimic primary
+                      : "bg-gray-100 text-gray-800" // Mimic muted
+                  }`}
+                >
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      code({ node, className, children, ...props }) {
+                        const isCodeBlock =
+                          className && className.startsWith("language-");
+                        if (!isCodeBlock) {
+                          return (
+                            <code className="relative rounded bg-gray-200 px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold text-gray-900">
+                              {children}
+                            </code>
+                          );
+                        }
+
+                        // For fenced code blocks
+                        return (
+                          <pre className="relative overflow-x-auto rounded-lg bg-gray-800 p-4 text-sm text-gray-100">
+                            <code className="block whitespace-pre-wrap">
+                              {children}
+                            </code>
+                          </pre>
+                        );
+                      },
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
+                </div>
+                {msg.role === "user" && (
+                  <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-700">
+                    You
+                    {/* <img src="/placeholder.svg?height=32&width=32" alt="User Avatar" className="aspect-square h-full w-full" /> */}
+                  </div>
+                )}
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex items-start gap-3 justify-start">
+                <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-700">
+                  AI
+                </div>
+                <div className="max-w-[80%] rounded-lg p-3 bg-gray-100 text-gray-800 animate-pulse">
+                  Thinking...
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        </div>
+        <form onSubmit={handleSubmit} className="flex gap-2 mt-4">
+          <input
+            type="text"
+            placeholder="Ask a coding question or paste code for correction..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            disabled={isLoading}
+            className="flex-1 flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+          />
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2"
+          >
+            <Send className="w-4 h-4" />
+            <span className="sr-only">Send</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
