@@ -1,155 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Code2, Users, Zap, Shield, Play, Github, Twitter, Mail, ArrowRight, CheckCircle, Star } from 'lucide-react';
 
-interface AuthModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  mode: 'login' | 'signup';
-}
-
-const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode }) => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    fullName: ''
-  });
-
-  if (!isOpen) return null;
-
-  const handleSubmit = () => {
-    // Handle authentication logic here
-    console.log('Auth submitted:', formData);
-    onClose();
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-900 rounded-2xl p-8 w-full max-w-md relative border border-slate-700 shadow-2xl">
-        <button 
-          onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
-        >
-          ✕
-        </button>
-        
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">
-            {mode === 'login' ? 'Welcome Back' : 'Join CodeSync'}
-          </h2>
-          <p className="text-slate-400">
-            {mode === 'login' ? 'Sign in to your account' : 'Create your account to get started'}
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          {mode === 'signup' && (
-            <div>
-              <input
-                type="text"
-                name="fullName"
-                placeholder="Full Name"
-                value={formData.fullName}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all"
-              />
-            </div>
-          )}
-          
-          <div>
-            <input
-              type="email"
-              name="email"
-              placeholder="Email Address"
-              value={formData.email}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all"
-            />
-          </div>
-          
-          <div>
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              value={formData.password}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all"
-            />
-          </div>
-          
-          {mode === 'signup' && (
-            <div>
-              <input
-                type="password"
-                name="confirmPassword"
-                placeholder="Confirm Password"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-all"
-              />
-            </div>
-          )}
-          
-          <button
-            onClick={handleSubmit}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-          >
-            {mode === 'login' ? 'Sign In' : 'Create Account'}
-          </button>
-        </div>
-        
-        <div className="mt-6 text-center">
-          <p className="text-slate-400">
-            {mode === 'login' ? "Don't have an account? " : "Already have an account? "}
-            <button 
-              onClick={() => {}}
-              className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
-            >
-              {mode === 'login' ? 'Sign up' : 'Sign in'}
-            </button>
-          </p>
-        </div>
-        
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-600"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-slate-900 text-slate-400">Or continue with</span>
-            </div>
-          </div>
-          
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            <button className="flex items-center justify-center px-4 py-2 border border-slate-600 rounded-lg bg-slate-800 text-white hover:bg-slate-700 transition-colors">
-              <Github className="w-5 h-5 mr-2" />
-              GitHub
-            </button>
-            <button className="flex items-center justify-center px-4 py-2 border border-slate-600 rounded-lg bg-slate-800 text-white hover:bg-slate-700 transition-colors">
-              <Mail className="w-5 h-5 mr-2" />
-              Google
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const CodeEditorHomepage: React.FC = () => {
-  const [authModal, setAuthModal] = useState<{ isOpen: boolean; mode: 'login' | 'signup' }>({
-    isOpen: false,
-    mode: 'login'
-  });
-  
   const [typedText, setTypedText] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
   
@@ -177,6 +29,16 @@ const CodeEditorHomepage: React.FC = () => {
     
     return () => clearInterval(timer);
   }, []);
+
+  const handleLoginRedirect = () => {
+    // Redirect to login page
+    window.location.href = '/login';
+  };
+
+    const handleSignupRedirect = () => {
+    // Redirect to login page
+    window.location.href = '/signup';
+  };
 
   const features = [
     {
@@ -245,13 +107,13 @@ const CodeEditorHomepage: React.FC = () => {
             
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => setAuthModal({ isOpen: true, mode: 'login' })}
+                onClick={handleLoginRedirect}
                 className="text-gray-300 hover:text-white transition-colors"
               >
                 Sign In
               </button>
               <button
-                onClick={() => setAuthModal({ isOpen: true, mode: 'signup' })}
+                onClick={handleSignupRedirect} 
                 className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105"
               >
                 Get Started
@@ -294,7 +156,7 @@ const CodeEditorHomepage: React.FC = () => {
               
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
-                  onClick={() => setAuthModal({ isOpen: true, mode: 'signup' })}
+                  onClick={handleLoginRedirect}
                   className="flex items-center justify-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-2xl"
                 >
                   Start Coding Now
@@ -436,7 +298,7 @@ const CodeEditorHomepage: React.FC = () => {
                 </ul>
                 
                 <button
-                  onClick={() => setAuthModal({ isOpen: true, mode: 'signup' })}
+                  onClick={handleLoginRedirect}
                   className={`w-full py-3 rounded-xl font-semibold transition-all duration-300 ${
                     plan.popular
                       ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 transform hover:scale-105'
@@ -463,7 +325,7 @@ const CodeEditorHomepage: React.FC = () => {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => setAuthModal({ isOpen: true, mode: 'signup' })}
+              onClick={handleLoginRedirect}
               className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-2xl"
             >
               Start Free Trial
@@ -535,13 +397,6 @@ const CodeEditorHomepage: React.FC = () => {
           </div>
         </div>
       </footer>
-
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={authModal.isOpen}
-        onClose={() => setAuthModal({ ...authModal, isOpen: false })}
-        mode={authModal.mode}
-      />
     </div>
   );
 };

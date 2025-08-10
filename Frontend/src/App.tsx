@@ -84,7 +84,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Homepage />} />
         </Routes>
       </Router>
     </ThemeProvider>
