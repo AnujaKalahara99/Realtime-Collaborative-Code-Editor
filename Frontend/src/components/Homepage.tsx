@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Code2, Users, Zap, Shield, Play, Github, Twitter, Mail, ArrowRight, CheckCircle, Star } from 'lucide-react';
-
+import { Navigate, useNavigate } from 'react-router';
 const CodeEditorHomepage: React.FC = () => {
   const [typedText, setTypedText] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
-  
+  const navigate = useNavigate();
   const codeText = 'function collaborate() {\n  return "real-time magic";\n}';
   
   useEffect(() => {
@@ -32,12 +32,12 @@ const CodeEditorHomepage: React.FC = () => {
 
   const handleLoginRedirect = () => {
     // Redirect to login page
-    window.location.href = '/login';
+   navigate('/login');
   };
 
     const handleSignupRedirect = () => {
-    // Redirect to login page
-    window.location.href = '/signup';
+    // Redirect to signup page
+    navigate('/signup');
   };
 
   const features = [

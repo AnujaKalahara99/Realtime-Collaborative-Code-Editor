@@ -60,10 +60,13 @@ function Login() {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
+      options: { redirectTo: 'http://localhost:5173/login' }
     });
+  
     if (error) {
       setError("Failed to sign in with Google");
     }
+   
   };
 
   const signInWithEmail = async (e: React.FormEvent) => {

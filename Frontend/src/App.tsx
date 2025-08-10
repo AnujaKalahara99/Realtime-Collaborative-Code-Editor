@@ -10,7 +10,7 @@ import Homepage from "./components/Homepage";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import { supabase } from "./database/superbase";
 import { type Session, type User } from "@supabase/supabase-js";
-
+import Viewonly from "./CodeEditor/viewonly";
 function App() {
   // console.log("App component rendered");
 
@@ -72,6 +72,7 @@ function App() {
             }
           />
           <Route path="/codeeditor/:id" element={<CodeEditorPage />} />
+          <Route path="/viewonly/:id" element={<Viewonly />} />
           <Route
             path="/codespace/sharebyemail/:invitationId"
             element={<CodespaceInvitation />}
