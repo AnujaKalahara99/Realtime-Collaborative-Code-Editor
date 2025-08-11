@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { Send, Bot } from "lucide-react"; // Lucide icons are fine
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm"; // For GitHub Flavored Markdown (tables, task lists)
+import { useTheme } from "../ThemeProvider";
 
 interface Message {
   role: "user" | "assistant";
@@ -10,6 +11,7 @@ interface Message {
 }
 
 export default function AskAIPanel() {
+  const { theme } = useTheme();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -85,10 +87,14 @@ export default function AskAIPanel() {
   };
 
   return (
-    <div className="w-full max-w-2xl h-[600px] flex flex-col rounded-xl border bg-white text-gray-900 shadow-lg">
+    <div
+      className={`w-full max-w-2xl h-[600px] flex flex-col rounded-xl border ${theme.surface} ${theme.text} ${theme.border} shadow-lg`}
+    >
       {/* CardHeader */}
-      <div className="flex flex-col space-y-1.5 p-6 border-b">
-        <h3 className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight">
+      <div className={`flex flex-col space-y-1.5 p-6 border-b ${theme.border}`}>
+        <h3
+          className={`flex items-center gap-2 text-lg font-semibold leading-none tracking-tight ${theme.text}`}
+        >
           <Bot className="w-6 h-6" /> Ask AI Assistant
         </h3>
       </div>
@@ -99,7 +105,7 @@ export default function AskAIPanel() {
         <div className="flex-1 pr-4 overflow-y-auto">
           <div className="space-y-4">
             {messages.length === 0 && (
-              <div className="text-center text-gray-500 py-8">
+              <div className={`text-center ${theme.textMuted} py-8`}>
                 Start a conversation with your coding AI assistant!
               </div>
             )}
@@ -111,7 +117,9 @@ export default function AskAIPanel() {
                 }`}
               >
                 {msg.role === "assistant" && (
-                  <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-700">
+                  <div
+                    className={`relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full ${theme.surfaceSecondary} flex items-center justify-center text-sm font-medium ${theme.text}`}
+                  >
                     AI
                     {/* <img src="/placeholder.svg?height=32&width=32" alt="AI Avatar" className="aspect-square h-full w-full" /> */}
                   </div>
@@ -119,19 +127,21 @@ export default function AskAIPanel() {
                 <div
                   className={`max-w-[80%] rounded-lg p-3 ${
                     msg.role === "user"
-                      ? "bg-blue-600 text-white" // Mimic primary
-                      : "bg-gray-100 text-gray-800" // Mimic muted
+                      ? "bg-blue-600 text-white"
+                      : `${theme.surfaceSecondary} ${theme.text}`
                   }`}
                 >
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
-                      code({ node, className, children, ...props }) {
+                      code({ className, children }) {
                         const isCodeBlock =
                           className && className.startsWith("language-");
                         if (!isCodeBlock) {
                           return (
-                            <code className="relative rounded bg-gray-200 px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold text-gray-900">
+                            <code
+                              className={`relative rounded px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold ${theme.surfaceSecondary} ${theme.text}`}
+                            >
                               {children}
                             </code>
                           );
@@ -139,7 +149,9 @@ export default function AskAIPanel() {
 
                         // For fenced code blocks
                         return (
-                          <pre className="relative overflow-x-auto rounded-lg bg-gray-800 p-4 text-sm text-gray-100">
+                          <pre
+                            className={`relative overflow-x-auto rounded-lg p-4 text-sm ${theme.surface} ${theme.text}`}
+                          >
                             <code className="block whitespace-pre-wrap">
                               {children}
                             </code>
@@ -152,7 +164,9 @@ export default function AskAIPanel() {
                   </ReactMarkdown>
                 </div>
                 {msg.role === "user" && (
-                  <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-700">
+                  <div
+                    className={`relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full ${theme.surfaceSecondary} flex items-center justify-center text-sm font-medium ${theme.text}`}
+                  >
                     You
                     {/* <img src="/placeholder.svg?height=32&width=32" alt="User Avatar" className="aspect-square h-full w-full" /> */}
                   </div>
@@ -161,10 +175,14 @@ export default function AskAIPanel() {
             ))}
             {isLoading && (
               <div className="flex items-start gap-3 justify-start">
-                <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-700">
+                <div
+                  className={`relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full ${theme.surfaceSecondary} flex items-center justify-center text-sm font-medium ${theme.text}`}
+                >
                   AI
                 </div>
-                <div className="max-w-[80%] rounded-lg p-3 bg-gray-100 text-gray-800 animate-pulse">
+                <div
+                  className={`max-w-[80%] rounded-lg p-3 ${theme.surfaceSecondary} ${theme.text} animate-pulse`}
+                >
                   Thinking...
                 </div>
               </div>
@@ -179,12 +197,12 @@ export default function AskAIPanel() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isLoading}
-            className="flex-1 flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className={`flex-1 flex h-10 w-full rounded-md border ${theme.border} ${theme.surface} px-3 py-2 text-sm ${theme.textMuted} focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50 ${theme.text}`}
           />
           <button
             type="submit"
             disabled={isLoading}
-            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2"
+            className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2`}
           >
             <Send className="w-4 h-4" />
             <span className="sr-only">Send</span>
