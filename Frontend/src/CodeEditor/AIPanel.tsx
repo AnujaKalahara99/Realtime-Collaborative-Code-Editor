@@ -1,8 +1,8 @@
 import type React from "react";
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot } from "lucide-react"; // Lucide icons are fine
+import { Send, Bot } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm"; // For GitHub Flavored Markdown (tables, task lists)
+import remarkGfm from "remark-gfm";
 import { useTheme } from "../ThemeProvider";
 
 interface Message {
@@ -16,14 +16,28 @@ export default function AskAIPanel() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Use setTimeout to ensure DOM has updated
+    setTimeout(() => {
+      // Try scrolling the container first
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop =
+          scrollContainerRef.current.scrollHeight;
+      }
+      // Fallback to scrollIntoView
+      messagesEndRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+        inline: "nearest",
+      });
+    }, 100);
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isLoading]); // Also scroll when loading state changes
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +49,7 @@ export default function AskAIPanel() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await fetch("http://localhost:5000/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -64,10 +78,13 @@ export default function AskAIPanel() {
         setMessages((prev) => {
           const lastMessage = prev[prev.length - 1];
           if (lastMessage.role === "assistant") {
-            return [
+            const updated = [
               ...prev.slice(0, -1),
               { ...lastMessage, content: assistantResponseContent },
             ];
+            // Trigger scroll after state update
+            setTimeout(() => scrollToBottom(), 50);
+            return updated;
           }
           return prev; // Should not happen if logic is correct
         });
@@ -100,10 +117,13 @@ export default function AskAIPanel() {
       </div>
 
       {/* CardContent */}
-      <div className="flex-1 flex flex-col p-4 pt-0">
-        {/* ScrollArea */}
-        <div className="flex-1 pr-4 overflow-y-auto">
-          <div className="space-y-4">
+      <div className="flex-1 flex flex-col p-4 pt-0 min-h-0">
+        {/* ScrollArea - Fixed height and proper overflow */}
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto pr-2 mb-4"
+        >
+          <div className="space-y-4 py-2">
             {messages.length === 0 && (
               <div className={`text-center ${theme.textMuted} py-8`}>
                 Start a conversation with your coding AI assistant!
@@ -147,7 +167,6 @@ export default function AskAIPanel() {
                           );
                         }
 
-                        // For fenced code blocks
                         return (
                           <pre
                             className={`relative overflow-x-auto rounded-lg p-4 text-sm ${theme.surface} ${theme.text}`}
@@ -190,7 +209,7 @@ export default function AskAIPanel() {
             <div ref={messagesEndRef} />
           </div>
         </div>
-        <form onSubmit={handleSubmit} className="flex gap-2 mt-4">
+        <form onSubmit={handleSubmit} className="flex gap-2 flex-shrink-0">
           <input
             type="text"
             placeholder="Ask a coding question or paste code for correction..."
