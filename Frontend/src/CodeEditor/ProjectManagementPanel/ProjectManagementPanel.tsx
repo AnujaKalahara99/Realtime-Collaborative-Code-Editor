@@ -11,7 +11,7 @@ const ProjectManagementPanel = ({
 }: {
   onFileSelect?: (file: FileNode) => void;
 }) => {
-  console.log("ProjectManagementPanel rendered");
+  // console.log("ProjectManagementPanel rendered");
 
   const { theme } = useTheme();
 

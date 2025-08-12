@@ -43,6 +43,23 @@ const ROUTES = [
       },
     },
   },
+  {
+    url: "/ws",
+    auth: false,
+    creditCheck: false,
+    rateLimit: {
+      windowMs: 60 * 1000,
+      limit: 1000,
+    },
+    proxy: {
+      target: "ws://144.24.128.44:4455",
+      changeOrigin: true,
+      ws: true,
+      pathRewrite: {
+        [`^/ws`]: "",
+      },
+    },
+  },
 ];
 
 export default ROUTES;

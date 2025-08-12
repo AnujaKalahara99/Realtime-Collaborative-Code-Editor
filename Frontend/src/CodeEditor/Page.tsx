@@ -61,7 +61,7 @@ const TabPanel: React.FC<TabPanelProps> = ({
 };
 
 const CodeEditorPage = () => {
-  console.log("CodeEditorPage rendered");
+  // console.log("CodeEditorPage rendered");
 
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const [leftActiveTab, setLeftActiveTab] = useState("pm");
@@ -94,16 +94,9 @@ const CodeEditorPage = () => {
   };
 
   const renderRightPanel = () => {
-    const username = "User"; //later need to replece with actual login user
     switch (rightActiveTab) {
       case "chat":
-        return (
-          <LiveChatPanel
-            roomName="ChatSpace" //this is also need to change later
-            username={username}
-            wsUrl="ws://144.24.128.44:4455"
-          />
-        );
+        return <LiveChatPanel />;
 
       case "compiler":
         return <CompilerPanel />;
@@ -123,7 +116,6 @@ const CodeEditorPage = () => {
   return (
     <div className="h-screen bg-gray-900 flex flex-col">
       <NavigationBar />
-
       <div className="flex-1 flex">
         <div className="w-80 border-r border-gray-600">
           <TabPanel
