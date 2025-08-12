@@ -11,11 +11,8 @@ import { supabase } from "./database/superbase";
 import { type Session, type User } from "@supabase/supabase-js";
 
 function App() {
-  // console.log("App component rendered");
-
   const [session, setSession] = useState<Session | null>(null);
-  // prevent duplicate updates based on the access token.
-  const lastTokenRef = useRef<string | undefined>();
+  const lastTokenRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     const {
@@ -23,7 +20,6 @@ function App() {
     } = supabase.auth.onAuthStateChange((event, session) => {
       const currentToken = session?.access_token;
 
-      // Only update if token actually changed
       if (lastTokenRef.current !== currentToken) {
         console.log("Session updated:", session);
         lastTokenRef.current = currentToken;
@@ -33,10 +29,6 @@ function App() {
     });
     return () => subscription.unsubscribe();
   }, []);
-
-  useEffect(() => {
-    console.log("Session changed on App");
-  }, [session]);
 
   async function upsertProfile(user: User) {
     const { id, user_metadata, email } = user;

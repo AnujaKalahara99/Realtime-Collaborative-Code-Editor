@@ -32,13 +32,13 @@ export interface Message {
 class YjsCollaborationService {
   private doc: Y.Doc | null = null;
   private provider: WebsocketProvider | null = null;
-  private fileSystemMap: Y.Map<any> | null = null;
+  private fileSystemMap: Y.Map<FileNode[]> | null = null;
   private fileTexts = new Map<string, Y.Text>();
   private chatArray: Y.Array<Message> | null = null;
   private currentCodespaceId: string | null = null;
 
-  private callbacks = new Map<string, Set<Function>>();
-  private observers = new WeakMap<Y.AbstractType<any>, Function>();
+  private callbacks = new Map<string, Set<(data: any) => void>>();
+  private observers = new WeakMap<Y.AbstractType<any>, () => void>();
 
   private readonly userColors = [
     "#30bced",
@@ -69,6 +69,7 @@ class YjsCollaborationService {
       }
     };
 
+    //This may incur performance costs due to binding multiple times
     window.addEventListener("popstate", checkUrl);
     const originalPushState = history.pushState;
     history.pushState = function (...args) {
@@ -104,7 +105,7 @@ class YjsCollaborationService {
       this.notifyCallbacks("connection", event.status === "connected");
     });
 
-    this.provider.on("synced", () => {
+    this.provider.on("sync", () => {
       this.notifyCallbacks(
         "fileSystem",
         this.fileSystemMap?.get("files") || []
@@ -153,7 +154,7 @@ class YjsCollaborationService {
     }
   }
 
-  private addCallback(type: string, callback: Function): () => void {
+  private addCallback(type: string, callback: (data: any) => void): () => void {
     if (!this.callbacks.has(type)) {
       this.callbacks.set(type, new Set());
     }

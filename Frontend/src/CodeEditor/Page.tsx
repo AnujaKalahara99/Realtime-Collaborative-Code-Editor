@@ -92,27 +92,14 @@ const CodeEditorPage = () => {
   };
 
   const renderRightPanel = () => {
-    const username = "User"; //later need to replece with actual login user
     switch (rightActiveTab) {
       case "chat":
-        return (
-          <LiveChatPanel
-            roomName="ChatSpace" //this is also need to change later
-            username={username}
-            wsUrl="ws://144.24.128.44:4455"
-          />
-        );
+        return <LiveChatPanel />;
 
       case "compiler":
         return <CompilerPanel />;
       default:
-        return (
-          <LiveChatPanel
-            roomName="ChatSpace"
-            username={username}
-            wsUrl="ws://144.24.128.44:4455"
-          />
-        );
+        return <LiveChatPanel />;
     }
   };
 

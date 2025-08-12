@@ -1,14 +1,21 @@
 import { useNavigate } from "react-router";
-import { FileText, MoreVertical, Trash2, Share2, Edit } from "lucide-react";
+import {
+  FileText,
+  MoreVertical,
+  Trash2,
+  Share2,
+  Edit,
+  SettingsIcon,
+} from "lucide-react";
 import { useTheme } from "../ThemeProvider";
 import { type Codespace, type ViewMode } from "./codespace.types";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 interface Props {
   codespace: Codespace;
   viewMode: ViewMode;
   onDelete?: () => void;
-  onShare?: (email: string, role: "Developer" | "Admin") => void; // Updated to include role
+  onShare?: (email: string, role: "Developer" | "Admin") => void;
   onEdit?: (newName: string) => void;
 }
 
@@ -26,10 +33,28 @@ function CodespaceCard({
   const [emailInput, setEmailInput] = useState("");
   const [roleInput, setRoleInput] = useState<"Developer" | "Admin">(
     "Developer"
-  ); // New state for role
+  );
   const [nameInput, setNameInput] = useState(codespace.name);
   const [displayName, setDisplayName] = useState(codespace.name);
   const navigate = useNavigate();
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showMenu]);
 
   const toggleMenu = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -66,18 +91,16 @@ function CodespaceCard({
   };
 
   const handleClick = () => {
-    navigate(`/codeeditor/${codespace.id}`);
-  };
-
-  const handleMouseLeave = () => {
-    setShowMenu(false);
+    if (!showMenu) {
+      navigate(`/codeeditor/${codespace.id}`);
+    }
   };
 
   const submitShare = () => {
     if (emailInput.trim()) {
-      onShare?.(emailInput.trim(), roleInput); // Pass both email and role
+      onShare?.(emailInput.trim(), roleInput);
       setEmailInput("");
-      setRoleInput("Developer"); // Reset role to default
+      setRoleInput("Developer");
       setShareModalOpen(false);
     }
   };
@@ -86,10 +109,7 @@ function CodespaceCard({
     <>
       <div
         onClick={handleClick}
-        onMouseLeave={handleMouseLeave}
-        className={`${theme.surfaceSecondary} rounded-lg ${
-          theme.border
-        } border ${
+        className={`${theme.surface} rounded-lg ${theme.border} border ${
           theme.hover
         } cursor-pointer transition-all duration-200 hover:shadow-md relative ${
           viewMode === "grid"
@@ -135,48 +155,51 @@ function CodespaceCard({
         </div>
 
         {(onDelete || onEdit || onShare) && (
-          <button
-            onClick={toggleMenu}
-            className={`${theme.hover} p-2 rounded-lg transition-colors ${
-              viewMode === "grid" ? "self-end mt-4" : ""
-            } hover:bg-gray-100 dark:hover:bg-gray-700`}
-          >
-            <MoreVertical size={16} className={theme.textMuted} />
-          </button>
-        )}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={toggleMenu}
+              className={`${
+                theme.hover
+              } cursor-pointer p-2 rounded-lg transition-colors ${
+                viewMode === "grid" ? " mt-4" : ""
+              } z-10`}
+            >
+              <SettingsIcon size={24} className={theme.textSecondary} />
+            </button>
 
-        {showMenu && (
-          <div
-            className={`${theme.surface} absolute right-4 ${
-              viewMode === "grid"
-                ? "top-[calc(100%+8px)]"
-                : "top-[calc(100%+4px)]"
-            } z-50 border ${theme.border} rounded-md shadow-lg p-2 w-48`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {onEdit && (
-              <button
-                onClick={handleEdit}
-                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 w-full px-3 py-2 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/50"
+            {showMenu && (
+              <div
+                className={`${theme.surface} absolute right-0 ${
+                  viewMode === "grid"
+                    ? "top-[calc(100%+4px)]"
+                    : "top-[calc(100%+4px)]"
+                } z-50 border ${theme.border} rounded-md shadow-lg p-2 w-48`}
               >
-                <Edit size={14} /> Edit
-              </button>
-            )}
-            {onShare && (
-              <button
-                onClick={handleShare}
-                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 w-full px-3 py-2 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/50"
-              >
-                <Share2 size={14} /> Share
-              </button>
-            )}
-            {onDelete && (
-              <button
-                onClick={handleDelete}
-                className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 w-full px-3 py-2 rounded-md hover:bg-red-50 dark:hover:bg-red-900/50"
-              >
-                <Trash2 size={14} /> Delete
-              </button>
+                {onEdit && (
+                  <button
+                    onClick={handleEdit}
+                    className={`flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 w-full px-3 py-2 rounded-md ${theme.hover}`}
+                  >
+                    <Edit size={14} /> Edit
+                  </button>
+                )}
+                {onShare && (
+                  <button
+                    onClick={handleShare}
+                    className={`flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 w-full px-3 py-2 rounded-md ${theme.hover}`}
+                  >
+                    <Share2 size={14} /> Share
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    onClick={handleDelete}
+                    className={`flex items-center gap-2 text-sm text-red-600 hover:text-red-700 w-full px-3 py-2 rounded-md ${theme.hover}`}
+                  >
+                    <Trash2 size={14} /> Delete
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}
@@ -184,19 +207,21 @@ function CodespaceCard({
 
       {shareModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-sm">
-            <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
+          <div
+            className={`${theme.surface} p-6 rounded-lg shadow-lg w-full max-w-sm`}
+          >
+            <h2 className={`text-lg font-semibold mb-4 ${theme.text}`}>
               Share Codespace
             </h2>
             <input
               type="email"
-              className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white mb-4"
+              className={`w-full px-3 py-2 border ${theme.border} rounded-md ${theme.surface} ${theme.text} mb-4`}
               placeholder="Enter email"
               value={emailInput}
               onChange={(e) => setEmailInput(e.target.value)}
             />
             <select
-              className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
+              className={`w-full px-3 py-2 border ${theme.border} rounded-md ${theme.surface} ${theme.text}`}
               value={roleInput}
               onChange={(e) =>
                 setRoleInput(e.target.value as "Developer" | "Admin")
@@ -208,7 +233,7 @@ function CodespaceCard({
             <div className="mt-4 flex justify-end gap-2">
               <button
                 onClick={() => setShareModalOpen(false)}
-                className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-sm rounded hover:bg-gray-400 dark:hover:bg-gray-500"
+                className={`px-4 py-2 ${theme.surfaceSecondary} ${theme.text} text-sm rounded ${theme.hover}`}
               >
                 Cancel
               </button>
@@ -225,13 +250,15 @@ function CodespaceCard({
 
       {editModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-sm">
-            <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
+          <div
+            className={`${theme.surface} p-6 rounded-lg shadow-lg w-full max-w-sm`}
+          >
+            <h2 className={`text-lg font-semibold mb-4 ${theme.text}`}>
               Edit Codespace Name
             </h2>
             <input
               type="text"
-              className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
+              className={`w-full px-3 py-2 border ${theme.border} rounded-md ${theme.surface} ${theme.text}`}
               placeholder="Enter new name"
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
@@ -239,7 +266,7 @@ function CodespaceCard({
             <div className="mt-4 flex justify-end gap-2">
               <button
                 onClick={() => setEditModalOpen(false)}
-                className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-sm rounded hover:bg-gray-400 dark:hover:bg-gray-500"
+                className={`px-4 py-2 ${theme.surfaceSecondary} ${theme.text} text-sm rounded ${theme.hover}`}
               >
                 Cancel
               </button>
