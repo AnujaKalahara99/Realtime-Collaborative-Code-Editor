@@ -15,7 +15,7 @@ export const useCodespaces = (session: Session) => {
     const sessionData = JSON.parse(sessionDataString || "null");
     return sessionData?.access_token || "";
   };
-
+  console.log(getToken());
   useEffect(() => {
     const fetchCodespaces = async () => {
       try {

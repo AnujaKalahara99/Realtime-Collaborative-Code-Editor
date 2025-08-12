@@ -6,10 +6,11 @@ import Login from "./components/login";
 import Signup from "./components/signup";
 import Dashboard from "./Dashboard/Dashboard";
 import CodespaceInvitation from "./Dashboard/AcceptInvite";
+import Homepage from "./components/Homepage";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import { supabase } from "./database/superbase";
 import { type Session, type User } from "@supabase/supabase-js";
-
+import Viewonly from "./CodeEditor/viewonly";
 function App() {
   const [session, setSession] = useState<Session | null>(null);
   const lastTokenRef = useRef<string | undefined>(undefined);
@@ -52,6 +53,8 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/homepage" element={<Homepage />} />
+
           <Route
             path="/dashboard"
             element={
@@ -61,6 +64,7 @@ function App() {
             }
           />
           <Route path="/codeeditor/:id" element={<CodeEditorPage />} />
+          <Route path="/viewonly/:id" element={<Viewonly />} />
           <Route
             path="/codespace/sharebyemail/:invitationId"
             element={<CodespaceInvitation />}
@@ -73,7 +77,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Homepage />} />
         </Routes>
       </Router>
     </ThemeProvider>

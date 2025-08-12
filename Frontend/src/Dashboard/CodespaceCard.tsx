@@ -1,3 +1,7 @@
+
+
+import React, { useState } from "react";
+import { FileText, MoreVertical, Trash2, Share2, Edit, Link, Check } from "lucide-react";
 import { useNavigate } from "react-router";
 import {
   FileText,
@@ -15,6 +19,7 @@ interface Props {
   codespace: Codespace;
   viewMode: ViewMode;
   onDelete?: () => void;
+  onShare?: (email: string, role: "Developer" | "Admin") => void;
   onShare?: (email: string, role: "Developer" | "Admin") => void;
   onEdit?: (newName: string) => void;
 }
@@ -36,6 +41,9 @@ function CodespaceCard({
   );
   const [nameInput, setNameInput] = useState(codespace.name);
   const [displayName, setDisplayName] = useState(codespace.name);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
+  const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -80,6 +88,34 @@ function CodespaceCard({
     setShowMenu(false);
   };
 
+  const handleCopyLink = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const shareLink = `http://localhost:5173/viewonly/${codespace.id}`;
+    
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setLinkCopied(true);
+      
+      setTimeout(() => {
+        setLinkCopied(false);
+      }, 2000);
+    } catch (err) {
+      const textArea = document.createElement('textarea');
+      textArea.value = shareLink;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      setLinkCopied(true);
+      setTimeout(() => {
+        setLinkCopied(false);
+      }, 2000);
+    }
+    
+    setShowMenu(false);
+  };
+
   const submitEdit = () => {
     if (nameInput.trim()) {
       setDisplayName(nameInput.trim());
@@ -99,7 +135,9 @@ function CodespaceCard({
   const submitShare = () => {
     if (emailInput.trim()) {
       onShare?.(emailInput.trim(), roleInput);
+      onShare?.(emailInput.trim(), roleInput);
       setEmailInput("");
+      setRoleInput("Developer");
       setRoleInput("Developer");
       setShareModalOpen(false);
     }
@@ -117,39 +155,45 @@ function CodespaceCard({
             : "p-4 flex items-center justify-between"
         }`}
       >
-        <div
-          className={`${
-            viewMode === "grid" ? "flex-1" : "flex items-center space-x-4"
-          }`}
-        >
+        <div className={`${viewMode === "grid" ? "flex-1" : "flex items-center space-x-4"}`}>
           <div
-            className={`${theme.surfaceSecondary} rounded-lg p-3 w-fit ${
+            className={`relative rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 p-3 shadow-md ${
               viewMode === "list" ? "!p-2" : ""
             }`}
           >
-            <FileText
-              size={viewMode === "grid" ? 32 : 20}
-              className="text-blue-500"
+            <FileText 
+              size={viewMode === "grid" ? 32 : 20} 
+              className="text-white drop-shadow-sm" 
             />
+            <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-white/20 to-transparent"></div>
           </div>
 
           <div className={`${viewMode === "grid" ? "mt-4" : ""}`}>
             <h3
-              className={`font-medium ${theme.text} ${
-                viewMode === "grid" ? "text-lg mb-2" : "text-base"
+              className={`font-semibold ${theme.text} transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400 ${
+                viewMode === "grid" ? "text-lg mb-3" : "text-base"
               }`}
             >
               {displayName}
             </h3>
             <div
               className={`text-sm ${theme.textMuted} ${
-                viewMode === "grid"
-                  ? "space-y-1"
-                  : "flex items-center space-x-4"
+                viewMode === "grid" ? "space-y-2" : "flex items-center space-x-6"
               }`}
             >
-              <p>Modified {codespace.lastModified}</p>
-              <p>{codespace.role}</p>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                <span>Created at {codespace.lastModified}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  codespace.role === "Admin" 
+                    ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+                    : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                }`}>
+                  {codespace.role}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -203,8 +247,16 @@ function CodespaceCard({
             )}
           </div>
         )}
+
+        {/* Tooltip for double-click hint */}
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-lg">
+            Double-click to open
+          </div>
+        </div>
       </div>
 
+      {/* Enhanced Share Modal */}
       {shareModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div
@@ -239,15 +291,16 @@ function CodespaceCard({
               </button>
               <button
                 onClick={submitShare}
-                className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
               >
-                Share
+                Send Invitation
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Enhanced Edit Modal */}
       {editModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div
@@ -272,9 +325,9 @@ function CodespaceCard({
               </button>
               <button
                 onClick={submitEdit}
-                className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
               >
-                Save
+                Save Changes
               </button>
             </div>
           </div>

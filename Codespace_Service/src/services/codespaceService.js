@@ -48,7 +48,7 @@ export class CodespaceService {
     if (workspaceError) throw workspaceError;
 
     try {
-      const { error: memberError } = await supabase
+      const { data: workspace_members, error: memberError } = await supabase
         .from("workspace_members")
         .insert({
           workspace_id: workspaceData.id,
@@ -196,7 +196,7 @@ static async shareCodespaceByEmail(codespaceId, email, userid, role) {
 
     // Check for existing invitation
     const { data: existing } = await supabase
-      .from('shareinvitation')
+      .from('invitations')
       .select('id')
       .eq('workspace_id', trimmedCodespaceId)
       .eq('email', email)
@@ -205,7 +205,7 @@ static async shareCodespaceByEmail(codespaceId, email, userid, role) {
 
     // Insert invitation
     const { data: invitation, error: insertError } = await supabase
-      .from('shareinvitation')
+      .from('invitations')
       .insert([{
         workspace_id: trimmedCodespaceId,
         email: email,
@@ -270,7 +270,7 @@ static async acceptInvitation(invitationId) {
   try {
     // Fetch invitation
     const { data: invitation, error: fetchError } = await supabase
-      .from('shareinvitation')
+      .from('invitations')
       .select('*')
       .eq('id', invitationId)
       .single();
@@ -290,7 +290,7 @@ static async acceptInvitation(invitationId) {
 
     // Update accepted_at
     const { data: updatedInvitation, error: updateError } = await supabase
-      .from('shareinvitation')
+      .from('invitations')
       .update({ accepted_at: new Date().toISOString() })
       .eq('id', invitationId)
       .select()
