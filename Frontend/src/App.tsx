@@ -6,7 +6,7 @@ import Login from "./components/login";
 import Signup from "./components/signup";
 import Dashboard from "./Dashboard/Dashboard";
 import CodespaceInvitation from "./Dashboard/AcceptInvite";
-import Homepage from "./components/Homepage";
+import Homepage from "./Home/Homepage";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import { supabase } from "./database/superbase";
 import { type Session, type User } from "@supabase/supabase-js";
@@ -16,6 +16,8 @@ function App() {
   const lastTokenRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
+    console.log("App mounted");
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {

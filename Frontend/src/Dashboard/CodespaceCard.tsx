@@ -1,7 +1,4 @@
-
-
-import React, { useState } from "react";
-import { FileText, MoreVertical, Trash2, Share2, Edit, Link, Check } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
 import {
   FileText,
@@ -13,13 +10,11 @@ import {
 } from "lucide-react";
 import { useTheme } from "../ThemeProvider";
 import { type Codespace, type ViewMode } from "./codespace.types";
-import { useState, useRef, useEffect } from "react";
 
 interface Props {
   codespace: Codespace;
   viewMode: ViewMode;
   onDelete?: () => void;
-  onShare?: (email: string, role: "Developer" | "Admin") => void;
   onShare?: (email: string, role: "Developer" | "Admin") => void;
   onEdit?: (newName: string) => void;
 }
@@ -42,8 +37,6 @@ function CodespaceCard({
   const [nameInput, setNameInput] = useState(codespace.name);
   const [displayName, setDisplayName] = useState(codespace.name);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [clickCount, setClickCount] = useState(0);
-  const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -91,28 +84,28 @@ function CodespaceCard({
   const handleCopyLink = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const shareLink = `http://localhost:5173/viewonly/${codespace.id}`;
-    
+
     try {
       await navigator.clipboard.writeText(shareLink);
       setLinkCopied(true);
-      
+
       setTimeout(() => {
         setLinkCopied(false);
       }, 2000);
     } catch (err) {
-      const textArea = document.createElement('textarea');
+      const textArea = document.createElement("textarea");
       textArea.value = shareLink;
       document.body.appendChild(textArea);
       textArea.select();
-      document.execCommand('copy');
+      document.execCommand("copy");
       document.body.removeChild(textArea);
-      
+
       setLinkCopied(true);
       setTimeout(() => {
         setLinkCopied(false);
       }, 2000);
     }
-    
+
     setShowMenu(false);
   };
 
@@ -155,22 +148,28 @@ function CodespaceCard({
             : "p-4 flex items-center justify-between"
         }`}
       >
-        <div className={`${viewMode === "grid" ? "flex-1" : "flex items-center space-x-4"}`}>
+        <div
+          className={`${
+            viewMode === "grid" ? "flex-1" : "flex items-center space-x-4"
+          }`}
+        >
           <div
-            className={`relative rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 p-3 shadow-md ${
+            className={`relative rounded-lg p-3 ${
               viewMode === "list" ? "!p-2" : ""
             }`}
           >
-            <FileText 
-              size={viewMode === "grid" ? 32 : 20} 
-              className="text-white drop-shadow-sm" 
+            <FileText
+              size={viewMode === "grid" ? 32 : 20}
+              className={`${theme.textSecondary}`}
             />
-            <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-white/20 to-transparent"></div>
+            <div className="absolute inset-0 rounded-lg"></div>
           </div>
 
           <div className={`${viewMode === "grid" ? "mt-4" : ""}`}>
             <h3
-              className={`font-semibold ${theme.text} transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400 ${
+              className={`font-semibold ${
+                theme.text
+              } transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400 ${
                 viewMode === "grid" ? "text-lg mb-3" : "text-base"
               }`}
             >
@@ -178,7 +177,9 @@ function CodespaceCard({
             </h3>
             <div
               className={`text-sm ${theme.textMuted} ${
-                viewMode === "grid" ? "space-y-2" : "flex items-center space-x-6"
+                viewMode === "grid"
+                  ? "space-y-2"
+                  : "flex items-center space-x-6"
               }`}
             >
               <div className="flex items-center space-x-2">
@@ -186,11 +187,13 @@ function CodespaceCard({
                 <span>Created at {codespace.lastModified}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  codespace.role === "Admin" 
-                    ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                    : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                }`}>
+                <div
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    codespace.role === "Admin"
+                      ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+                      : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                  }`}
+                >
                   {codespace.role}
                 </div>
               </div>
