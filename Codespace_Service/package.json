@@ -13,7 +13,9 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@ai-sdk/google": "^2.0.4",
     "@supabase/supabase-js": "^2.53.0",
+    "ai": "^5.0.10",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",

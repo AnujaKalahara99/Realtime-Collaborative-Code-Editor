@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { FileText, GitBranch, MessageCircle, Play } from "lucide-react";
+import { FileText, GitBranch, MessageCircle, Play, Bot } from "lucide-react";
 import ProjectManagementPanel from "./ProjectManagementPanel/ProjectManagementPanel";
 import GitPanel from "./GitPanel";
+import AskAIPanel from "./AIPanel";
 import LiveChatPanel from "./LiveChatPanel";
 import CompilerPanel from "./CompilerPanel";
 import NavigationBar from "./NavigationBar";
@@ -74,6 +75,7 @@ const CodeEditorPage = () => {
   const rightTabs = [
     { id: "chat", label: "Chat", icon: <MessageCircle size={14} /> },
     { id: "compiler", label: "Compiler", icon: <Play size={14} /> },
+    { id: "ai", label: "Ask AI", icon: <Bot size={14} /> },
   ];
 
   const renderLeftPanel = () => {
@@ -99,7 +101,15 @@ const CodeEditorPage = () => {
       case "compiler":
         return <CompilerPanel />;
       default:
-        return <LiveChatPanel />;
+        return (
+          <LiveChatPanel
+            roomName="ChatSpace"
+            username={username}
+            wsUrl="ws://144.24.128.44:4455"
+          />
+        );
+      case "ai":
+        return <AskAIPanel />;
     }
   };
 

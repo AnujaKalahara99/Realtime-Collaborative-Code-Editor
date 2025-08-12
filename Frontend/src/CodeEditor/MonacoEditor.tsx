@@ -8,7 +8,7 @@ import {
 } from "./YJSCollaborationService.duplicate";
 import { useTheme } from "../ThemeProvider";
 import type { FileNode } from "./ProjectManagementPanel/file.types";
-import CollaborativeCursor from "./CollaborativeCursor";
+import CollaborativeCursor from "./MonacoEditor/CollaborativeCursor";
 
 interface MonacoEditorProps {
   selectedFile?: FileNode | null;
