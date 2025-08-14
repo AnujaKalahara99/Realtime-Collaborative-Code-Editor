@@ -93,35 +93,6 @@ PORT=5000
 GOOGLE_GENERATIVE_AI_API_KEY=
 ```
 
-
-## Use Cases
-
-### Educational Institutions
-
-- **Interactive coding sessions** with real-time instructor supervision
-- **Assignment management** with submission tracking and grading
-- **Student collaboration** on group projects and peer learning
-- **Progress monitoring** with detailed analytics and reporting
-- **Classroom management** with organized codespaces per course
-
-### Development Teams
-
-- **Pair programming** and collaborative code reviews
-- **Cross-team collaboration** on shared projects
-- **Code execution and testing** in standardized environments
-- **Version control workflows** with team-based Git operations
-- **Knowledge sharing** through integrated chat and documentation
-
-### Organizations & Enterprises
-
-- **Corporate training programs** and coding bootcamps
-- **Hackathons and coding competitions** with real-time judging
-- **Remote development** collaboration across global teams
-- **Custom environment configurations** for specific tech stacks
-- **Onboarding programs** for new developers
-
-## Development Guide
-
 ### Local Development Setup
 
 1. **Prerequisites Installation**
@@ -154,6 +125,32 @@ GOOGLE_GENERATIVE_AI_API_KEY=
    cd Codespace_Service && npm run dev
    cd WS_Server && npm run dev
    ```
+
+## Use Cases
+
+### Educational Institutions
+
+- **Interactive coding sessions** with real-time instructor supervision
+- **Assignment management** with submission tracking and grading
+- **Student collaboration** on group projects and peer learning
+- **Progress monitoring** with detailed analytics and reporting
+- **Classroom management** with organized codespaces per course
+
+### Development Teams
+
+- **Pair programming** and collaborative code reviews
+- **Cross-team collaboration** on shared projects
+- **Code execution and testing** in standardized environments
+- **Version control workflows** with team-based Git operations
+- **Knowledge sharing** through integrated chat and documentation
+
+### Organizations & Enterprises
+
+- **Corporate training programs** and coding bootcamps
+- **Hackathons and coding competitions** with real-time judging
+- **Remote development** collaboration across global teams
+- **Custom environment configurations** for specific tech stacks
+- **Onboarding programs** for new developers
 
 ## Team
 
