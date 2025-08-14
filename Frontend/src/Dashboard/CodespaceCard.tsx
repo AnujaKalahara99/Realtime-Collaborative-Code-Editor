@@ -128,9 +128,7 @@ function CodespaceCard({
   const submitShare = () => {
     if (emailInput.trim()) {
       onShare?.(emailInput.trim(), roleInput);
-      onShare?.(emailInput.trim(), roleInput);
       setEmailInput("");
-      setRoleInput("Developer");
       setRoleInput("Developer");
       setShareModalOpen(false);
     }

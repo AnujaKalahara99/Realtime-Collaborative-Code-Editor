@@ -384,7 +384,7 @@ export const useCollaboration = (): YjsCollaborationService => {
     service = new YjsCollaborationService();
   }
   return service;
-};
+};  
 
 export const disconnectCollaboration = (): void => {
   service?.destroy();

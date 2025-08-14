@@ -180,7 +180,7 @@ static async shareCodespaceByEmail(codespaceId, email, userid, role) {
   try {
     // Verify codespace exists
     const { data: codespace } = await supabase
-      .from('workspaces') // Assuming 'workspaces' is the table (previously 'codespaces')
+      .from('workspaces') 
       .select('id')
       .eq('id', trimmedCodespaceId)
       .single();
@@ -188,7 +188,7 @@ static async shareCodespaceByEmail(codespaceId, email, userid, role) {
 
     // Verify user exists
     const { data: user } = await supabase
-      .from('profiles') // Assuming 'profiles' table for users
+      .from('profiles')
       .select('id')
       .eq('id', userid)
       .single();
