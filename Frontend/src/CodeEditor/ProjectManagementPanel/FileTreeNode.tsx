@@ -45,7 +45,6 @@ const FileTreeNode = ({
     onRename(node.id, newName);
   };
 
-  // Drag and drop handlers
   const handleDragStart = (e: React.DragEvent) => {
     e.stopPropagation();
     e.dataTransfer.setData("nodeId", node.id);
@@ -59,10 +58,8 @@ const FileTreeNode = ({
     dragElement.style.background = "#aaaaaa55";
     document.body.appendChild(dragElement);
 
-    // Set custom drag image
     e.dataTransfer.setDragImage(dragElement, 0, 0);
 
-    // Clean up the element after drag operation
     requestAnimationFrame(() => {
       document.body.removeChild(dragElement);
     });

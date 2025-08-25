@@ -134,6 +134,42 @@ export class YjsPersistence {
         `Syncing ${allFiles.length} files for workspace ${workspaceId}`
       );
 
+      // Get current file IDs from document
+      const currentFileIds = new Set(
+        allFiles.map((file) => file.id).filter(Boolean)
+      );
+
+      // Fetch all files for this workspace from database
+      const { data: dbFiles, error: fetchError } = await supabase
+        .from("files")
+        .select("id")
+        .eq("workspace_id", workspaceId);
+
+      if (fetchError) {
+        console.error(
+          `Error fetching files for workspace ${workspaceId}:`,
+          fetchError
+        );
+      } else {
+        // Check for files that exist in DB but not in the document - these need to be deleted
+        for (const dbFile of dbFiles) {
+          if (!currentFileIds.has(dbFile.id)) {
+            // This file exists in DB but not in document, so delete it
+            const { error: deleteError } = await supabase
+              .from("files")
+              .delete()
+              .eq("id", dbFile.id);
+
+            if (deleteError) {
+              console.error(`Error deleting file ${dbFile.id}:`, deleteError);
+            } else {
+              console.log(`🗑️ Deleted file with ID: ${dbFile.id}`);
+            }
+          }
+        }
+      }
+
+      // Process existing files (add/update)
       for (const file of allFiles) {
         if (!file.id) continue;
 

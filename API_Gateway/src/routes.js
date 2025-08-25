@@ -53,6 +53,7 @@ const ROUTES = [
     },
     proxy: {
       target: "ws://144.24.128.44:4455",
+      target: "ws://localhost:4455",
       changeOrigin: true,
       ws: true,
       pathRewrite: {
