@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useCollaboration } from "../YJSCollaborationService.duplicate";
+import { useCollaboration } from "../YJSCollaborationService";
 import type { FileNode } from "./file.types";
 import { v4 as uuidv4 } from "uuid";
 
@@ -43,6 +43,7 @@ export const useFileTree = (initialFiles: FileNode[]) => {
 
   // Helper to update both local state and collaboration service
   const updateFiles = (newFiles: FileNode[]) => {
+    console.log("Updating files:", newFiles);
     setFiles(newFiles);
     collaborationService.setFileSystem(newFiles);
   };
@@ -86,6 +87,7 @@ export const useFileTree = (initialFiles: FileNode[]) => {
     parentId: string | null,
     newNode: FileNode
   ): FileNode[] => {
+    console.log("Adding node:", newNode);
     if (parentId === null) return [...nodes, newNode];
 
     return nodes.map((node) => {
@@ -190,7 +192,6 @@ export const useFileTree = (initialFiles: FileNode[]) => {
   };
 
   const updateFileContent = (id: string, content: string) => {
-    // Update local state for immediate UI feedback
     const newFiles = updateNode(files, id, { content });
     updateFiles(newFiles);
   };

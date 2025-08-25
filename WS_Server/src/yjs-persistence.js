@@ -42,14 +42,61 @@ export class YjsPersistence {
       if (files && files.length > 0) {
         const fileSystemMap = ydoc.getMap("fileSystem");
 
-        const filesArray = files.map((file) => ({
-          id: file.id,
-          name: file.name,
-          type: file.file_type,
-          path: file.storage_path,
-        }));
+        // Convert flat file list to nested structure
+        const createNestedStructure = (filesList) => {
+          const root = [];
+          const pathMap = new Map(); // To track created folders
 
-        fileSystemMap.set("files", filesArray);
+          filesList.forEach((file) => {
+            const filePath = file.storage_path || file.name;
+            const pathParts = filePath.split("/").filter(Boolean);
+            const fileName = pathParts.pop() || file.name;
+
+            let currentLevel = root;
+            let currentPath = "";
+
+            // Create folders as needed
+            for (const part of pathParts) {
+              currentPath += (currentPath ? "/" : "") + part;
+
+              // Check if folder already exists at this level
+              let folder = currentLevel.find(
+                (item) => item.type === "folder" && item.name === part
+              );
+
+              if (!folder) {
+                // Create folder if it doesn't exist
+                const folderId = `folder-${currentPath.replace(
+                  /[\/\\]/g,
+                  "-"
+                )}`;
+                folder = {
+                  id: folderId,
+                  name: part,
+                  type: "folder",
+                  children: [],
+                };
+                currentLevel.push(folder);
+                pathMap.set(currentPath, folder);
+              }
+
+              currentLevel = folder.children;
+            }
+
+            // Add file to the current level
+            currentLevel.push({
+              id: file.id,
+              name: fileName,
+              type: file.file_type || "file",
+              path: file.storage_path,
+            });
+          });
+
+          return root;
+        };
+
+        const nestedFiles = createNestedStructure(files);
+        fileSystemMap.set("files", nestedFiles);
 
         files.forEach((file) => {
           if (file.content) {
