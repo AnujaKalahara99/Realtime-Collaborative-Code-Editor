@@ -90,7 +90,7 @@ export const vfsPlugin = (vfs: VFSStore): Plugin => ({
         const file = vfs.getFile(args.path);
         if (file) {
           return {
-            contents: file.content,
+            contents: file.content ?? "",
             loader:
               args.path.endsWith(".tsx") || args.path.endsWith(".jsx")
                 ? "jsx"

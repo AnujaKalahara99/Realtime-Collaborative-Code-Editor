@@ -5,6 +5,7 @@ import FileTreeNode from "./FileTreeNode";
 import ExplorerHeader from "./ExplorerHeader";
 import ContextMenu from "./ContextMenu";
 import { useTheme } from "../../ThemeProvider";
+import type { VFSFile, VFSFolder } from "../../lib/vfs/types";
 
 const ProjectManagementPanel = ({
   onFileSelect,
@@ -35,7 +36,7 @@ const ProjectManagementPanel = ({
   const [editingNode, setEditingNode] = useState<string | null>(null);
 
   // Event handlers
-  const handleFileSelect = (node: FileNode) => {
+  const handleFileSelect = (node: VFSFile | VFSFolder | FileNode) => {
     if (node.type === "file") {
       setSelectedFile(node.id);
       onFileSelect?.(node);

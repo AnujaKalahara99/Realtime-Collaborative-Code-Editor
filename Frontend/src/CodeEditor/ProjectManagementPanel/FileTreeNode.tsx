@@ -1,15 +1,16 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useTheme } from "../../ThemeProvider";
 import type { FileNode } from "./file.types";
+import type { VFSEntry, VFSFolder, VFSFile } from "../../lib/vfs/types";
 import FileIcon from "./FileIcon";
 import InlineEditor from "./InlineEditor";
 
 interface FileTreeNodeProps {
-  node: FileNode;
+  node: VFSFolder | VFSFile | FileNode;
   level: number;
   isSelected: boolean;
   isEditing: boolean;
-  onSelect: (node: FileNode) => void;
+  onSelect: (node: VFSFolder | VFSFile | FileNode) => void;
   onToggleExpand: (id: string) => void;
   onContextMenu: (e: React.MouseEvent, nodeId: string) => void;
   onRename: (id: string, newName: string) => void;

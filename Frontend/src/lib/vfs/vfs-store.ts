@@ -21,11 +21,11 @@ export class VFSStore {
     return parts.some((part) => EXCLUDED_FILES.includes(part));
   }
 
-  on(event: "change", listener: (event: VFSChangeEvent) => void) {
+  on(_event: "change", listener: (event: VFSChangeEvent) => void) {
     this.listeners.push(listener);
   }
 
-  off(event: "change", listener: (event: VFSChangeEvent) => void) {
+  off(_event: "change", listener: (event: VFSChangeEvent) => void) {
     const index = this.listeners.indexOf(listener);
     if (index > -1) {
       this.listeners.splice(index, 1);
@@ -50,7 +50,7 @@ export class VFSStore {
     const parentPath = path.substring(0, path.lastIndexOf("/")) || "/";
     const parent = this.entries.get(parentPath) as VFSDirectory;
 
-    if (!parent || parent.type !== "directory") {
+    if (!parent || parent.type !== "folder") {
       console.error(
         `Parent directory not found or not a directory for path: ${path}`
       );
@@ -58,6 +58,7 @@ export class VFSStore {
     }
 
     const file: VFSFile = {
+      id: path, // Add required id field
       path,
       name,
       type: "file",
@@ -84,7 +85,7 @@ export class VFSStore {
     const parentPath = path.substring(0, path.lastIndexOf("/")) || "/";
     const parent = this.entries.get(parentPath) as VFSDirectory;
 
-    if (path !== "/" && (!parent || parent.type !== "directory")) {
+    if (path !== "/" && (!parent || parent.type !== "folder")) {
       console.error(
         `Parent directory not found or not a directory for path: ${path}`
       );
@@ -92,14 +93,15 @@ export class VFSStore {
     }
 
     const directory: VFSDirectory = {
+      id: path, // Use path as unique identifier
       path,
       name,
-      type: "directory",
+      type: "folder",
       children: [],
       lastModified: Date.now(),
     };
     this.entries.set(path, directory);
-    if (parent && parent.type === "directory") {
+    if (parent && parent.type === "folder") {
       parent.children.push(name);
     }
     this.emitChange({ type: "create", path });
@@ -113,7 +115,7 @@ export class VFSStore {
 
   getDirectory(path: string): VFSDirectory | undefined {
     const entry = this.entries.get(path);
-    return entry && entry.type === "directory"
+    return entry && entry.type === "folder"
       ? (entry as VFSDirectory)
       : undefined;
   }
@@ -144,14 +146,14 @@ export class VFSStore {
     // Remove from parent's children list
     const parentPath = path.substring(0, path.lastIndexOf("/")) || "/";
     const parent = this.entries.get(parentPath) as VFSDirectory;
-    if (parent && parent.type === "directory") {
+    if (parent && parent.type === "folder") {
       parent.children = parent.children.filter(
         (childName) => childName !== entry.name
       );
     }
 
     //  delete children if it's a directory
-    if (entry.type === "directory") {
+    if (entry.type === "folder") {
       const childrenPaths = Array.from(this.entries.keys()).filter(
         (key) => key.startsWith(path + "/") && key !== path
       );
@@ -182,7 +184,7 @@ export class VFSStore {
     // Update parent's children list
     const oldParentPath = oldPath.substring(0, oldPath.lastIndexOf("/")) || "/";
     const oldParent = this.entries.get(oldParentPath) as VFSDirectory;
-    if (oldParent && oldParent.type === "directory") {
+    if (oldParent && oldParent.type === "folder") {
       oldParent.children = oldParent.children.filter(
         (childName) => childName !== entry.name
       );
@@ -191,7 +193,7 @@ export class VFSStore {
     const newName = newPath.split("/").pop() || "";
     const newParentPath = newPath.substring(0, newPath.lastIndexOf("/")) || "/";
     const newParent = this.entries.get(newParentPath) as VFSDirectory;
-    if (!newParent || newParent.type !== "directory") {
+    if (!newParent || newParent.type !== "folder") {
       console.error(
         `New parent directory not found or not a directory for path: ${newPath}`
       );
@@ -207,7 +209,7 @@ export class VFSStore {
     this.entries.set(newPath, entry);
 
     // If it's a directory, update all children paths recursively
-    if (entry.type === "directory") {
+    if (entry.type === "folder") {
       const childrenToUpdate: [string, VFSEntry][] = [];
       this.entries.forEach((childEntry, childPath) => {
         if (childPath.startsWith(oldPath + "/") && childPath !== oldPath) {
@@ -238,7 +240,7 @@ export class VFSStore {
     if (!root) return undefined;
 
     const buildNode = (entry: VFSEntry): VFSEntry => {
-      if (entry.type === "directory") {
+      if (entry.type === "folder") {
         const dir = entry as VFSDirectory;
         const treeDir: VFSTreeDirectory = {
           ...dir,

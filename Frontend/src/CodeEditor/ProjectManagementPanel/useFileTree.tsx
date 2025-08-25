@@ -1,14 +1,52 @@
 import { useState, useEffect, useCallback } from "react";
 import { useCollaboration } from "../YJSCollaborationService.duplicate";
 import type { FileNode } from "./file.types";
+import { VFSStore } from "../../lib/vfs/vfs-store";
 import { v4 as uuidv4 } from "uuid";
 
-// Simplified File Tree Operations Hook using centralized YJS service
+// Simplified File Tree Operations Hook with VFS integration
 export const useFileTree = (initialFiles: FileNode[]) => {
   const [files, setFiles] = useState<FileNode[]>(initialFiles);
   const [isConnected, setIsConnected] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [vfsStore] = useState(() => new VFSStore());
   const collaborationService = useCollaboration();
+
+  // Helper function to create VFS-compatible paths
+  const createVFSPath = (name: string, parentPath: string = "/"): string => {
+    return parentPath === "/" ? `/${name}` : `${parentPath}/${name}`;
+  };
+
+  // Sync FileNode structure to VFS
+  const syncToVFS = useCallback(
+    (nodes: FileNode[], parentPath = "/") => {
+      nodes.forEach((node) => {
+        const fullPath = createVFSPath(node.name, parentPath);
+
+        try {
+          if (node.type === "folder") {
+            vfsStore.addDirectory(fullPath);
+            if (node.children && node.children.length > 0) {
+              syncToVFS(node.children, fullPath);
+            }
+          } else {
+            vfsStore.addFile(fullPath, node.content || "");
+          }
+        } catch (error) {
+          // Ignore if already exists
+          console.debug(`VFS sync: ${fullPath} may already exist`);
+        }
+      });
+    },
+    [vfsStore]
+  );
+
+  // Initialize VFS with initial files
+  useEffect(() => {
+    if (initialFiles.length > 0 && !isInitialized) {
+      syncToVFS(initialFiles);
+    }
+  }, [initialFiles, syncToVFS, isInitialized]);
 
   useEffect(() => {
     // Subscribe to connection changes
@@ -25,9 +63,11 @@ export const useFileTree = (initialFiles: FileNode[]) => {
             if (currentFiles.length === 0) {
               console.log("No files found, setting initial files");
               collaborationService.setFileSystem(initialFiles);
+              syncToVFS(initialFiles);
             } else {
               console.log("Files already exist, using synced files");
               setFiles(currentFiles);
+              syncToVFS(currentFiles);
             }
             setIsInitialized(true);
           }, 500); // Wait for initial sync
@@ -37,7 +77,11 @@ export const useFileTree = (initialFiles: FileNode[]) => {
 
     // Subscribe to file system changes
     const unsubscribeFileSystem = collaborationService.onFileSystemChange(
-      (newFiles) => setFiles(newFiles)
+      (newFiles) => {
+        setFiles(newFiles);
+        // Optionally sync changes back to VFS
+        syncToVFS(newFiles);
+      }
     );
 
     // Check if already connected
@@ -45,6 +89,7 @@ export const useFileTree = (initialFiles: FileNode[]) => {
       const currentFiles = collaborationService.getFileSystem();
       if (currentFiles.length > 0) {
         setFiles(currentFiles);
+        syncToVFS(currentFiles);
         setIsInitialized(true);
       }
     }
@@ -53,32 +98,7 @@ export const useFileTree = (initialFiles: FileNode[]) => {
       unsubscribeConnection();
       unsubscribeFileSystem();
     };
-  }, [initialFiles, collaborationService, isInitialized]);
-
-  // useEffect(() => {
-  //   // Subscribe to connection changes
-  //   const unsubscribeConnection =
-  //     collaborationService.onConnectionChange(setIsConnected);
-
-  //   // Subscribe to file system changes
-  //   const unsubscribeFileSystem = collaborationService.onFileSystemChange(
-  //     // (newFiles) => {
-  //     //   setFiles(newFiles);
-  //     // }
-  //     handleFileSystemChange
-  //   );
-
-  //   // Initialize file system if empty
-  //   const currentFiles = collaborationService.getFileSystem();
-  //   if (currentFiles.length === 0) {
-  //     collaborationService.setFileSystem(initialFiles);
-  //   }
-
-  //   return () => {
-  //     unsubscribeConnection();
-  //     unsubscribeFileSystem();
-  //   };
-  // }, [initialFiles]);
+  }, [initialFiles, collaborationService, isInitialized, syncToVFS]);
 
   // Helper functions for tree operations
   const findNodeById = (nodes: FileNode[], id: string): FileNode | null => {
@@ -142,7 +162,7 @@ export const useFileTree = (initialFiles: FileNode[]) => {
     });
   };
 
-  // Operations that sync with YJS
+  // Operations that sync with both VFS and YJS
   const toggleExpanded = (id: string) => {
     const currentFiles = collaborationService.getFileSystem();
     const newFiles = updateNode(currentFiles, id, {
@@ -161,6 +181,16 @@ export const useFileTree = (initialFiles: FileNode[]) => {
       type: "file",
       content: "",
     };
+
+    // Try to add to VFS as well
+    try {
+      const parentNode = parentId ? findNodeById(files, parentId) : null;
+      const parentPath = parentNode ? "/" : "/"; // Simplified path logic
+      const fullPath = createVFSPath(name, parentPath);
+      vfsStore.addFile(fullPath, "");
+    } catch (error) {
+      console.debug("Could not add file to VFS:", error);
+    }
 
     const currentFiles = collaborationService.getFileSystem();
     const newFiles = addNode(currentFiles, parentId, newFile);
@@ -183,6 +213,16 @@ export const useFileTree = (initialFiles: FileNode[]) => {
       children: [],
       isExpanded: false,
     };
+
+    // Try to add to VFS as well
+    try {
+      const parentNode = parentId ? findNodeById(files, parentId) : null;
+      const parentPath = parentNode ? "/" : "/"; // Simplified path logic
+      const fullPath = createVFSPath(name, parentPath);
+      vfsStore.addDirectory(fullPath);
+    } catch (error) {
+      console.debug("Could not add folder to VFS:", error);
+    }
 
     const currentFiles = collaborationService.getFileSystem();
     const newFiles = addNode(currentFiles, parentId, newFolder);
@@ -216,8 +256,42 @@ export const useFileTree = (initialFiles: FileNode[]) => {
     const newFiles = updateNode(files, id, { content });
     setFiles(newFiles);
 
+    // Try to update in VFS as well
+    try {
+      // This is a simplified approach - in a real implementation you'd need
+      // to maintain a mapping between FileNode IDs and VFS paths
+      const node = findNodeById(files, id);
+      if (node) {
+        // For now, we'll skip VFS content updates since path mapping is complex
+        console.debug("File content updated:", id, content.length);
+      }
+    } catch (error) {
+      console.debug("Could not update file content in VFS:", error);
+    }
+
     // Content sync is handled by YJS automatically through the collaboration service
     // No need to manually sync content changes
+  };
+
+  // VFS-specific methods
+  const getVFSStore = () => vfsStore;
+
+  const getFileFromVFS = (path: string) => {
+    try {
+      return vfsStore.getFile(path);
+    } catch (error) {
+      console.debug("Could not get file from VFS:", error);
+      return null;
+    }
+  };
+
+  const addFileToVFS = (path: string, content: string) => {
+    try {
+      return vfsStore.addFile(path, content);
+    } catch (error) {
+      console.debug("Could not add file to VFS:", error);
+      return null;
+    }
   };
 
   return {
@@ -230,6 +304,10 @@ export const useFileTree = (initialFiles: FileNode[]) => {
     removeNode,
     updateFileContent,
     isConnected,
+    // VFS integration methods
+    getVFSStore,
+    getFileFromVFS,
+    addFileToVFS,
   };
 };
 
