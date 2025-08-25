@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useCollaboration } from "../YJSCollaborationService.duplicate";
 import type { FileNode } from "./file.types";
 import { v4 as uuidv4 } from "uuid";
@@ -220,6 +220,64 @@ export const useFileTree = (initialFiles: FileNode[]) => {
     // No need to manually sync content changes
   };
 
+  const moveNode = (nodeId: string, targetId: string | null) => {
+    setFiles((prevFiles) => {
+      // Clone the tree to avoid direct mutation
+      const newFiles = JSON.parse(JSON.stringify(prevFiles));
+
+      // Helper function to find and remove a node from its parent
+      const findAndRemoveNode = (nodes: FileNode[]): FileNode | null => {
+        for (let i = 0; i < nodes.length; i++) {
+          if (nodes[i].id === nodeId) {
+            // Remove node from current position
+            const [removedNode] = nodes.splice(i, 1);
+            return removedNode;
+          }
+
+          if (nodes[i].type === "folder" && nodes[i].children) {
+            const result = findAndRemoveNode(nodes[i].children ?? []);
+            if (result) return result;
+          }
+        }
+        return null;
+      };
+
+      // Helper function to find target folder
+      const findTargetFolder = (
+        nodes: FileNode[],
+        id: string
+      ): FileNode | null => {
+        for (const node of nodes) {
+          if (node.id === id) return node;
+          if (node.type === "folder" && node.children) {
+            const found = findTargetFolder(node.children, id);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+
+      // Remove node from its current position
+      const nodeToMove = findAndRemoveNode(newFiles);
+
+      if (nodeToMove) {
+        if (targetId === null) {
+          // Move to root level
+          newFiles.push(nodeToMove);
+        } else {
+          // Find target folder and add node to its children
+          const targetFolder = findTargetFolder(newFiles, targetId);
+          if (targetFolder && targetFolder.type === "folder") {
+            if (!targetFolder.children) targetFolder.children = [];
+            targetFolder.children.push(nodeToMove);
+          }
+        }
+      }
+
+      return newFiles;
+    });
+  };
+
   return {
     files,
     findNodeById,
@@ -230,6 +288,7 @@ export const useFileTree = (initialFiles: FileNode[]) => {
     removeNode,
     updateFileContent,
     isConnected,
+    moveNode,
   };
 };
 

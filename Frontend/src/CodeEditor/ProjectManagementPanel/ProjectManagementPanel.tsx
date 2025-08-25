@@ -11,25 +11,21 @@ const ProjectManagementPanel = ({
 }: {
   onFileSelect?: (file: FileNode) => void;
 }) => {
-  // console.log("ProjectManagementPanel rendered");
-
   const { theme } = useTheme();
 
-  // Initial mock data
   const initialFiles: FileNode[] = [];
 
-  // File tree operations
   const {
     files,
-    findNodeById,
+    // findNodeById,
     toggleExpanded,
     createFile,
     createFolder,
     renameNode,
     removeNode,
+    moveNode,
   } = useFileTree(initialFiles);
 
-  // UI state - Initialize selectedFile from sessionStorage
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuData | null>(null);
   const [editingNode, setEditingNode] = useState<string | null>(null);
@@ -85,25 +81,41 @@ const ProjectManagementPanel = ({
     setContextMenu(null);
   };
 
+  const handleMoveNode = (nodeId: string, targetId: string | null) => {
+    moveNode(nodeId, targetId);
+  };
+
+  // Add drop handler for root level drops
+  const handleRootDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const nodeId = e.dataTransfer.getData("nodeId");
+    if (nodeId) {
+      moveNode(nodeId, null);
+    }
+  };
+
   // Render file tree
   const renderFileTree = (
     nodes: FileNode[],
     level: number = 0
   ): React.ReactNode => {
-    return nodes.map((node) => (
-      <FileTreeNode
-        key={node.id}
-        node={node}
-        level={level}
-        isSelected={selectedFile === node.id}
-        isEditing={editingNode === node.id}
-        onSelect={handleFileSelect}
-        onToggleExpand={toggleExpanded}
-        onContextMenu={handleContextMenu}
-        onRename={handleNodeRename}
-        onCancelEdit={handleCancelEdit}
-      />
-    ));
+    return nodes
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .map((node) => (
+        <FileTreeNode
+          key={node.id}
+          node={node}
+          level={level}
+          isSelected={selectedFile === node.id}
+          isEditing={editingNode === node.id}
+          onSelect={handleFileSelect}
+          onToggleExpand={toggleExpanded}
+          onContextMenu={handleContextMenu}
+          onRename={handleNodeRename}
+          onCancelEdit={handleCancelEdit}
+          onMoveNode={handleMoveNode}
+        />
+      ));
   };
 
   return (
@@ -114,7 +126,13 @@ const ProjectManagementPanel = ({
           onCreateFolder={() => handleCreateFolder(null)}
         />
 
-        <div className="flex-1 overflow-y-auto">{renderFileTree(files)}</div>
+        <div
+          className="flex-1 overflow-y-auto"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleRootDrop}
+        >
+          {renderFileTree(files)}
+        </div>
       </div>
 
       {contextMenu && (

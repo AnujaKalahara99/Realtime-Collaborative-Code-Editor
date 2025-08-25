@@ -43,7 +43,7 @@ export const ThemeProvider: React.FC<React.PropsWithChildren<object>> = ({
 
       // Interactive elements
       hover: "hover:bg-gray-600",
-      active: "bg-gray-800",
+      active: "bg-gray-500",
       inactive: "bg-gray-700",
 
       // Status bar

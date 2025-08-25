@@ -112,7 +112,7 @@ export function ChatSpace() {
                   <Avatar
                     name={msg.user}
                     src={msg.avatar}
-                    color={isCurrentUser ? "#3B82F6" : undefined} // Blue for current user
+                    color={undefined} // Blue for current user
                     size="medium"
                   />
 

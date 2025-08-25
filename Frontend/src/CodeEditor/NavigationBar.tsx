@@ -63,10 +63,10 @@ const NavigationBar = () => {
             <div className="flex -space-x-1">
               {connectedUsers.slice(0, 3).map((user, index) => (
                 <Avatar
-                  key={index}
+                  key={user.name + index}
                   name={user.name}
                   src={user.avatar}
-                  color={user.color}
+                  color={undefined}
                   size="small"
                 />
               ))}

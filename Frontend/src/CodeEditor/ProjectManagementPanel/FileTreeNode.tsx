@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useTheme } from "../../ThemeProvider";
 import type { FileNode } from "./file.types";
@@ -14,6 +15,7 @@ interface FileTreeNodeProps {
   onContextMenu: (e: React.MouseEvent, nodeId: string) => void;
   onRename: (id: string, newName: string) => void;
   onCancelEdit: () => void;
+  onMoveNode: (nodeId: string, targetId: string | null) => void;
 }
 
 const FileTreeNode = ({
@@ -26,8 +28,10 @@ const FileTreeNode = ({
   onContextMenu,
   onRename,
   onCancelEdit,
+  onMoveNode,
 }: FileTreeNodeProps) => {
   const { theme } = useTheme();
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const handleClick = () => {
     if (node.type === "folder") {
@@ -41,15 +45,90 @@ const FileTreeNode = ({
     onRename(node.id, newName);
   };
 
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent) => {
+    e.stopPropagation();
+    e.dataTransfer.setData("nodeId", node.id);
+    e.dataTransfer.effectAllowed = "move";
+
+    // Create an invisible clone for the drag image
+    const dragElement = e.currentTarget.cloneNode(true) as HTMLElement;
+    dragElement.style.position = "absolute";
+    dragElement.style.top = "-1000px";
+    dragElement.style.opacity = "1";
+    dragElement.style.background = "#aaaaaa55";
+    document.body.appendChild(dragElement);
+
+    // Set custom drag image
+    e.dataTransfer.setDragImage(dragElement, 0, 0);
+
+    // Clean up the element after drag operation
+    requestAnimationFrame(() => {
+      document.body.removeChild(dragElement);
+    });
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only allow dropping on folders or the root
+    if (node.type === "folder") {
+      e.dataTransfer.dropEffect = "move";
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (node.type === "folder") {
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const nodeId = e.dataTransfer.getData("nodeId");
+
+    // Don't allow dropping onto itself
+    if (nodeId === node.id) {
+      return;
+    }
+
+    // Move the node to the target folder
+    if (node.type === "folder") {
+      onMoveNode(nodeId, node.id);
+
+      // Auto-expand folder when dropping into it
+      if (!node.isExpanded) {
+        onToggleExpand(node.id);
+      }
+    }
+  };
+
   return (
     <div>
       <div
         className={`flex items-center py-1 px-2 cursor-pointer text-sm select-none ${
-          isSelected ? theme.active : theme.hover
+          isSelected ? theme.active : isDragOver ? theme.hover : theme.hover
         }`}
         style={{ paddingLeft: `${level * 12 + 8}px` }}
         onClick={handleClick}
         onContextMenu={(e) => onContextMenu(e, node.id)}
+        draggable={!isEditing}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       >
         <div className="flex items-center flex-1 min-w-0">
           {node.type === "folder" && (
@@ -90,6 +169,7 @@ const FileTreeNode = ({
               onContextMenu={onContextMenu}
               onRename={onRename}
               onCancelEdit={onCancelEdit}
+              onMoveNode={onMoveNode}
             />
           ))}
         </div>

@@ -83,6 +83,7 @@ export const useCodespaces = (session: Session) => {
           lastModified: data.codespace.lastModified,
           created_at: data.codespace.created_at,
           owner: name,
+          role: "owner",
         };
         setCodespaces([newWorkspace, ...codespaces]);
         return true;
