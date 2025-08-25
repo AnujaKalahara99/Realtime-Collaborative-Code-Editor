@@ -1,5 +1,5 @@
 import { supabase } from "../database/superbase";
-import { LogOut, Code } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import { useTheme } from "../ThemeProvider";
 import { useNavigate } from "react-router";
 import { type Session } from "@supabase/supabase-js";
@@ -15,6 +15,10 @@ const TitleBar = ({ Session }: { Session: Session }) => {
   const signOut = async () => {
     await supabase.auth.signOut();
     navigate("/login");
+  };
+
+  const goToProfile = () => {
+    navigate("/profile");
   };
 
   // const goToCodeEditor = () => {
@@ -42,10 +46,18 @@ const TitleBar = ({ Session }: { Session: Session }) => {
             {avatar && (
               <img
                 src={avatar}
-                alt="Profile"
-                className="w-8 h-8 rounded-full object-cover"
+                className="w-8 h-8 rounded-full object-cover cursor-pointer"
+                onClick={goToProfile}
               />
             )}
+
+            {/* <button
+              onClick={goToProfile}
+              className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${theme.hover} ${theme.textSecondary} transition-colors`}
+            >
+              <User size={16} className="mr-2" />
+              Profile
+            </button> */}
 
             <button
               onClick={signOut}
