@@ -290,14 +290,21 @@ class YjsCollaborationService {
     if (!awareness) return [];
 
     const users: CollaborationUser[] = [];
+    const seenUserNames = new Map<string, CollaborationUser>();
+
     awareness.getStates().forEach((state: any) => {
       if (state.user) {
-        users.push({
-          name: state.user.name,
-          color: state.user.color,
-          cursor: state.cursor,
-          avatar: state.user.avatar,
-        });
+        const userName = state.user.name;
+        if (!seenUserNames.has(userName)) {
+          const user = {
+            name: userName,
+            color: state.user.color,
+            cursor: state.cursor,
+            avatar: state.user.avatar,
+          };
+          users.push(user);
+          seenUserNames.set(userName, user);
+        }
       }
     });
 
@@ -334,11 +341,19 @@ class YjsCollaborationService {
     const awareness = this.provider?.awareness;
     if (!awareness) return () => {};
 
-    const handler = () => callback(this.getConnectedUsers());
+    const handler = () => {
+      const users = this.getConnectedUsers();
+      callback(users);
+    };
+
     awareness.on("change", handler);
     callback(this.getConnectedUsers());
 
-    return () => awareness.off("change", handler);
+    return () => {
+      if (awareness) {
+        awareness.off("change", handler);
+      }
+    };
   }
 
   updateCursorPosition(
@@ -384,7 +399,7 @@ export const useCollaboration = (): YjsCollaborationService => {
     service = new YjsCollaborationService();
   }
   return service;
-};  
+};
 
 export const disconnectCollaboration = (): void => {
   service?.destroy();

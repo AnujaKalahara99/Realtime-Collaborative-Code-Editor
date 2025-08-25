@@ -3,7 +3,7 @@ import * as monaco from "monaco-editor";
 import {
   useCollaboration,
   type CollaborationUser,
-} from "../YJSCollaborationService.duplicate";
+} from "../YJSCollaborationService.copy";
 import "./CollaborativeCursor.css";
 
 interface CollaborativeCursorProps {

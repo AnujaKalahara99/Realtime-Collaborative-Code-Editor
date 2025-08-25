@@ -1,0 +1,51 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "WS Server",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}/WS_Server"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Codespace Service",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}/Codespace_Service"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "API Gateway",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}/API_Gateway"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Frontend",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}/Frontend"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Start All",
+      "dependsOn": [
+        "WS Server",
+        "Codespace Service",
+        "API Gateway",
+        "Frontend"
+      ],
+      "dependsOrder": "parallel"
+    }
+  ]
+}
