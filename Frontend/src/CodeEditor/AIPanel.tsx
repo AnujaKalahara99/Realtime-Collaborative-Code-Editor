@@ -105,7 +105,7 @@ export default function AskAIPanel() {
 
   return (
     <div
-      className={`w-full max-w-2xl h-[600px] flex flex-col rounded-xl border ${theme.surface} ${theme.text} ${theme.border} shadow-lg`}
+      className={`w-full max-w-2xl h-full flex flex-col rounded-xl border ${theme.surface} ${theme.text} ${theme.border} shadow-lg`}
     >
       {/* CardHeader */}
       <div className={`flex flex-col space-y-1.5 p-6 border-b ${theme.border}`}>
