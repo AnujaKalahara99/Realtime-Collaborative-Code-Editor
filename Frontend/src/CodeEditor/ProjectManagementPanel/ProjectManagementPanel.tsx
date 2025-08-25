@@ -13,8 +13,6 @@ const ProjectManagementPanel = ({
 }) => {
   const { theme } = useTheme();
 
-  const initialFiles: FileNode[] = [];
-
   const {
     files,
     // findNodeById,
@@ -24,7 +22,7 @@ const ProjectManagementPanel = ({
     renameNode,
     removeNode,
     moveNode,
-  } = useFileTree(initialFiles);
+  } = useFileTree();
 
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuData | null>(null);

@@ -3,37 +3,18 @@ import { useCollaboration } from "../YJSCollaborationService";
 import type { FileNode } from "./file.types";
 import { v4 as uuidv4 } from "uuid";
 
-export const useFileTree = (initialFiles: FileNode[]) => {
+export const useFileTree = () => {
   const [files, setFiles] = useState<FileNode[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const collaborationService = useCollaboration();
 
   // Initialize and subscribe to collaboration service
   useEffect(() => {
-    const unsubscribeConnection = collaborationService.onConnectionChange(
-      (connected) => {
-        setIsConnected(connected);
-
-        if (connected && !isInitialized) {
-          const currentFiles = collaborationService.getFileSystem();
-          setFiles(currentFiles);
-          setIsInitialized(true);
-        }
-      }
-    );
+    const unsubscribeConnection =
+      collaborationService.onConnectionChange(setIsConnected);
 
     const unsubscribeFileSystem =
       collaborationService.onFileSystemChange(setFiles);
-
-    // Check if already connected
-    if (collaborationService.isConnected()) {
-      const currentFiles = collaborationService.getFileSystem();
-      if (currentFiles.length > 0) {
-        setFiles(currentFiles);
-        setIsInitialized(true);
-      }
-    }
 
     return () => {
       unsubscribeConnection();
@@ -43,12 +24,10 @@ export const useFileTree = (initialFiles: FileNode[]) => {
 
   // Helper to update both local state and collaboration service
   const updateFiles = (newFiles: FileNode[]) => {
-    console.log("Updating files:", newFiles);
     setFiles(newFiles);
     collaborationService.setFileSystem(newFiles);
   };
 
-  // Tree traversal helpers
   const findNodeById = (nodes: FileNode[], id: string): FileNode | null => {
     for (const node of nodes) {
       if (node.id === id) return node;
@@ -60,7 +39,6 @@ export const useFileTree = (initialFiles: FileNode[]) => {
     return null;
   };
 
-  // Tree modification helpers
   const updateNode = (
     nodes: FileNode[],
     id: string,
@@ -104,26 +82,6 @@ export const useFileTree = (initialFiles: FileNode[]) => {
     });
   };
 
-  // Path management
-  const getNodePath = (parentId: string | null, name: string): string => {
-    if (!parentId) return name;
-
-    const parentNode = findNodeById(
-      collaborationService.getFileSystem(),
-      parentId
-    );
-    return parentNode?.path ? `${parentNode.path}/${name}` : name;
-  };
-
-  const updateChildPaths = (node: FileNode) => {
-    if (!node.children) return;
-
-    node.children.forEach((child) => {
-      child.path = node.path ? `${node.path}/${child.name}` : child.name;
-      if (child.type === "folder" && child.children) updateChildPaths(child);
-    });
-  };
-
   // File tree operations
   const toggleExpanded = (id: string) => {
     const node = findNodeById(files, id);
@@ -139,13 +97,11 @@ export const useFileTree = (initialFiles: FileNode[]) => {
     parentId: string | null,
     name: string = "new-file.txt"
   ) => {
-    const path = getNodePath(parentId, name);
     const newFile: FileNode = {
       id: uuidv4(),
       name,
       type: "file",
       content: "",
-      path,
     };
 
     const newFiles = addNode(files, parentId, newFile);
@@ -159,14 +115,12 @@ export const useFileTree = (initialFiles: FileNode[]) => {
     parentId: string | null,
     name: string = "new-folder"
   ) => {
-    const path = getNodePath(parentId, name);
     const newFolder: FileNode = {
       id: uuidv4(),
       name,
       type: "folder",
       children: [],
       isExpanded: false,
-      path,
     };
 
     const newFiles = addNode(files, parentId, newFolder);
@@ -199,7 +153,6 @@ export const useFileTree = (initialFiles: FileNode[]) => {
   const moveNode = (nodeId: string, targetId: string | null) => {
     const newFiles = JSON.parse(JSON.stringify(files));
 
-    // Find and remove node from current position
     const findAndRemoveNode = (nodes: FileNode[]): FileNode | null => {
       for (let i = 0; i < nodes.length; i++) {
         if (nodes[i].id === nodeId) {
@@ -217,25 +170,13 @@ export const useFileTree = (initialFiles: FileNode[]) => {
     if (!nodeToMove) return;
 
     if (targetId === null) {
-      // Move to root
-      nodeToMove.path = nodeToMove.name;
       newFiles.push(nodeToMove);
     } else {
-      // Move to target folder
       const targetFolder = findNodeById(newFiles, targetId);
       if (targetFolder && targetFolder.type === "folder") {
-        nodeToMove.path = targetFolder.path
-          ? `${targetFolder.path}/${nodeToMove.name}`
-          : nodeToMove.name;
-
         if (!targetFolder.children) targetFolder.children = [];
         targetFolder.children.push(nodeToMove);
       }
-    }
-
-    // Update child paths recursively
-    if (nodeToMove.type === "folder" && nodeToMove.children) {
-      updateChildPaths(nodeToMove);
     }
 
     updateFiles(newFiles);

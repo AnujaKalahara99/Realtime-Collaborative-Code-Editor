@@ -7,7 +7,6 @@ export interface FileNode {
   content?: string;
   children?: FileNode[];
   isExpanded?: boolean;
-  path?: string;
 }
 
 export interface ContextMenuData {
