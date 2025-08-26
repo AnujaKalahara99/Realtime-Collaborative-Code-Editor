@@ -103,10 +103,16 @@ export default function AskAIPanel() {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+    // Allow Shift+Enter to create new line (default textarea behavior)
+  };
+
   return (
-    <div
-      className={`w-full max-w-2xl h-[600px] flex flex-col rounded-xl border ${theme.surface} ${theme.text} ${theme.border} shadow-lg`}
-    >
+    <div className={`h-full ${theme.surface} ${theme.text} p-4`}>
       {/* CardHeader */}
       <div className={`flex flex-col space-y-1.5 p-6 border-b ${theme.border}`}>
         <h3
@@ -117,11 +123,12 @@ export default function AskAIPanel() {
       </div>
 
       {/* CardContent */}
-      <div className="flex-1 flex flex-col p-4 pt-0 min-h-0">
+      <div className="flex-1 ">
+        {/* flex flex-col h-[calc(100vh-250px)] p-4 pt-0 min-h-0 */}
         {/* ScrollArea - Fixed height and proper overflow */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto pr-2 mb-4"
+          className="w-full h-[calc(100vh-250px)] p-4 overflow-y-auto Simple-Scrollbar"
         >
           <div className="space-y-4 py-2">
             {messages.length === 0 && (
@@ -209,14 +216,29 @@ export default function AskAIPanel() {
             <div ref={messagesEndRef} />
           </div>
         </div>
-        <form onSubmit={handleSubmit} className="flex gap-2 flex-shrink-0">
-          <input
-            type="text"
-            placeholder="Ask a coding question or paste code for correction..."
+        <form
+          onSubmit={handleSubmit}
+          className="flex gap-2 flex-shrink-0 items-end"
+        >
+          <textarea
+            placeholder="Ask your problem.... "
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
             disabled={isLoading}
-            className={`flex-1 flex h-10 w-full rounded-md border ${theme.border} ${theme.surface} px-3 py-2 text-sm ${theme.textMuted} focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50 ${theme.text}`}
+            rows={1}
+            className={`flex-1 min-h-[40px] max-h-[120px] w-full rounded-md border ${theme.border} ${theme.surface} px-3 py-2 text-sm ${theme.textMuted} focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50 ${theme.text} resize-none`}
+            style={{
+              height: "auto",
+              minHeight: "40px",
+              maxHeight: "120px",
+              overflowY: input.split("\n").length > 3 ? "auto" : "hidden",
+            }}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = "auto";
+              target.style.height = Math.min(target.scrollHeight, 120) + "px";
+            }}
           />
           <button
             type="submit"
