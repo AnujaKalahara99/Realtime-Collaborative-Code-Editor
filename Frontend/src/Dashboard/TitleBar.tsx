@@ -17,6 +17,10 @@ const TitleBar = ({ Session }: { Session: Session }) => {
     navigate("/login");
   };
 
+  const goToProfile = () => {
+    navigate("/profile");
+  };
+
   // const goToCodeEditor = () => {
   //   navigate("/codeeditor");
   // };
@@ -43,7 +47,8 @@ const TitleBar = ({ Session }: { Session: Session }) => {
               <img
                 src={avatar}
                 alt="Profile"
-                className="w-8 h-8 rounded-full object-cover"
+                className="w-8 h-8 rounded-full object-cover cursor-pointer"
+                onClick={goToProfile}
               />
             )}
 
