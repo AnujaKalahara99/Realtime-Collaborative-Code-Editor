@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useCollaboration } from "../YJSCollaborationService.duplicate";
 import type { FileNode } from "./file.types";
 import { VFSStore } from "../../lib/vfs/vfs-store";
@@ -11,11 +11,78 @@ export const useFileTree = (initialFiles: FileNode[]) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [vfsStore] = useState(() => new VFSStore());
   const collaborationService = useCollaboration();
+  const fileContentListeners = useRef<Map<string, () => void>>(new Map());
 
   // Helper function to create VFS-compatible paths
   const createVFSPath = (name: string, parentPath: string = "/"): string => {
     return parentPath === "/" ? `/${name}` : `${parentPath}/${name}`;
   };
+
+  // Helper function to get VFS path for a FileNode
+  const getVFSPathForNode = useCallback(
+    (nodeId: string, nodes: FileNode[] = files): string | null => {
+      const findNodePath = (
+        nodes: FileNode[],
+        targetId: string,
+        currentPath = ""
+      ): string | null => {
+        for (const node of nodes) {
+          const nodePath =
+            currentPath === "" ? node.name : `${currentPath}/${node.name}`;
+
+          if (node.id === targetId) {
+            return `/${nodePath}`;
+          }
+
+          if (node.children) {
+            const childPath = findNodePath(node.children, targetId, nodePath);
+            if (childPath) return childPath;
+          }
+        }
+        return null;
+      };
+
+      return findNodePath(nodes, nodeId);
+    },
+    [files]
+  );
+
+  // Setup file content synchronization between YJS and VFS
+  const setupFileContentSync = useCallback(
+    (fileNode: FileNode) => {
+      if (fileNode.type !== "file") return;
+
+      // Clean up existing listener if any
+      const existingUnsubscribe = fileContentListeners.current.get(fileNode.id);
+      if (existingUnsubscribe) {
+        existingUnsubscribe();
+      }
+
+      // Set up new listener for file content changes from YJS
+      const unsubscribe = collaborationService.onFileContentChange(
+        fileNode.id,
+        (content: string) => {
+          // Update VFS when content changes in YJS
+          const vfsPath = getVFSPathForNode(fileNode.id);
+          if (vfsPath) {
+            try {
+              vfsStore.updateFile(vfsPath, content);
+            } catch (error) {
+              console.debug("Could not update VFS file content:", error);
+            }
+          }
+
+          // Update local file tree state
+          setFiles((currentFiles) =>
+            updateNode(currentFiles, fileNode.id, { content })
+          );
+        }
+      );
+
+      fileContentListeners.current.set(fileNode.id, unsubscribe);
+    },
+    [collaborationService, getVFSPathForNode, vfsStore]
+  );
 
   // Sync FileNode structure to VFS
   const syncToVFS = useCallback(
@@ -31,14 +98,20 @@ export const useFileTree = (initialFiles: FileNode[]) => {
             }
           } else {
             vfsStore.addFile(fullPath, node.content || "");
+            // Set up content synchronization for files
+            setupFileContentSync(node);
           }
         } catch (error) {
           // Ignore if already exists
           console.debug(`VFS sync: ${fullPath} may already exist`);
+          // Still set up content sync for existing files
+          if (node.type === "file") {
+            setupFileContentSync(node);
+          }
         }
       });
     },
-    [vfsStore]
+    [vfsStore, setupFileContentSync]
   );
 
   // Initialize VFS with initial files
@@ -97,8 +170,21 @@ export const useFileTree = (initialFiles: FileNode[]) => {
     return () => {
       unsubscribeConnection();
       unsubscribeFileSystem();
+
+      // Clean up all file content listeners
+      fileContentListeners.current.forEach((unsubscribe) => unsubscribe());
+      fileContentListeners.current.clear();
     };
   }, [initialFiles, collaborationService, isInitialized, syncToVFS]);
+
+  // Cleanup effect for component unmount
+  useEffect(() => {
+    return () => {
+      // Clean up all file content listeners on unmount
+      fileContentListeners.current.forEach((unsubscribe) => unsubscribe());
+      fileContentListeners.current.clear();
+    };
+  }, []);
 
   // Helper functions for tree operations
   const findNodeById = (nodes: FileNode[], id: string): FileNode | null => {
@@ -185,7 +271,8 @@ export const useFileTree = (initialFiles: FileNode[]) => {
     // Try to add to VFS as well
     try {
       const parentNode = parentId ? findNodeById(files, parentId) : null;
-      const parentPath = parentNode ? "/" : "/"; // Simplified path logic
+      const parentPath =
+        parentNode && parentId ? getVFSPathForNode(parentId) || "/" : "/";
       const fullPath = createVFSPath(name, parentPath);
       vfsStore.addFile(fullPath, "");
     } catch (error) {
@@ -198,6 +285,9 @@ export const useFileTree = (initialFiles: FileNode[]) => {
 
     // Initialize empty content for the new file
     collaborationService.initializeFileContent(newFile.id, "");
+
+    // Set up content synchronization for the new file
+    setupFileContentSync(newFile);
 
     return newFile;
   };
@@ -217,7 +307,8 @@ export const useFileTree = (initialFiles: FileNode[]) => {
     // Try to add to VFS as well
     try {
       const parentNode = parentId ? findNodeById(files, parentId) : null;
-      const parentPath = parentNode ? "/" : "/"; // Simplified path logic
+      const parentPath =
+        parentNode && parentId ? getVFSPathForNode(parentId) || "/" : "/";
       const fullPath = createVFSPath(name, parentPath);
       vfsStore.addDirectory(fullPath);
     } catch (error) {
@@ -233,17 +324,73 @@ export const useFileTree = (initialFiles: FileNode[]) => {
 
   const renameNode = (id: string, newName: string) => {
     const currentFiles = collaborationService.getFileSystem();
-    const newFiles = updateNode(currentFiles, id, { name: newName });
-    collaborationService.setFileSystem(newFiles);
+    const node = findNodeById(currentFiles, id);
+
+    if (node) {
+      const oldVfsPath = getVFSPathForNode(id);
+
+      // Update the file system first
+      const newFiles = updateNode(currentFiles, id, { name: newName });
+      collaborationService.setFileSystem(newFiles);
+
+      // Update VFS path if we can find the old one
+      if (oldVfsPath) {
+        try {
+          const newVfsPath = oldVfsPath.replace(`/${node.name}`, `/${newName}`);
+          vfsStore.renameEntry(oldVfsPath, newVfsPath);
+        } catch (error) {
+          console.debug("Could not rename in VFS:", error);
+        }
+      }
+    } else {
+      // Fallback to just updating the file system
+      const newFiles = updateNode(currentFiles, id, { name: newName });
+      collaborationService.setFileSystem(newFiles);
+    }
   };
 
   const removeNode = (id: string) => {
     const currentFiles = collaborationService.getFileSystem();
     const node = findNodeById(currentFiles, id);
 
-    // If it's a file, clean up its content
-    if (node?.type === "file") {
-      collaborationService.deleteFileContent(id);
+    if (node) {
+      // Remove from VFS
+      const vfsPath = getVFSPathForNode(id);
+      if (vfsPath) {
+        try {
+          vfsStore.deleteEntry(vfsPath);
+        } catch (error) {
+          console.debug("Could not remove from VFS:", error);
+        }
+      }
+
+      // Clean up content listeners if it's a file
+      if (node.type === "file") {
+        const unsubscribe = fileContentListeners.current.get(id);
+        if (unsubscribe) {
+          unsubscribe();
+          fileContentListeners.current.delete(id);
+        }
+        collaborationService.deleteFileContent(id);
+      }
+
+      // If it's a folder, clean up all children listeners recursively
+      if (node.type === "folder" && node.children) {
+        const cleanupChildren = (children: FileNode[]) => {
+          children.forEach((child) => {
+            if (child.type === "file") {
+              const unsubscribe = fileContentListeners.current.get(child.id);
+              if (unsubscribe) {
+                unsubscribe();
+                fileContentListeners.current.delete(child.id);
+              }
+            } else if (child.children) {
+              cleanupChildren(child.children);
+            }
+          });
+        };
+        cleanupChildren(node.children);
+      }
     }
 
     // Remove from file system
@@ -256,21 +403,18 @@ export const useFileTree = (initialFiles: FileNode[]) => {
     const newFiles = updateNode(files, id, { content });
     setFiles(newFiles);
 
-    // Try to update in VFS as well
-    try {
-      // This is a simplified approach - in a real implementation you'd need
-      // to maintain a mapping between FileNode IDs and VFS paths
-      const node = findNodeById(files, id);
-      if (node) {
-        // For now, we'll skip VFS content updates since path mapping is complex
-        console.debug("File content updated:", id, content.length);
+    // Update in VFS as well
+    const vfsPath = getVFSPathForNode(id);
+    if (vfsPath) {
+      try {
+        vfsStore.updateFile(vfsPath, content);
+      } catch (error) {
+        console.debug("Could not update file content in VFS:", error);
       }
-    } catch (error) {
-      console.debug("Could not update file content in VFS:", error);
     }
 
     // Content sync is handled by YJS automatically through the collaboration service
-    // No need to manually sync content changes
+    // The YJS content changes will be synced back to VFS through our content listeners
   };
 
   // VFS-specific methods
@@ -294,6 +438,27 @@ export const useFileTree = (initialFiles: FileNode[]) => {
     }
   };
 
+  // Method to manually sync VFS content to YJS (if needed)
+  const syncVFSContentToYJS = (nodeId: string, content: string) => {
+    try {
+      collaborationService.initializeFileContent(nodeId, content);
+      return true;
+    } catch (error) {
+      console.debug("Could not sync VFS content to YJS:", error);
+      return false;
+    }
+  };
+
+  // Method to get current VFS content for a file
+  const getVFSFileContent = (nodeId: string): string | null => {
+    const vfsPath = getVFSPathForNode(nodeId);
+    if (vfsPath) {
+      const file = getFileFromVFS(vfsPath);
+      return file?.content || null;
+    }
+    return null;
+  };
+
   return {
     files,
     findNodeById,
@@ -308,6 +473,10 @@ export const useFileTree = (initialFiles: FileNode[]) => {
     getVFSStore,
     getFileFromVFS,
     addFileToVFS,
+    syncVFSContentToYJS,
+    getVFSFileContent,
+    // VFS path utilities
+    getVFSPathForNode,
   };
 };
 
