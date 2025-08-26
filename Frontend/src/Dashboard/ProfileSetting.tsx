@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTheme } from "../ThemeProvider";
 import { useProfile } from "../Contexts/ProfileContext";
 import {
@@ -7,7 +7,6 @@ import {
   Bell,
   Shield,
   Save,
-  Palette,
   Upload,
   X,
   Plus,
@@ -17,7 +16,7 @@ import { useNavigate } from "react-router";
 export default function SettingsPage() {
   const { theme } = useTheme();
   const navigate = useNavigate();
-  const { profileData, updateProfile } = useProfile();
+  const { profileData, updateProfile, loading, error } = useProfile();
 
   // Form state
   const [firstName, setFirstName] = useState(profileData.firstName);
@@ -34,25 +33,59 @@ export default function SettingsPage() {
   );
   const [newTechStack, setNewTechStack] = useState("");
 
+  // Local loading states
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(false);
   const [twoFactorAuth, setTwoFactorAuth] = useState(false);
 
-  const handleSaveProfile = () => {
-    updateProfile({
-      firstName,
-      lastName,
-      email,
-      bio,
-      location,
-      jobTitle,
-      phone,
-      website,
-      techStacks,
-      profilePicture,
-    });
+  // Update form state when profileData changes (e.g., after loading)
+  useEffect(() => {
+    setFirstName(profileData.firstName);
+    setLastName(profileData.lastName);
+    setEmail(profileData.email);
+    setBio(profileData.bio);
+    setLocation(profileData.location);
+    setJobTitle(profileData.jobTitle);
+    setPhone(profileData.phone);
+    setWebsite(profileData.website);
+    setTechStacks(profileData.techStacks);
+    setProfilePicture(profileData.profilePicture);
+  }, [profileData]);
 
-    navigate("/profile");
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    setSaveMessage(null);
+
+    try {
+      const success = await updateProfile({
+        firstName,
+        lastName,
+        email,
+        bio,
+        location,
+        jobTitle,
+        phone,
+        website,
+        techStacks,
+        profilePicture,
+      });
+
+      if (success) {
+        setSaveMessage("Profile updated successfully!");
+        setTimeout(() => {
+          navigate("/profile");
+        }, 1500);
+      } else {
+        setSaveMessage("Failed to update profile. Please try again.");
+      }
+    } catch (err) {
+      setSaveMessage("An error occurred while saving. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleAddTechStack = () => {
@@ -352,11 +385,41 @@ export default function SettingsPage() {
 
               <button
                 onClick={handleSaveProfile}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${theme.statusBar} ${theme.statusText} hover:opacity-90`}
+                disabled={isSaving || loading}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                  isSaving || loading
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:opacity-90"
+                } ${theme.statusBar} ${theme.statusText}`}
               >
                 <Save className="w-4 h-4" />
-                Save Profile
+                {isSaving ? "Saving..." : "Save Profile"}
               </button>
+
+              {/* Status Messages */}
+              {saveMessage && (
+                <div
+                  className={`p-3 rounded-md text-sm ${
+                    saveMessage.includes("successfully")
+                      ? "bg-green-100 text-green-800 border border-green-200"
+                      : "bg-red-100 text-red-800 border border-red-200"
+                  }`}
+                >
+                  {saveMessage}
+                </div>
+              )}
+
+              {error && (
+                <div className="p-3 rounded-md text-sm bg-red-100 text-red-800 border border-red-200">
+                  Error: {error}
+                </div>
+              )}
+
+              {loading && (
+                <div className="p-3 rounded-md text-sm bg-blue-100 text-blue-800 border border-blue-200">
+                  Loading profile data...
+                </div>
+              )}
             </div>
           </div>
 
