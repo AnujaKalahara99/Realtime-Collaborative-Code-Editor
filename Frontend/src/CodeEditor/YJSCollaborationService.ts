@@ -1,7 +1,6 @@
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import type { FileNode } from "./ProjectManagementPanel/file.types";
-import { type Session } from "@supabase/supabase-js";
 import { supabase } from "../database/superbase";
 
 export interface CollaborationUser {
@@ -101,7 +100,7 @@ class YjsCollaborationService {
   private setupProviderEvents(): void {
     if (!this.provider) return;
 
-    this.provider.on("status", (event: any) => {
+    this.provider.on("status", (event: { status: string }) => {
       this.notifyCallbacks("connection", event.status === "connected");
     });
 
