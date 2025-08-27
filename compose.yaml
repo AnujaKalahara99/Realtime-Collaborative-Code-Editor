@@ -1,0 +1,11 @@
+services:
+  api-gateway:
+    build: ./API_Gateway
+    depends_on:
+      - codespace-service
+
+  codespace-service:
+    build: ./Codespace_Service
+
+  ws-server:
+    build: ./WS_Server
