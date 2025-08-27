@@ -2,6 +2,7 @@ import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import type { FileNode } from "./ProjectManagementPanel/file.types";
 import { supabase } from "../database/superbase";
+import { type Awareness } from "y-protocols/awareness";
 
 export interface CollaborationUser {
   name: string;
@@ -34,7 +35,7 @@ class YjsCollaborationService {
   private fileSystemMap: Y.Map<FileNode[]> | null = null;
   private fileTexts = new Map<string, Y.Text>();
   private chatArray: Y.Array<Message> | null = null;
-  private currentCodespaceId: string | null = null;
+  private currentCodespaceId: string;
 
   private callbacks = new Map<string, Set<(data: any) => void>>();
   private observers = new WeakMap<Y.AbstractType<any>, () => void>();
@@ -50,37 +51,38 @@ class YjsCollaborationService {
     "#1be7ff",
   ];
 
-  constructor() {
+  constructor(currentCodespaceId: string) {
+    this.currentCodespaceId = currentCodespaceId;
     this.initialize();
-    this.setupUrlChangeDetection();
+    // this.setupUrlChangeDetection();
   }
 
-  private getCodespaceId(): string {
-    const segments = window.location.pathname.split("/");
-    return segments[segments.length - 1];
-  }
+  // private getCodespaceId(): string {
+  //   const segments = window.location.pathname.split("/");
+  //   return segments[segments.length - 1];
+  // }
 
-  private setupUrlChangeDetection(): void {
-    const checkUrl = () => {
-      const newId = this.getCodespaceId();
-      if (newId !== this.currentCodespaceId) {
-        this.initialize();
-      }
-    };
+  // private setupUrlChangeDetection(): void {
+  //   const checkUrl = () => {
+  //     const newId = this.getCodespaceId();
+  //     if (newId !== this.currentCodespaceId) {
+  //       this.initialize();
+  //     }
+  //   };
 
-    //This may incur performance costs due to binding multiple times
-    window.addEventListener("popstate", checkUrl);
-    const originalPushState = history.pushState;
-    history.pushState = function (...args) {
-      originalPushState.apply(history, args);
-      checkUrl();
-    };
-  }
+  //   //This may incur performance costs due to binding multiple times
+  //   window.addEventListener("popstate", checkUrl);
+  //   const originalPushState = history.pushState;
+  //   history.pushState = function (...args) {
+  //     originalPushState.apply(history, args);
+  //     checkUrl();
+  //   };
+  // }
 
   private initialize(): void {
     this.cleanup();
 
-    this.currentCodespaceId = this.getCodespaceId();
+    // this.currentCodespaceId = this.getCodespaceId();
     this.doc = new Y.Doc();
 
     this.provider = new WebsocketProvider(
@@ -95,6 +97,10 @@ class YjsCollaborationService {
     this.setupProviderEvents();
     this.setupObservers();
     this.setupAwareness();
+  }
+
+  getAwareness(): Awareness | null {
+    return this.provider?.awareness || null;
   }
 
   private setupProviderEvents(): void {
@@ -386,21 +392,37 @@ class YjsCollaborationService {
   }
 
   destroy(): void {
-    this.cleanup();
-    this.currentCodespaceId = null;
+    if (this.provider?.awareness) {
+      console.log("Destroying collaboration service awareness");
+      this.provider.awareness.setLocalState(null);
+    }
+
+    setTimeout(() => {
+      this.cleanup();
+      // this.currentCodespaceId = null;
+    }, 100);
   }
 }
 
 let service: YjsCollaborationService | null = null;
 
 export const useCollaboration = (): YjsCollaborationService => {
+  const path = window.location.pathname;
+  if (!path.includes("/codeeditor/")) return null as any;
+
+  const segments = path.split("/");
+  const codespaceId = segments[segments.length - 1];
+
+  console.log("Using collaboration service ", codespaceId);
+
   if (!service) {
-    service = new YjsCollaborationService();
+    service = new YjsCollaborationService(codespaceId);
   }
   return service;
 };
 
 export const disconnectCollaboration = (): void => {
+  console.log("Disconnecting collaboration service");
   service?.destroy();
   service = null;
 };

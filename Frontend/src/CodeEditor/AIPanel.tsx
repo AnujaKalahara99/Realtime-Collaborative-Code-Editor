@@ -105,10 +105,10 @@ export default function AskAIPanel() {
 
   return (
     <div
-      className={`w-full max-w-2xl h-[600px] flex flex-col rounded-xl border ${theme.surface} ${theme.text} ${theme.border} shadow-lg`}
+      className={`w-full h-full flex flex-col ${theme.surface} ${theme.text}`}
     >
       {/* CardHeader */}
-      <div className={`flex flex-col space-y-1.5 p-6 border-b ${theme.border}`}>
+      <div className={`flex-shrink-0 p-4 border-b ${theme.border}`}>
         <h3
           className={`flex items-center gap-2 text-lg font-semibold leading-none tracking-tight ${theme.text}`}
         >
@@ -117,13 +117,13 @@ export default function AskAIPanel() {
       </div>
 
       {/* CardContent */}
-      <div className="flex-1 flex flex-col p-4 pt-0 min-h-0">
-        {/* ScrollArea - Fixed height and proper overflow */}
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* ScrollArea - Using the LiveChatPanel approach */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto pr-2 mb-4"
+          className="flex-1 w-full max-h-[calc(100vh-230px)] overflow-y-auto p-4 Simple-Scrollbar"
         >
-          <div className="space-y-4 py-2">
+          <div className="space-y-4">
             {messages.length === 0 && (
               <div className={`text-center ${theme.textMuted} py-8`}>
                 Start a conversation with your coding AI assistant!
@@ -141,7 +141,6 @@ export default function AskAIPanel() {
                     className={`relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full ${theme.surfaceSecondary} flex items-center justify-center text-sm font-medium ${theme.text}`}
                   >
                     AI
-                    {/* <img src="/placeholder.svg?height=32&width=32" alt="AI Avatar" className="aspect-square h-full w-full" /> */}
                   </div>
                 )}
                 <div
@@ -187,7 +186,6 @@ export default function AskAIPanel() {
                     className={`relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full ${theme.surfaceSecondary} flex items-center justify-center text-sm font-medium ${theme.text}`}
                   >
                     You
-                    {/* <img src="/placeholder.svg?height=32&width=32" alt="User Avatar" className="aspect-square h-full w-full" /> */}
                   </div>
                 )}
               </div>
@@ -209,19 +207,24 @@ export default function AskAIPanel() {
             <div ref={messagesEndRef} />
           </div>
         </div>
-        <form onSubmit={handleSubmit} className="flex gap-2 flex-shrink-0">
+
+        {/* Input Area */}
+        <form
+          onSubmit={handleSubmit}
+          className={`flex-shrink-0 flex gap-2 p-4 border-t ${theme.border}`}
+        >
           <input
             type="text"
             placeholder="Ask a coding question or paste code for correction..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isLoading}
-            className={`flex-1 flex h-10 w-full rounded-md border ${theme.border} ${theme.surface} px-3 py-2 text-sm ${theme.textMuted} focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50 ${theme.text}`}
+            className={`flex-1 h-10 rounded-md border ${theme.border} ${theme.surface} px-3 py-2 text-sm ${theme.text} focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50`}
           />
           <button
             type="submit"
             disabled={isLoading}
-            className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2`}
+            className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2`}
           >
             <Send className="w-4 h-4" />
             <span className="sr-only">Send</span>

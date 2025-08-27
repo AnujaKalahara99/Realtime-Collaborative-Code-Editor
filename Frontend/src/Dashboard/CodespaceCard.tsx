@@ -186,11 +186,7 @@ function CodespaceCard({
               </div>
               <div className="flex items-center space-x-2">
                 <div
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    codespace.role === "Admin"
-                      ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                      : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                  }`}
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${theme.surfaceSecondary} ${theme.text}`}
                 >
                   {codespace.role}
                 </div>

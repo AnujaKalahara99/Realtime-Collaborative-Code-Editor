@@ -17,9 +17,6 @@ const TitleBar = ({ Session }: { Session: Session }) => {
     navigate("/login");
   };
 
-  // const goToCodeEditor = () => {
-  //   navigate("/codeeditor");
-  // };
   return (
     <header
       className={`${theme.surface} ${theme.border} border-b sticky top-0 z-10`}
@@ -31,14 +28,6 @@ const TitleBar = ({ Session }: { Session: Session }) => {
           </div>
 
           <div className="flex items-center space-x-3">
-            {/* <button
-              onClick={goToCodeEditor}
-              className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${theme.hover} ${theme.textSecondary} transition-colors`}
-            >
-              <Code size={16} className="mr-2" />
-              Code Editor
-            </button> */}
-
             {avatar && (
               <img
                 src={avatar}

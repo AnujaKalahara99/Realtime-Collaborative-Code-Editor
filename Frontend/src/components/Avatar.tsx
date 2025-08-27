@@ -1,5 +1,3 @@
-import React from "react";
-
 export interface AvatarProps {
   name: string;
   src?: string;
@@ -9,14 +7,14 @@ export interface AvatarProps {
   alt?: string;
 }
 
-const Avatar: React.FC<AvatarProps> = ({
+const Avatar = ({
   name,
   src,
   color,
   size = "medium",
   className = "",
   alt,
-}) => {
+}: AvatarProps) => {
   // Size configurations
   const sizeConfig = {
     small: {

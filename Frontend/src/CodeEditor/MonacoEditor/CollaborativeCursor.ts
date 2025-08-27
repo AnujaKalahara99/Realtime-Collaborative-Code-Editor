@@ -3,7 +3,7 @@ import * as monaco from "monaco-editor";
 import {
   useCollaboration,
   type CollaborationUser,
-} from "../YJSCollaborationService.copy";
+} from "../YJSCollaborationService";
 import "./CollaborativeCursor.css";
 
 interface CollaborativeCursorProps {
@@ -35,12 +35,12 @@ export default function CollaborativeCursor({
     }
 
     const updateUsers = () => {
-      const fileUsers = collaborationService.getUsersInFile(selectedFile.id);
-      setUsers(fileUsers);
+      const fileUsers = collaborationService?.getUsersInFile(selectedFile.id);
+      setUsers(fileUsers || []);
     };
 
-    const unsubscribe = collaborationService.onUsersChange(updateUsers);
-    updateUsers();
+    const unsubscribe = collaborationService?.onUsersChange(updateUsers);
+    // updateUsers();
 
     const handleCursorChange = () => {
       if (!editor) return;
@@ -70,7 +70,9 @@ export default function CollaborativeCursor({
       editor.onDidChangeCursorSelection(handleCursorChange);
 
     return () => {
-      unsubscribe();
+      if (typeof unsubscribe === "function") {
+        unsubscribe();
+      }
       cursorChangeDisposable.dispose();
       selectionChangeDisposable.dispose();
       clearAllCursors();

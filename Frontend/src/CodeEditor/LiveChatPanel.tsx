@@ -10,7 +10,7 @@ import {
   useCollaboration,
   type CollaborationUser,
   type Message,
-} from "./YJSCollaborationService.copy";
+} from "./YJSCollaborationService";
 import { useTheme } from "../ThemeProvider";
 import { ChevronRight } from "lucide-react";
 import Avatar from "../components/Avatar";
@@ -81,7 +81,7 @@ export function ChatSpace() {
   };
 
   return (
-    <div className={`flex flex-col ${theme.border} border ${theme.surface}`}>
+    <div className={`flex flex-col ${theme.surface}`}>
       {/* Header */}
       <div className={`flex-shrink-0 h-20 pb-3 p-4 ${theme.border} border-b`}>
         <h2 className={`text-lg font-semibold ${theme.text}`}>Team Chat</h2>
