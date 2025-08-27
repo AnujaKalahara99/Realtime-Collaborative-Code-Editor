@@ -170,75 +170,77 @@ export class CodespaceService {
     return data;
   }
 
-static async shareCodespaceByEmail(codespaceId, email, userid, role) {
-  const trimmedCodespaceId = codespaceId.trim();
-  if (!trimmedCodespaceId) throw new Error('Codespace ID is required');
-  if (!email || !email.trim()) throw new Error('Email is required');
-  if (!userid) throw new Error('User ID is required');
-  
+  static async shareCodespaceByEmail(codespaceId, email, userid, role) {
+    const trimmedCodespaceId = codespaceId.trim();
+    if (!trimmedCodespaceId) throw new Error("Codespace ID is required");
+    if (!email || !email.trim()) throw new Error("Email is required");
+    if (!userid) throw new Error("User ID is required");
 
-  try {
-    // Verify codespace exists
-    const { data: codespace } = await supabase
-      .from('workspaces') 
-      .select('id')
-      .eq('id', trimmedCodespaceId)
-      .single();
-    if (!codespace) throw new Error('Workspace not found');
+    try {
+      // Verify codespace exists
+      const { data: codespace } = await supabase
+        .from("workspaces")
+        .select("id")
+        .eq("id", trimmedCodespaceId)
+        .single();
+      if (!codespace) throw new Error("Workspace not found");
 
-    // Verify user exists
-    const { data: user } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', userid)
-      .single();
-    if (!user) throw new Error('User not found');
+      // Verify user exists
+      const { data: user } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", userid)
+        .single();
+      if (!user) throw new Error("User not found");
 
-    // Check for existing invitation
-    const { data: existing } = await supabase
-      .from('invitations')
-      .select('id')
-      .eq('workspace_id', trimmedCodespaceId)
-      .eq('email', email)
-      .single();
-    if (existing) throw new Error('Invitation already exists');
+      // Check for existing invitation
+      const { data: existing } = await supabase
+        .from("invitations")
+        .select("id")
+        .eq("workspace_id", trimmedCodespaceId)
+        .eq("email", email)
+        .single();
+      if (existing) throw new Error("Invitation already exists");
 
-    // Insert invitation
-    const { data: invitation, error: insertError } = await supabase
-      .from('invitations')
-      .insert([{
-        workspace_id: trimmedCodespaceId,
-        email: email,
-        role: role, 
-        invited_by: userid,
-        accepted_at: null,
-      }])
-      .select()
-      .single();
+      // Insert invitation
+      const { data: invitation, error: insertError } = await supabase
+        .from("invitations")
+        .insert([
+          {
+            workspace_id: trimmedCodespaceId,
+            email: email,
+            role: role,
+            invited_by: userid,
+            accepted_at: null,
+          },
+        ])
+        .select()
+        .single();
 
-    if (insertError) {
-      console.error('Supabase insert error:', insertError);
-      throw new Error(`Failed to insert invitation: ${insertError.message}`);
-    }
+      if (insertError) {
+        console.error("Supabase insert error:", insertError);
+        throw new Error(`Failed to insert invitation: ${insertError.message}`);
+      }
 
-    // Configure SMTP transport
-    const transporter = nodemailer.createTransport({
-      service: 'Gmail',
-      auth: {
-        user: from,
-        pass:key,
-      },
-    });
+      // Configure SMTP transport
+      const transporter = nodemailer.createTransport({
+        service: "Gmail",
+        auth: {
+          user: from,
+          pass: key,
+        },
+      });
 
-    // Construct share link using codespaceId
-    const shareLink = `http://localhost:5173/codespace/sharebyemail/${invitation.id}`;
+      // Construct share link using codespaceId
+      // const shareLink = `http://localhost:5173/codespace/sharebyemail/${invitation.id}`;
+      const shareLink = `https://68aee7a468a50f41d684ab8b--rtc-editor.netlify.app/codespace/sharebyemail/${invitation.id}`;
 
-    // Compose email
-    const mailOptions = {
-      from: '"Realtime Code Editor" <m.mannage@gmail.com>',
-      to: email,
-      subject: 'A Codespace Has Been Shared With You',
-      html: `
+      // Compose email
+      const mailOptions = {
+        from: '"Realtime Code Editor" <m.mannage@gmail.com>',
+        to: email,
+        subject: "A Codespace Has Been Shared With You",
+        html: `
         <html>
           <body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; color: #333;">
             <div style="max-width: 600px; margin: 20px auto; padding: 20px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
@@ -253,84 +255,87 @@ static async shareCodespaceByEmail(codespaceId, email, userid, role) {
           </body>
         </html>
       `,
-    };
+      };
 
-    // Send email
-    await transporter.sendMail(mailOptions);
-    console.log(`Codespace sharing email sent to ${email} successfully.`);
+      // Send email
+      await transporter.sendMail(mailOptions);
+      console.log(`Codespace sharing email sent to ${email} successfully.`);
 
-    return { invitation };
-  } catch (err) {
-    console.error('Error in shareCodespaceByEmail:', err);
-    throw err;
+      return { invitation };
+    } catch (err) {
+      console.error("Error in shareCodespaceByEmail:", err);
+      throw err;
+    }
   }
-}
 
-static async acceptInvitation(invitationId) {
-  try {
-    // Fetch invitation
-    const { data: invitation, error: fetchError } = await supabase
-      .from('invitations')
-      .select('*')
-      .eq('id', invitationId)
-      .single();
-    if (fetchError || !invitation) {
-      throw new Error('Invitation not found');
+  static async acceptInvitation(invitationId) {
+    try {
+      // Fetch invitation
+      const { data: invitation, error: fetchError } = await supabase
+        .from("invitations")
+        .select("*")
+        .eq("id", invitationId)
+        .single();
+      if (fetchError || !invitation) {
+        throw new Error("Invitation not found");
+      }
+
+      // Fetch user_id from profiles table
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", invitation.email.trim())
+        .single();
+      if (profileError || !profile) {
+        throw new Error("User profile not found");
+      }
+
+      // Update accepted_at
+      const { data: updatedInvitation, error: updateError } = await supabase
+        .from("invitations")
+        .update({ accepted_at: new Date().toISOString() })
+        .eq("id", invitationId)
+        .select()
+        .single();
+      if (updateError) {
+        console.error("Supabase update error:", updateError);
+        throw new Error(`Failed to accept invitation: ${updateError.message}`);
+      }
+
+      const { data: existingMember } = await supabase
+        .from("workspace_members")
+        .select("id")
+        .eq("workspace_id", invitation.workspace_id)
+        .eq("user_id", profile.id)
+        .single();
+      if (existingMember) {
+        throw new Error("User is already a member of this workspace");
+      }
+
+      // Add user to workspace_members
+      const { data: member, error: memberError } = await supabase
+        .from("workspace_members")
+        .insert([
+          {
+            workspace_id: invitation.workspace_id,
+            user_id: profile.id,
+            role: invitation.role, // Role from invitation, trigger may override to 'admin'
+            joined_at: new Date().toISOString(),
+          },
+        ])
+        .select()
+        .single();
+      if (memberError) {
+        console.error("Supabase insert error:", memberError);
+        throw new Error(
+          `Failed to add user to workspace: ${memberError.message}`
+        );
+      }
+
+      return { invitation: updatedInvitation, member };
+    } catch (err) {
+      console.error("Error in acceptInvitation:", err);
+      throw err;
     }
-
-    // Fetch user_id from profiles table
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', invitation.email.trim())
-      .single();
-    if (profileError || !profile) {
-      throw new Error('User profile not found');
-    }
-
-    // Update accepted_at
-    const { data: updatedInvitation, error: updateError } = await supabase
-      .from('invitations')
-      .update({ accepted_at: new Date().toISOString() })
-      .eq('id', invitationId)
-      .select()
-      .single();
-    if (updateError) {
-      console.error('Supabase update error:', updateError);
-      throw new Error(`Failed to accept invitation: ${updateError.message}`);
-    }
-
-   
-    const { data: existingMember } = await supabase
-      .from('workspace_members')
-      .select('id')
-      .eq('workspace_id', invitation.workspace_id)
-      .eq('user_id', profile.id)
-      .single();
-    if (existingMember) {
-      throw new Error('User is already a member of this workspace');
-    }
-
-    // Add user to workspace_members
-    const { data: member, error: memberError } = await supabase
-      .from('workspace_members')
-      .insert([{
-        workspace_id: invitation.workspace_id,
-        user_id: profile.id,
-        role: invitation.role, // Role from invitation, trigger may override to 'admin'
-        joined_at: new Date().toISOString(),
-      }])
-      .select()
-      .single();
-    if (memberError) {
-      console.error('Supabase insert error:', memberError);
-      throw new Error(`Failed to add user to workspace: ${memberError.message}`);
-    }
-
-    return { invitation: updatedInvitation, member };
-  } catch (err) {
-    console.error('Error in acceptInvitation:', err);
-    throw err;
   }
-}  
 }

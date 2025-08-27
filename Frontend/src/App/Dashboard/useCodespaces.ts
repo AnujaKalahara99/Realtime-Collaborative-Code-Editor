@@ -3,6 +3,9 @@ import { type Session } from "@supabase/supabase-js";
 import { type Codespace } from "./codespace.types";
 
 export const useCodespaces = (session: Session) => {
+  // const CODESPACE_API_URL = "http://localhost:4000/codespaces";
+  const CODESPACE_API_URL = "http://144.24.128.44:4000/codespaces";
+
   const [codespaces, setCodespaces] = useState<Codespace[]>([]);
   const user = session.user;
   const name = user.user_metadata.full_name || user.email;
@@ -25,7 +28,7 @@ export const useCodespaces = (session: Session) => {
           return;
         }
 
-        const response = await fetch("http://localhost:4000/codespaces", {
+        const response = await fetch(CODESPACE_API_URL, {
           method: "GET",
           headers: {
             Authorization: getToken(),
@@ -64,7 +67,7 @@ export const useCodespaces = (session: Session) => {
         return false;
       }
 
-      const response = await fetch("http://localhost:4000/codespaces", {
+      const response = await fetch(CODESPACE_API_URL, {
         method: "POST",
         headers: {
           Authorization: getToken(),
@@ -102,7 +105,7 @@ export const useCodespaces = (session: Session) => {
         return false;
       }
 
-      const response = await fetch(`http://localhost:4000/codespaces/${id}`, {
+      const response = await fetch(`${CODESPACE_API_URL}/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: getToken(),
@@ -141,17 +144,14 @@ export const useCodespaces = (session: Session) => {
         return false;
       }
 
-      const response = await fetch(
-        `http://localhost:4000/codespaces/${id}/sharebyemail`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: getToken(),
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email: email.trim(), role: role.trim() }),
-        }
-      );
+      const response = await fetch(`${CODESPACE_API_URL}/${id}/sharebyemail`, {
+        method: "POST",
+        headers: {
+          Authorization: getToken(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: email.trim(), role: role.trim() }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -184,7 +184,7 @@ export const useCodespaces = (session: Session) => {
         return false;
       }
 
-      const response = await fetch(`http://localhost:4000/codespaces/${id}`, {
+      const response = await fetch(`${CODESPACE_API_URL}/${id}`, {
         method: "PUT",
         headers: {
           Authorization: getToken(),

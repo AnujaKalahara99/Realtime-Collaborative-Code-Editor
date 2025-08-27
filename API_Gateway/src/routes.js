@@ -8,7 +8,8 @@ const ROUTES = [
       limit: 100,
     },
     proxy: {
-      target: "http://localhost:5000/codespaces",
+      // target: "http://localhost:5000/codespaces",
+      target: "http://codespace-service:5000/codespaces",
       changeOrigin: true,
       pathRewrite: {
         [`^/codespaces`]: "",
@@ -52,7 +53,8 @@ const ROUTES = [
       limit: 1000,
     },
     proxy: {
-      target: "ws://144.24.128.44:4455",
+      target: "ws://ws-server:4455",
+      // target: "ws://144.24.128.44:4455",
       // target: "ws://localhost:4455",
       changeOrigin: true,
       ws: true,

@@ -59,7 +59,11 @@ function Login() {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: "http://localhost:5173/login" },
+      // options: { redirectTo: "http://localhost:5173/login" },
+      options: {
+        redirectTo:
+          "https://68aee7a468a50f41d684ab8b--rtc-editor.netlify.app/login",
+      },
     });
 
     if (error) {

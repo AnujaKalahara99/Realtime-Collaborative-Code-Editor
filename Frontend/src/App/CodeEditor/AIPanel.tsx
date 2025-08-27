@@ -11,6 +11,9 @@ interface Message {
 }
 
 export default function AskAIPanel() {
+  // const CODESPACE_API_URL = "http://localhost:4000/codespaces";
+  const CODESPACE_API_URL = "http://144.24.128.44:4000/codespaces";
+
   const { theme } = useTheme();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -49,7 +52,7 @@ export default function AskAIPanel() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/chat", {
+      const response = await fetch(`${CODESPACE_API_URL}/api/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

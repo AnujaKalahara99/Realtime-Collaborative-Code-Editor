@@ -14,6 +14,9 @@ const getToken = () => {
 };
 
 const CollaboratePage: React.FC = () => {
+  // const CODESPACE_API_URL = "http://localhost:4000/codespaces";
+  const CODESPACE_API_URL = "http://144.24.128.44:4000/codespaces";
+
   const navigate = useNavigate();
   const { invitationId } = useParams<{ invitationId: string }>();
   const { theme } = useTheme();
@@ -35,7 +38,7 @@ const CollaboratePage: React.FC = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:4000/codespaces/accept-invitation/${invitationId}`,
+        `${CODESPACE_API_URL}/accept-invitation/${invitationId}`,
         {
           method: "PUT",
           headers: {
