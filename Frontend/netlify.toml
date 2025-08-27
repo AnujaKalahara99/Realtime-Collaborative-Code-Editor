@@ -4,3 +4,10 @@
   to = "http://144.24.128.44:4000/:splat"
   status = 200
   force = true
+
+# WebSocket gateway
+[[redirects]]
+  from = "/ws/*"
+  to = "ws://144.24.128.44:4455/:splat"
+  status = 200
+  force = true
