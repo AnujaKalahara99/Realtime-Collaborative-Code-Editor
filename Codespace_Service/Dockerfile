@@ -18,6 +18,10 @@ ENV SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 
 ENV SUPABASE_PROJECT_ID='kafnsbymonfgbjwzwngz'
 
+ENV Email_password='jrla yccu aoyo mnvu'
+
+ENV Email_user='codespace.mora@gmail.com'
+
 EXPOSE 5000
 
 CMD [ "npm", "start" ]
