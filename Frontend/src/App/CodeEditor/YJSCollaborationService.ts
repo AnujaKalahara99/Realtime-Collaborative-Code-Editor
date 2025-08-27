@@ -87,7 +87,8 @@ class YjsCollaborationService {
 
     this.provider = new WebsocketProvider(
       // "ws://localhost:4000/ws",
-      "/ws/",
+      // "ws://144.24.128.44:4000/ws",
+      "wss://www.rtc-app.linkpc.net/ws",
       this.currentCodespaceId,
       this.doc
     );

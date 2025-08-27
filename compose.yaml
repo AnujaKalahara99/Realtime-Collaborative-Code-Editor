@@ -1,14 +1,37 @@
 services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx_proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./Nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - api-gateway
+    networks:
+      - proxy_net
+
   api-gateway:
     build: ./API_Gateway
-    ports:
-      - "4000:4000"
+    container_name: api_gateway
     depends_on:
       - codespace-service
       - ws-server
+    networks:
+      - proxy_net
 
   codespace-service:
     build: ./Codespace_Service
+    networks:
+      - proxy_net
 
   ws-server:
     build: ./WS_Server
+    networks:
+      - proxy_net
+
+networks:
+  proxy_net:
+    driver: bridge

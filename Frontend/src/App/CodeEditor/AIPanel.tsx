@@ -12,7 +12,7 @@ interface Message {
 
 export default function AskAIPanel() {
   // const CODESPACE_API_URL = "http://localhost:4000/codespaces";
-  const CODESPACE_API_URL = "/api/codespaces";
+  const CODESPACE_API_URL = "https://www.rtc-app.linkpc.net/codespaces";
 
   const { theme } = useTheme();
   const [messages, setMessages] = useState<Message[]>([]);
