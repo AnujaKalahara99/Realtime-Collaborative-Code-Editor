@@ -11,9 +11,9 @@ import {
   type CollaborationUser,
   type Message,
 } from "./YJSCollaborationService";
-import { useTheme } from "../ThemeProvider";
+import { useTheme } from "../../Contexts/ThemeProvider";
 import { ChevronRight } from "lucide-react";
-import Avatar from "../components/Avatar";
+import Avatar from "../../components/Avatar";
 
 export function ChatSpace() {
   const [inputMessage, setInputMessage] = useState("");

@@ -8,7 +8,7 @@ import {
   Edit,
   SettingsIcon,
 } from "lucide-react";
-import { useTheme } from "../ThemeProvider";
+import { useTheme } from "../../Contexts/ThemeProvider";
 import { type Codespace, type ViewMode } from "./codespace.types";
 
 interface Props {

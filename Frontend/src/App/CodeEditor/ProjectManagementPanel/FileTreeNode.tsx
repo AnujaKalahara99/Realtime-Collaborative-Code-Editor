@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { useTheme } from "../../ThemeProvider";
+import { useTheme } from "../../../Contexts/ThemeProvider";
 import type { FileNode } from "./file.types";
 import FileIcon from "./FileIcon";
 import InlineEditor from "./InlineEditor";

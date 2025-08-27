@@ -1,5 +1,5 @@
-import { useTheme } from "../ThemeProvider";
-import { useProfile } from "../Contexts/ProfileContext";
+import { useTheme } from "../../Contexts/ThemeProvider";
+import { useProfile } from "../../Contexts/ProfileContext";
 import { useNavigate } from "react-router";
 import {
   ArrowLeft,

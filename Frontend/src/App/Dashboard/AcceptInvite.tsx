@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import ThemeToggleButton from "../components/ThemeToggleBtn";
-import { useTheme } from "../ThemeProvider";
+import ThemeToggleButton from "../../components/ThemeToggleBtn";
+import { useTheme } from "../../Contexts/ThemeProvider";
 
 const getToken = () => {
   const storageKey = `sb-${

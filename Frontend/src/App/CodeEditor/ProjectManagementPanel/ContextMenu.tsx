@@ -1,5 +1,5 @@
 import { Edit3, File, Folder, Trash2 } from "lucide-react";
-import { useTheme } from "../../ThemeProvider";
+import { useTheme } from "../../../Contexts/ThemeProvider";
 import type { ContextMenuData } from "./file.types";
 
 interface ContextMenuProps {

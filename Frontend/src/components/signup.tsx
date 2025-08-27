@@ -1,9 +1,20 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { supabase } from "../database/superbase";
-import { useTheme } from "../ThemeProvider";
-import { Mail, Lock, User, AlertCircle, Sun, Moon, Code, Zap, UserPlus, Shield, CheckCircle2 } from "lucide-react";
+import { useTheme } from "../Contexts/ThemeProvider";
+import {
+  Mail,
+  Lock,
+  User,
+  AlertCircle,
+  Sun,
+  Moon,
+  Code,
+  Zap,
+  UserPlus,
+  Shield,
+  CheckCircle2,
+} from "lucide-react";
 
 // ThemeToggleButton component integrated into the same file
 type ThemeToggleButtonProps = {
@@ -49,11 +60,22 @@ function Signup() {
 
   // Password strength checker
   const getPasswordStrength = (password: string) => {
-    if (password.length < 6) return { strength: 0, label: "Too short", color: "text-red-500" };
-    if (password.length < 8) return { strength: 1, label: "Weak", color: "text-orange-500" };
-    if (password.length < 12 && /[A-Z]/.test(password) && /[0-9]/.test(password)) 
+    if (password.length < 6)
+      return { strength: 0, label: "Too short", color: "text-red-500" };
+    if (password.length < 8)
+      return { strength: 1, label: "Weak", color: "text-orange-500" };
+    if (
+      password.length < 12 &&
+      /[A-Z]/.test(password) &&
+      /[0-9]/.test(password)
+    )
       return { strength: 2, label: "Good", color: "text-blue-500" };
-    if (password.length >= 12 && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[!@#$%^&*]/.test(password)) 
+    if (
+      password.length >= 12 &&
+      /[A-Z]/.test(password) &&
+      /[0-9]/.test(password) &&
+      /[!@#$%^&*]/.test(password)
+    )
       return { strength: 3, label: "Strong", color: "text-green-500" };
     return { strength: 1, label: "Weak", color: "text-orange-500" };
   };
@@ -126,12 +148,16 @@ function Signup() {
                 </div>
               </div>
               <div className="flex flex-col items-start">
-                <h1 className={`text-4xl font-bold bg-gradient-to-r from-emerald-600 via-blue-600 to-purple-600 bg-clip-text text-transparent`}>
+                <h1
+                  className={`text-4xl font-bold bg-gradient-to-r from-emerald-600 via-blue-600 to-purple-600 bg-clip-text text-transparent`}
+                >
                   CodeSync
                 </h1>
                 <div className="flex items-center space-x-1 mt-1">
                   <UserPlus size={12} className="text-emerald-500" />
-                  <span className={`text-xs ${theme.textSecondary} font-medium`}>
+                  <span
+                    className={`text-xs ${theme.textSecondary} font-medium`}
+                  >
                     Join the Community
                   </span>
                 </div>
@@ -142,7 +168,9 @@ function Signup() {
             </div>
           </div>
           <div className="space-y-2">
-            <h2 className={`text-2xl font-bold ${theme.text}`}>Create Your Account</h2>
+            <h2 className={`text-2xl font-bold ${theme.text}`}>
+              Create Your Account
+            </h2>
             <p className={`text-lg ${theme.textSecondary} font-medium`}>
               Start your coding journey with CodeSync
             </p>
@@ -150,25 +178,33 @@ function Signup() {
         </div>
 
         {/* Benefits Section */}
-        <div className={`${theme.surfaceSecondary} rounded-xl p-4 border ${theme.border} backdrop-blur-sm`}>
+        <div
+          className={`${theme.surfaceSecondary} rounded-xl p-4 border ${theme.border} backdrop-blur-sm`}
+        >
           <div className="grid grid-cols-3 gap-3 text-center">
             <div className="flex flex-col items-center space-y-2">
               <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-2 rounded-lg">
                 <Code size={16} className="text-white" />
               </div>
-              <span className={`text-xs font-medium ${theme.text}`}>Sync Code</span>
+              <span className={`text-xs font-medium ${theme.text}`}>
+                Sync Code
+              </span>
             </div>
             <div className="flex flex-col items-center space-y-2">
               <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-2 rounded-lg">
                 <Zap size={16} className="text-white" />
               </div>
-              <span className={`text-xs font-medium ${theme.text}`}>Fast Deploy</span>
+              <span className={`text-xs font-medium ${theme.text}`}>
+                Fast Deploy
+              </span>
             </div>
             <div className="flex flex-col items-center space-y-2">
               <div className="bg-gradient-to-br from-emerald-500 to-green-500 p-2 rounded-lg">
                 <Shield size={16} className="text-white" />
               </div>
-              <span className={`text-xs font-medium ${theme.text}`}>Secure</span>
+              <span className={`text-xs font-medium ${theme.text}`}>
+                Secure
+              </span>
             </div>
           </div>
         </div>
@@ -179,11 +215,13 @@ function Signup() {
         >
           {/* Subtle gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-2xl pointer-events-none"></div>
-          
+
           <div className="relative z-10">
             {/* Error Message */}
             {error && (
-              <div className={`mb-6 p-4 bg-red-50/90 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-3 backdrop-blur-sm`}>
+              <div
+                className={`mb-6 p-4 bg-red-50/90 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-3 backdrop-blur-sm`}
+              >
                 <div className="flex-shrink-0">
                   <AlertCircle size={20} className="text-red-500" />
                 </div>
@@ -217,7 +255,10 @@ function Signup() {
                     placeholder="Enter your full name"
                   />
                   {fullName && (
-                    <CheckCircle2 size={20} className="absolute right-4 top-1/2 transform -translate-y-1/2 text-emerald-500" />
+                    <CheckCircle2
+                      size={20}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-emerald-500"
+                    />
                   )}
                 </div>
               </div>
@@ -243,8 +284,11 @@ function Signup() {
                     className={`w-full pl-12 pr-4 py-4 ${theme.border} border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 ${theme.text} ${theme.surface} transition-all duration-200 hover:border-blue-300`}
                     placeholder="Enter your email address"
                   />
-                  {email.includes('@') && (
-                    <CheckCircle2 size={20} className="absolute right-4 top-1/2 transform -translate-y-1/2 text-emerald-500" />
+                  {email.includes("@") && (
+                    <CheckCircle2
+                      size={20}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-emerald-500"
+                    />
                   )}
                 </div>
               </div>
@@ -272,12 +316,14 @@ function Signup() {
                     placeholder="Create a strong password"
                   />
                 </div>
-                
+
                 {/* Password Strength Indicator */}
                 {password && (
                   <div className="mt-3 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className={`text-xs font-medium ${passwordStrength.color}`}>
+                      <span
+                        className={`text-xs font-medium ${passwordStrength.color}`}
+                      >
                         Password Strength: {passwordStrength.label}
                       </span>
                       <span className={`text-xs ${theme.textMuted}`}>
@@ -285,24 +331,43 @@ function Signup() {
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                      <div 
+                      <div
                         className={`h-full transition-all duration-300 ${
-                          passwordStrength.strength === 0 ? 'bg-red-500 w-1/4' :
-                          passwordStrength.strength === 1 ? 'bg-orange-500 w-2/4' :
-                          passwordStrength.strength === 2 ? 'bg-blue-500 w-3/4' :
-                          'bg-green-500 w-full'
+                          passwordStrength.strength === 0
+                            ? "bg-red-500 w-1/4"
+                            : passwordStrength.strength === 1
+                            ? "bg-orange-500 w-2/4"
+                            : passwordStrength.strength === 2
+                            ? "bg-blue-500 w-3/4"
+                            : "bg-green-500 w-full"
                         }`}
                       />
                     </div>
                   </div>
                 )}
-                
+
                 <div className={`text-xs ${theme.textMuted} space-y-1`}>
                   <p>Password requirements:</p>
                   <ul className="list-disc list-inside space-y-0.5 ml-2">
-                    <li className={password.length >= 6 ? 'text-emerald-500' : ''}>At least 6 characters</li>
-                    <li className={/[A-Z]/.test(password) ? 'text-emerald-500' : ''}>One uppercase letter</li>
-                    <li className={/[0-9]/.test(password) ? 'text-emerald-500' : ''}>One number</li>
+                    <li
+                      className={password.length >= 6 ? "text-emerald-500" : ""}
+                    >
+                      At least 6 characters
+                    </li>
+                    <li
+                      className={
+                        /[A-Z]/.test(password) ? "text-emerald-500" : ""
+                      }
+                    >
+                      One uppercase letter
+                    </li>
+                    <li
+                      className={
+                        /[0-9]/.test(password) ? "text-emerald-500" : ""
+                      }
+                    >
+                      One number
+                    </li>
                   </ul>
                 </div>
               </div>

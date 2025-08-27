@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { Send, Bot } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { useTheme } from "../ThemeProvider";
+import { useTheme } from "../../Contexts/ThemeProvider";
 
 interface Message {
   role: "user" | "assistant";

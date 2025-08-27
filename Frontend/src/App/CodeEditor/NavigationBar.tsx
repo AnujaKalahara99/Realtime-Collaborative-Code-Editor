@@ -1,12 +1,12 @@
 import { Sun, Moon, ArrowLeft } from "lucide-react";
-import { useTheme } from "../ThemeProvider";
+import { useTheme } from "../../Contexts/ThemeProvider";
 import { useEffect, useState } from "react";
 import {
   useCollaboration,
   type CollaborationUser,
   disconnectCollaboration, // Add this import
 } from "./YJSCollaborationService";
-import Avatar from "../components/Avatar";
+import Avatar from "../../components/Avatar";
 import { useNavigate } from "react-router";
 
 const NavigationBar = () => {

@@ -1,4 +1,4 @@
-import { useTheme } from "../ThemeProvider";
+import { useTheme } from "../../Contexts/ThemeProvider";
 
 const StatusBar = () => {
   const { theme } = useTheme();

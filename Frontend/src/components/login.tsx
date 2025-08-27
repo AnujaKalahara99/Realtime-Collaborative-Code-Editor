@@ -1,8 +1,7 @@
-
 import { supabase } from "../database/superbase";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { useTheme } from "../ThemeProvider";
+import { useTheme } from "../Contexts/ThemeProvider";
 import { Mail, Lock, AlertCircle, Sun, Moon, Code, Zap } from "lucide-react";
 
 type ThemeToggleButtonProps = {
@@ -60,13 +59,12 @@ function Login() {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: 'http://localhost:5173/login' }
+      options: { redirectTo: "http://localhost:5173/login" },
     });
-  
+
     if (error) {
       setError("Failed to sign in with Google");
     }
-   
   };
 
   const signInWithEmail = async (e: React.FormEvent) => {
@@ -111,12 +109,16 @@ function Login() {
                 </div>
               </div>
               <div className="flex flex-col items-start">
-                <h1 className={`text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-600 bg-clip-text text-transparent`}>
+                <h1
+                  className={`text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-600 bg-clip-text text-transparent`}
+                >
                   CodeSync
                 </h1>
                 <div className="flex items-center space-x-1 mt-1">
                   <Zap size={12} className="text-blue-500" />
-                  <span className={`text-xs ${theme.textSecondary} font-medium`}>
+                  <span
+                    className={`text-xs ${theme.textSecondary} font-medium`}
+                  >
                     Sync. Code. Collaborate.
                   </span>
                 </div>
@@ -137,11 +139,13 @@ function Login() {
         >
           {/* Subtle gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-2xl pointer-events-none"></div>
-          
+
           <div className="relative z-10">
             {/* Error Message */}
             {error && (
-              <div className={`mb-6 p-4 bg-red-50/90 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-3 backdrop-blur-sm`}>
+              <div
+                className={`mb-6 p-4 bg-red-50/90 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-3 backdrop-blur-sm`}
+              >
                 <div className="flex-shrink-0">
                   <AlertCircle size={20} className="text-red-500" />
                 </div>
@@ -225,9 +229,15 @@ function Login() {
 
             {/* Divider */}
             <div className="my-8 flex items-center">
-              <div className={`flex-1 h-px bg-gradient-to-r from-transparent via-current to-transparent opacity-20 ${theme.textMuted}`}></div>
-              <span className={`px-4 text-sm font-medium ${theme.textMuted}`}>or continue with</span>
-              <div className={`flex-1 h-px bg-gradient-to-r from-transparent via-current to-transparent opacity-20 ${theme.textMuted}`}></div>
+              <div
+                className={`flex-1 h-px bg-gradient-to-r from-transparent via-current to-transparent opacity-20 ${theme.textMuted}`}
+              ></div>
+              <span className={`px-4 text-sm font-medium ${theme.textMuted}`}>
+                or continue with
+              </span>
+              <div
+                className={`flex-1 h-px bg-gradient-to-r from-transparent via-current to-transparent opacity-20 ${theme.textMuted}`}
+              ></div>
             </div>
 
             {/* Google Button */}
@@ -275,11 +285,17 @@ function Login() {
         <div className="text-center">
           <p className={`text-xs ${theme.textMuted}`}>
             By signing in, you agree to our{" "}
-            <a href="#" className="text-blue-500 hover:text-blue-400 transition-colors">
+            <a
+              href="#"
+              className="text-blue-500 hover:text-blue-400 transition-colors"
+            >
               Terms of Service
             </a>{" "}
             and{" "}
-            <a href="#" className="text-blue-500 hover:text-blue-400 transition-colors">
+            <a
+              href="#"
+              className="text-blue-500 hover:text-blue-400 transition-colors"
+            >
               Privacy Policy
             </a>
           </p>

@@ -4,7 +4,7 @@ import useFileTree from "./useFileTree";
 import FileTreeNode from "./FileTreeNode";
 import ExplorerHeader from "./ExplorerHeader";
 import ContextMenu from "./ContextMenu";
-import { useTheme } from "../../ThemeProvider";
+import { useTheme } from "../../../Contexts/ThemeProvider";
 
 const ProjectManagementPanel = ({
   onFileSelect,

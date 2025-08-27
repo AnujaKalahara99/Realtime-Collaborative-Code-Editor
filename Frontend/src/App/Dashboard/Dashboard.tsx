@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { type Session } from "@supabase/supabase-js";
-import { useTheme } from "../ThemeProvider";
+import { useTheme } from "../../Contexts/ThemeProvider";
 import TitleBar from "./TitleBar";
 import SearchAndControls from "./SearchAndControls";
 import CodespaceGrid from "./CodespaceGrid";

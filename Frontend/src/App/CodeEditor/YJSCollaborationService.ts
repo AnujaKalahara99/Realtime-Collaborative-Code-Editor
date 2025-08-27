@@ -1,7 +1,7 @@
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import type { FileNode } from "./ProjectManagementPanel/file.types";
-import { supabase } from "../database/superbase";
+import { supabase } from "../../database/superbase";
 import { type Awareness } from "y-protocols/awareness";
 
 export interface CollaborationUser {

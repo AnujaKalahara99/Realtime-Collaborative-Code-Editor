@@ -1,5 +1,5 @@
 import { File, Folder } from "lucide-react";
-import { useTheme } from "../../ThemeProvider";
+import { useTheme } from "../../../Contexts/ThemeProvider";
 
 interface ExplorerHeaderProps {
   onCreateFile: () => void;

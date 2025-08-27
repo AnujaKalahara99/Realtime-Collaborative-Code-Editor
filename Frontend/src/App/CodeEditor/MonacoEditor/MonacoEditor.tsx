@@ -6,7 +6,7 @@ import {
   useCollaboration,
   type CollaborationUser,
 } from "../YJSCollaborationService";
-import { useTheme } from "../../ThemeProvider";
+import { useTheme } from "../../../Contexts/ThemeProvider";
 import type { FileNode } from "../ProjectManagementPanel/file.types";
 import CollaborativeCursor from "./CollaborativeCursor";
 

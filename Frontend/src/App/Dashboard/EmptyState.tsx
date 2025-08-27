@@ -1,5 +1,5 @@
 import { FileText } from "lucide-react";
-import { useTheme } from "../ThemeProvider";
+import { useTheme } from "../../Contexts/ThemeProvider";
 
 interface Props {
   searchQuery: string;

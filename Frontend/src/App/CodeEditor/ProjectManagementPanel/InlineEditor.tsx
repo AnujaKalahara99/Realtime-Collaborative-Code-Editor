@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useTheme } from "../../ThemeProvider";
+import { useTheme } from "../../../Contexts/ThemeProvider";
 
 interface InlineEditorProps {
   initialValue: string;
