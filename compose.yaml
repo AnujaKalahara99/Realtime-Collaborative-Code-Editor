@@ -1,8 +1,11 @@
 services:
   api-gateway:
     build: ./API_Gateway
+    ports:
+      - "4000:4000"
     depends_on:
       - codespace-service
+      - ws-server
 
   codespace-service:
     build: ./Codespace_Service
