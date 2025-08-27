@@ -72,7 +72,7 @@ const CodeEditorPage = () => {
   const [leftPanelWidth, setLeftPanelWidth] = useState(320); // Default width 320px
   const [rightPanelWidth, setRightPanelWidth] = useState(320);
   const minPanelWidth = 200; // Minimum width in pixels
-  const maxPanelWidth = 600; // Optional: maximum width
+  // const maxPanelWidth = 600; // Optional: maximum width
   const containerRef = useRef<HTMLDivElement>(null);
 
   const leftResizeRef = useRef<HTMLDivElement>(null);
@@ -118,13 +118,7 @@ const CodeEditorPage = () => {
       case "compiler":
         return <CompilerPanel />;
       default:
-        return (
-          <LiveChatPanel
-            roomName="ChatSpace"
-            username={username}
-            wsUrl="ws://144.24.128.44:4455"
-          />
-        );
+        return <LiveChatPanel />;
       case "ai":
         return <AskAIPanel />;
     }

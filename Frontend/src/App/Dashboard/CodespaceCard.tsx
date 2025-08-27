@@ -1,13 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
-import {
-  FileText,
-  MoreVertical,
-  Trash2,
-  Share2,
-  Edit,
-  SettingsIcon,
-} from "lucide-react";
+import { FileText, Trash2, Share2, Edit, SettingsIcon } from "lucide-react";
 import { useTheme } from "../../Contexts/ThemeProvider";
 import { type Codespace, type ViewMode } from "./codespace.types";
 
@@ -36,7 +29,6 @@ function CodespaceCard({
   );
   const [nameInput, setNameInput] = useState(codespace.name);
   const [displayName, setDisplayName] = useState(codespace.name);
-  const [linkCopied, setLinkCopied] = useState(false);
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -78,34 +70,6 @@ function CodespaceCard({
     e.stopPropagation();
     setNameInput(displayName);
     setEditModalOpen(true);
-    setShowMenu(false);
-  };
-
-  const handleCopyLink = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const shareLink = `http://localhost:5173/viewonly/${codespace.id}`;
-
-    try {
-      await navigator.clipboard.writeText(shareLink);
-      setLinkCopied(true);
-
-      setTimeout(() => {
-        setLinkCopied(false);
-      }, 2000);
-    } catch (err) {
-      const textArea = document.createElement("textarea");
-      textArea.value = shareLink;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textArea);
-
-      setLinkCopied(true);
-      setTimeout(() => {
-        setLinkCopied(false);
-      }, 2000);
-    }
-
     setShowMenu(false);
   };
 

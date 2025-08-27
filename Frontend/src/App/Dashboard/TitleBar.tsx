@@ -1,5 +1,5 @@
 import { supabase } from "../../database/superbase";
-import { LogOut, Code } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useTheme } from "../../Contexts/ThemeProvider";
 import { useNavigate } from "react-router";
 import { type Session } from "@supabase/supabase-js";
