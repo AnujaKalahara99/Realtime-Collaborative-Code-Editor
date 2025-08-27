@@ -1,23 +1,28 @@
+
 import { FileText } from "lucide-react";
 import { useTheme } from "../ThemeProvider";
 
 interface Props {
   searchQuery: string;
+  codespaces: any[]; // or Codespace[]
 }
 
-function EmptyState({ searchQuery }: Props) {
+function EmptyState({ searchQuery, codespaces }: Props) {
   const { theme } = useTheme();
 
-  if (!searchQuery) return null;
+  // Show only if no codespaces match
+  if (codespaces.length > 0) return null;
 
   return (
     <div className="text-center py-12">
       <FileText size={48} className={`${theme.textMuted} mx-auto mb-4`} />
       <h3 className={`text-lg font-medium ${theme.text} mb-2`}>
-        No codespaces found
+        {searchQuery ? "No codespaces found" : "No codespaces yet"}
       </h3>
       <p className={theme.textSecondary}>
-        Try searching with different keywords or create a new codespace.
+        {searchQuery
+          ? "Try searching with different keywords."
+          : "Create a new codespace to get started."}
       </p>
     </div>
   );
