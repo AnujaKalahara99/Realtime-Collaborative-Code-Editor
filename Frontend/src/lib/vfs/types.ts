@@ -16,7 +16,7 @@ export interface VFSFile extends VFSEntry {
 
 export interface VFSFolder extends VFSEntry {
   type: "folder";
-  children: VFSFile[]; // Names of children entries;
+  children: string[]; // Names of children entries;
 }
 
 export interface VFSTreeFolder extends VFSEntry {
