@@ -68,15 +68,17 @@ export function ChatSpace() {
   }, [inputMessage, collaboration]);
 
   const handleKeyDown = useCallback(
-    (e: KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") {
+    (e: KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
         handleSendMessage();
       }
+      // Allow Shift+Enter to create new line (default textarea behavior)
     },
     [handleSendMessage]
   );
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setInputMessage(e.target.value);
   };
 
@@ -159,15 +161,26 @@ export function ChatSpace() {
 
       {/* Input Area */}
       <div
-        className={`flex-shrink-0 h-20 flex items-center gap-2 pt-4 p-4 ${theme.border} border-t`}
+        className={`flex-shrink-0 min-h-20 flex items-end gap-2 pt-4 p-4 ${theme.border} border-t`}
       >
-        <input
-          type="text"
-          placeholder="Type a message..."
+        <textarea
+          placeholder="Type a message... "
           value={inputMessage}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          className={`flex-1 px-4 py-2 ${theme.border} border ${theme.input} focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme.text} transition-all`}
+          rows={1}
+          className={`flex-1 px-4 py-2 ${theme.border} border ${theme.surface} focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme.text} transition-all resize-none min-h-[40px] max-h-[120px]`}
+          style={{
+            height: "auto",
+            minHeight: "40px",
+            maxHeight: "120px",
+            overflowY: inputMessage.split("\n").length > 3 ? "auto" : "hidden",
+          }}
+          onInput={(e) => {
+            const target = e.target as HTMLTextAreaElement;
+            target.style.height = "auto";
+            target.style.height = Math.min(target.scrollHeight, 120) + "px";
+          }}
         />
         <button
           onClick={handleSendMessage}

@@ -2,10 +2,13 @@ import "./App.css";
 import { useState, useEffect, useRef } from "react";
 import CodeEditorPage from "./CodeEditor/Page";
 import { ThemeProvider } from "./ThemeProvider";
+import { ProfileProvider } from "./Contexts/ProfileContext";
 import Login from "./components/login";
 import Signup from "./components/signup";
 import Dashboard from "./Dashboard/Dashboard";
 import CodespaceInvitation from "./Dashboard/AcceptInvite";
+import ProfilePage from "./Dashboard/profile";
+import SettingsPage from "./Dashboard/ProfileSetting";
 import Homepage from "./Home/Homepage";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import { supabase } from "./database/superbase";
@@ -19,7 +22,7 @@ function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       const currentToken = session?.access_token;
 
       if (lastTokenRef.current !== currentToken) {
@@ -50,36 +53,55 @@ function App() {
 
   return (
     <ThemeProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/homepage" element={<Homepage />} />
+      <ProfileProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/homepage" element={<Homepage />} />
 
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                {session && <Dashboard session={session} />}
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/codeeditor/:id" element={<CodeEditorPage />} />
-          <Route
-            path="/codespace/sharebyemail/:invitationId"
-            element={<CodespaceInvitation />}
-          />
-          <Route
-            path="/codeeditor"
-            element={
-              <ProtectedRoute>
-                <CodeEditorPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/" element={<Homepage />} />
-        </Routes>
-      </Router>
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  {session && <Dashboard session={session} />}
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route path="/codeeditor/:id" element={<CodeEditorPage />} />
+            <Route
+              path="/codespace/sharebyemail/:invitationId"
+              element={<CodespaceInvitation />}
+            />
+            <Route
+              path="/codeeditor"
+              element={
+                <ProtectedRoute>
+                  <CodeEditorPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/" element={<Homepage />} />
+          </Routes>
+        </Router>
+      </ProfileProvider>
     </ThemeProvider>
   );
 }

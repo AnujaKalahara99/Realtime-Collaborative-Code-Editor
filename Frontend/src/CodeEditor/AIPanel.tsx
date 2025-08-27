@@ -103,6 +103,14 @@ export default function AskAIPanel() {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+    // Allow Shift+Enter to create new line (default textarea behavior)
+  };
+
   return (
     <div
       className={`w-full h-full flex flex-col ${theme.surface} ${theme.text}`}
@@ -218,6 +226,7 @@ export default function AskAIPanel() {
             placeholder="Ask a coding question or paste code for correction..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
             disabled={isLoading}
             className={`flex-1 h-10 rounded-md border ${theme.border} ${theme.surface} px-3 py-2 text-sm ${theme.text} focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50`}
           />
