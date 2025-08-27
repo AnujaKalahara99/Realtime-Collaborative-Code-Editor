@@ -7,7 +7,7 @@
 
 # WebSocket gateway
 [[redirects]]
-  from = "/ws/*"
-  to = "ws://144.24.128.44:4455/:splat"
+  from = "/ws"
+  to = "ws://144.24.128.44:4455"
   status = 200
   force = true
