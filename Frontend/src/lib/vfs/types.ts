@@ -1,28 +1,27 @@
-export type VFSEntryType = "file" | "directory";
+export type VFSEntryType = "file" | "folder";
 
 export interface VFSEntry {
+  id: string;
   path: string;
   name: string;
   type: VFSEntryType;
   lastModified: number;
+  isExpanded?: boolean;
 }
 
 export interface VFSFile extends VFSEntry {
   type: "file";
   content: string;
-  id?: string;
 }
 
-export interface VFSDirectory extends VFSEntry {
-  type: "directory";
-  children: string[]; // Names of children entries;
-  id?: string;
+export interface VFSFolder extends VFSEntry {
+  type: "folder";
+  children: VFSFile[]; // Names of children entries;
 }
 
-export interface VFSTreeDirectory extends VFSEntry {
-  type: "directory";
+export interface VFSTreeFolder extends VFSEntry {
+  type: "folder";
   children: VFSEntry[]; // Full VFSEntry objects for tree view
-  id?: string;
 }
 
 export interface VFSChangeEvent {
