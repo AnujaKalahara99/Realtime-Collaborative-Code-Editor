@@ -52,8 +52,9 @@ const CollaboratePage: React.FC = () => {
 
       const data = await response.json();
       console.log("API response:", data);
+      console.log("API response22:", data.invitation.workspace_id);
 
-      navigate(data.codespaceId ? `/codespace/${data.codespaceId}` : "/", {
+      navigate(data.invitation.workspace_id ? `/codeeditor/${data.invitation.workspace_id}` : "/", {
         state: { invitationId },
       });
     } catch (err) {
