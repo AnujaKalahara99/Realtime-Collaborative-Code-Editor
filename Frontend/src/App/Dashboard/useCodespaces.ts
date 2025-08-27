@@ -4,7 +4,7 @@ import { type Codespace } from "./codespace.types";
 
 export const useCodespaces = (session: Session) => {
   // const CODESPACE_API_URL = "http://localhost:4000/codespaces";
-  const CODESPACE_API_URL = "http://144.24.128.44:4000/codespaces";
+  const CODESPACE_API_URL = "/api/codespaces";
 
   const [codespaces, setCodespaces] = useState<Codespace[]>([]);
   const user = session.user;

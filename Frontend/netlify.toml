@@ -1,0 +1,6 @@
+# Proxy everything to API Gateway
+[[redirects]]
+  from = "/api/*"
+  to = "http://144.24.128.44:4000/:splat"
+  status = 200
+  force = true
