@@ -233,7 +233,8 @@ export class CodespaceService {
 
       // Construct share link using codespaceId
       // const shareLink = `http://localhost:5173/codespace/sharebyemail/${invitation.id}`;
-      const shareLink = `https://68aee7a468a50f41d684ab8b--rtc-editor.netlify.app/codespace/sharebyemail/${invitation.id}`;
+      const shareLink = `http://rtc-editor.netlify.app/codespace/sharebyemail/${invitation.id}`;
+      // const shareLink = `https://68aee7a468a50f41d684ab8b--rtc-editor.netlify.app/codespace/sharebyemail/${invitation.id}`;
 
       // Compose email
       const mailOptions = {
