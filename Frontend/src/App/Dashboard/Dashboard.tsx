@@ -62,7 +62,7 @@ const Dashboard = ({ session }: Props) => {
           onShareWorkspace={shareCodespacebyemail}
         />
 
-        <EmptyState searchQuery={searchQuery} />
+        <EmptyState searchQuery={searchQuery} codespaces={filteredCodespaces} /> 
         <CreateCodespaceModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}

@@ -16,7 +16,3 @@ services:
     depends_on:
       - redis
 
-  worker-py:
-    build: ./worker-py
-    depends_on:
-      - redis
