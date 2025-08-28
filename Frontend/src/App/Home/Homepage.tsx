@@ -2,21 +2,26 @@ import React, { useState, useEffect } from "react";
 import {
   Code2,
   Users,
-  Zap,
-  Shield,
   Play,
   Github,
   Twitter,
   Mail,
   ArrowRight,
   CheckCircle,
-  Star,
+  Moon,
+  Sun,
+  Terminal,
+  Share2,
+  GitBranch,
+  UserPlus,
 } from "lucide-react";
 import { useNavigate } from "react-router";
+import { useTheme } from "../../Contexts/ThemeProvider";
 
 const CodeEditorHomepage: React.FC = () => {
   const [typedText, setTypedText] = useState("");
   const [isScrolled, setIsScrolled] = useState(false);
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const codeText = 'function collaborate() {\n  return "real-time magic";\n}';
 
@@ -55,22 +60,28 @@ const CodeEditorHomepage: React.FC = () => {
 
   const features = [
     {
-      icon: <Users className="w-8 h-8 text-blue-400" />,
+      icon: <Users className="w-6 h-6 text-blue-400" />,
       title: "Real-Time Collaboration",
       description:
-        "Code together with your team in real-time. See changes instantly as they happen.",
+        "Google Docs-style collaborative coding with live cursors, auto-synchronization, and integrated chat.",
     },
     {
-      icon: <Zap className="w-8 h-8 text-yellow-400" />,
-      title: "Lightning Fast",
+      icon: <Terminal className="w-6 h-6 text-yellow-400" />,
+      title: "Development Environment",
       description:
-        "Optimized for performance with instant syntax highlighting and auto-completion.",
+        "VS Code-like experience with syntax highlighting, autocompletion, and secure code execution.",
     },
     {
-      icon: <Shield className="w-8 h-8 text-green-400" />,
-      title: "Secure & Private",
+      icon: <GitBranch className="w-6 h-6 text-green-400" />,
+      title: "Version Control",
       description:
-        "Enterprise-grade security with end-to-end encryption for your code.",
+        "Git-like functionality with commit history, branches, and rollback capabilities.",
+    },
+    {
+      icon: <UserPlus className="w-6 h-6 text-purple-400" />,
+      title: "Role-Based Access",
+      description:
+        "Comprehensive user management for teams, educational institutions, and organizations.",
     },
   ];
 
@@ -82,7 +93,7 @@ const CodeEditorHomepage: React.FC = () => {
       features: [
         "Up to 3 collaborators",
         "5 projects",
-        "Basic themes",
+        "Basic code execution",
         "Community support",
       ],
       popular: false,
@@ -94,9 +105,9 @@ const CodeEditorHomepage: React.FC = () => {
       features: [
         "Unlimited collaborators",
         "Unlimited projects",
-        "Premium themes",
+        "Advanced environments",
         "Priority support",
-        "Advanced debugging",
+        "Version control",
       ],
       popular: true,
     },
@@ -108,29 +119,42 @@ const CodeEditorHomepage: React.FC = () => {
         "Everything in Pro",
         "Team management",
         "SSO integration",
-        "Custom themes",
+        "Custom environments",
         "Dedicated support",
       ],
       popular: false,
     },
   ];
 
+  // Use theme classes for consistent styling
+  const bgClass = isDark ? "bg-gray-900" : "bg-white";
+
+  const surfaceClass = isDark ? "bg-gray-800" : "bg-gray-50";
+
+  const secondarySurfaceClass = isDark ? "bg-gray-700" : "bg-gray-100";
+
+  const borderClass = isDark ? "border-gray-600" : "border-gray-300";
+
+  const textClass = isDark ? "text-white" : "text-gray-900";
+
+  const secondaryTextClass = isDark ? "text-gray-300" : "text-gray-700";
+
+  const mutedTextClass = isDark ? "text-gray-400" : "text-gray-500";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className={`min-h-screen ${bgClass}`}>
       {/* Header */}
       <header
         className={`fixed top-0 w-full z-40 transition-all duration-300 ${
-          isScrolled
-            ? "bg-slate-900/95 backdrop-blur-md border-b border-slate-700"
-            : "bg-transparent"
+          isScrolled ? `${surfaceClass} border-b ${borderClass}` : `${bgClass}`
         }`}
       >
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
-              <Code2 className="w-8 h-8 text-blue-400 mr-2" />
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                CodeSync
+              <Code2 className="w-6 h-6 text-blue-500 mr-2" />
+              <span className={`text-xl font-semibold ${textClass}`}>
+                RTC-Editor
               </span>
             </div>
 
@@ -138,35 +162,48 @@ const CodeEditorHomepage: React.FC = () => {
               <div className="ml-10 flex items-baseline space-x-8">
                 <a
                   href="#features"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className={`${secondaryTextClass} hover:${textClass} transition-colors`}
                 >
                   Features
                 </a>
                 <a
-                  href="#pricing"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  href="#use-cases"
+                  className={`${secondaryTextClass} hover:${textClass} transition-colors`}
                 >
-                  Pricing
+                  Use Cases
                 </a>
                 <a
-                  href="#about"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  href="#pricing"
+                  className={`${secondaryTextClass} hover:${textClass} transition-colors`}
                 >
-                  About
+                  Pricing
                 </a>
               </div>
             </div>
 
             <div className="flex items-center space-x-4">
               <button
+                onClick={toggleTheme}
+                className={`p-2 rounded-md ${secondarySurfaceClass} ${secondaryTextClass}`}
+                aria-label="Toggle theme"
+              >
+                {isDark ? (
+                  <Sun className="w-5 h-5" />
+                ) : (
+                  <Moon className="w-5 h-5" />
+                )}
+              </button>
+
+              <button
                 onClick={handleLoginRedirect}
-                className="text-gray-300 hover:text-white transition-colors"
+                className={`${secondaryTextClass} hover:${textClass} transition-colors`}
               >
                 Sign In
               </button>
+
               <button
                 onClick={handleSignupRedirect}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105"
+                className={`${surfaceClass} ${textClass} px-4 py-2 rounded-md font-medium hover:${secondarySurfaceClass} transition-colors border ${borderClass}`}
               >
                 Get Started
               </button>
@@ -177,89 +214,80 @@ const CodeEditorHomepage: React.FC = () => {
 
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <div className="inline-flex items-center px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-full">
-                  <Star className="w-4 h-4 text-blue-400 mr-2" />
-                  <span className="text-sm text-blue-300">
-                    Now with AI-powered suggestions
-                  </span>
-                </div>
+            <div className="space-y-6">
+              <h1
+                className={`text-4xl md:text-5xl font-bold leading-tight ${textClass}`}
+              >
+                Real-Time Collaborative Code Editor
+              </h1>
 
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
-                  <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                    Code
-                  </span>
-                  <br />
-                  <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                    Together
-                  </span>
-                  <br />
-                  <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                    In Real-Time
-                  </span>
-                </h1>
-
-                <p className="text-xl text-gray-300 max-w-lg leading-relaxed">
-                  The most powerful collaborative code editor for modern
-                  development teams. Write, debug, and deploy together, anywhere
-                  in the world.
-                </p>
-              </div>
+              <p
+                className={`text-xl ${secondaryTextClass} max-w-lg leading-relaxed`}
+              >
+                Experience seamless, real-time code editing and teamwork—just
+                like collaborating in Google Docs, but purpose-built for
+                developers.
+              </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
-                  onClick={handleLoginRedirect}
-                  className="flex items-center justify-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-2xl"
+                  onClick={handleSignupRedirect}
+                  className={`flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors`}
                 >
                   Start Coding Now
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                  <ArrowRight className="ml-2 w-4 h-4" />
                 </button>
 
-                <button className="flex items-center justify-center px-8 py-4 border-2 border-gray-600 text-white rounded-xl font-semibold text-lg hover:border-gray-400 transition-all duration-300 hover:bg-gray-800/50">
-                  <Play className="mr-2 w-5 h-5" />
+                <button
+                  className={`flex items-center justify-center px-6 py-3 border ${borderClass} ${textClass} rounded-md font-medium hover:${secondarySurfaceClass} transition-colors`}
+                >
+                  <Play className="mr-2 w-4 h-4" />
                   Watch Demo
                 </button>
               </div>
-
-              <div className="flex items-center space-x-8 pt-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-white">500K+</div>
-                  <div className="text-sm text-gray-400">Developers</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-white">99.9%</div>
-                  <div className="text-sm text-gray-400">Uptime</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-white">50M+</div>
-                  <div className="text-sm text-gray-400">Lines of Code</div>
-                </div>
-              </div>
             </div>
 
-            <div className="relative">
-              <div className="bg-gray-900 rounded-2xl shadow-2xl border border-gray-700 p-6 transform rotate-1 hover:rotate-0 transition-transform duration-500">
-                <div className="flex items-center mb-4">
-                  <div className="flex space-x-2">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  </div>
-                  <div className="ml-4 text-sm text-gray-400">
-                    collaborative-project.js
+            <div
+              className={`rounded-lg overflow-hidden border ${borderClass} ${surfaceClass}`}
+            >
+              <div
+                className={`flex items-center ${secondarySurfaceClass} px-4 py-2 border-b ${borderClass}`}
+              >
+                <div className="flex space-x-2 mr-4">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                </div>
+                <div className={`text-sm ${mutedTextClass} flex-1`}>
+                  collaborative-project.js
+                </div>
+                <div className="flex items-center">
+                  <Share2 className={`w-4 h-4 ${mutedTextClass} mr-3`} />
+                  <div className="flex -space-x-2">
+                    <div className="w-6 h-6 bg-blue-500 rounded-full border-2 border-gray-900 flex items-center justify-center text-xs font-semibold">
+                      A
+                    </div>
+                    <div className="w-6 h-6 bg-green-500 rounded-full border-2 border-gray-900 flex items-center justify-center text-xs font-semibold">
+                      B
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="font-mono text-sm">
-                  <div className="text-gray-500">1</div>
-                  <div className="text-gray-500">2</div>
-                  <div className="text-gray-500">3</div>
-                  <div className="text-gray-500">4</div>
+              <div className="p-4 font-mono text-sm">
+                <div className="flex">
+                  <div
+                    className={`text-right pr-4 ${mutedTextClass} select-none`}
+                  >
+                    <div>1</div>
+                    <div>2</div>
+                    <div>3</div>
+                    <div>4</div>
+                  </div>
 
-                  <div className="absolute left-16 top-16 space-y-1">
+                  <div className="flex-1 overflow-x-auto">
                     <div className="text-purple-400">
                       {typedText.split("\n").map((line, index) => (
                         <div key={index} className="min-h-[1.25rem]">
@@ -273,22 +301,13 @@ const CodeEditorHomepage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="mt-8 flex items-center space-x-2">
-                  <div className="flex -space-x-2">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full border-2 border-gray-900 flex items-center justify-center text-xs font-semibold">
-                      A
-                    </div>
-                    <div className="w-8 h-8 bg-green-500 rounded-full border-2 border-gray-900 flex items-center justify-center text-xs font-semibold">
-                      B
-                    </div>
-                    <div className="w-8 h-8 bg-purple-500 rounded-full border-2 border-gray-900 flex items-center justify-center text-xs font-semibold">
-                      C
-                    </div>
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    3 developers coding
-                  </div>
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <div
+                  className={`mt-4 text-xs ${mutedTextClass} border-t ${borderClass} pt-2`}
+                >
+                  <span className="flex items-center">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-2"></div>
+                    User A is typing...
+                  </span>
                 </div>
               </div>
             </div>
@@ -297,99 +316,183 @@ const CodeEditorHomepage: React.FC = () => {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+      <section id="features" className={`py-16 px-4 ${surfaceClass}`}>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className={`text-3xl font-bold ${textClass} mb-4`}>
               Built for Modern Development
             </h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Everything you need to code collaboratively, from real-time
-              editing to advanced debugging tools.
+            <p className={`${secondaryTextClass} max-w-2xl mx-auto`}>
+              A comprehensive platform for real-time collaborative coding with
+              integrated testing, version control, and team management.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="group p-8 bg-gray-800/50 rounded-2xl border border-gray-700 hover:border-gray-600 transition-all duration-300 hover:transform hover:scale-105"
+                className={`p-6 ${bgClass} rounded-lg border ${borderClass}`}
               >
-                <div className="mb-6 p-3 bg-gray-700/50 rounded-xl inline-block group-hover:scale-110 transition-transform duration-300">
-                  {feature.icon}
-                </div>
-                <h3 className="text-xl font-semibold text-white mb-4">
+                <div className="mb-4">{feature.icon}</div>
+                <h3 className={`text-lg font-semibold ${textClass} mb-2`}>
                   {feature.title}
                 </h3>
-                <p className="text-gray-300 leading-relaxed">
-                  {feature.description}
-                </p>
+                <p className={`${mutedTextClass}`}>{feature.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
+      {/* Use Cases Section */}
+      <section id="use-cases" className="py-16 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className={`text-3xl font-bold ${textClass} mb-4`}>
+              Perfect for Every Team
+            </h2>
+            <p className={`${secondaryTextClass} max-w-2xl mx-auto`}>
+              Our platform adapts to various use cases across different teams
+              and organizations.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            <div
+              className={`p-6 ${surfaceClass} rounded-lg border ${borderClass}`}
+            >
+              <h3 className={`text-lg font-semibold ${textClass} mb-3`}>
+                Educational Institutions
+              </h3>
+              <ul className={`${secondaryTextClass} space-y-2`}>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <span>
+                    Interactive coding sessions with real-time instructor
+                    supervision
+                  </span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <span>Assignment management with submission tracking</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <span>Student collaboration on group projects</span>
+                </li>
+              </ul>
+            </div>
+
+            <div
+              className={`p-6 ${surfaceClass} rounded-lg border ${borderClass}`}
+            >
+              <h3 className={`text-lg font-semibold ${textClass} mb-3`}>
+                Development Teams
+              </h3>
+              <ul className={`${secondaryTextClass} space-y-2`}>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <span>Pair programming and collaborative code reviews</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <span>Code execution in standardized environments</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <span>Version control with team-based operations</span>
+                </li>
+              </ul>
+            </div>
+
+            <div
+              className={`p-6 ${surfaceClass} rounded-lg border ${borderClass}`}
+            >
+              <h3 className={`text-lg font-semibold ${textClass} mb-3`}>
+                Organizations
+              </h3>
+              <ul className={`${secondaryTextClass} space-y-2`}>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <span>Corporate training programs and coding bootcamps</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <span>Hackathons with real-time judging</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <span>Remote collaboration across global teams</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 px-4 bg-gray-900/30">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+      <section id="pricing" className={`py-16 px-4 ${surfaceClass}`}>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className={`text-3xl font-bold ${textClass} mb-4`}>
               Simple, Transparent Pricing
             </h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+            <p className={`${secondaryTextClass} max-w-2xl mx-auto`}>
               Choose the perfect plan for your team. Upgrade or downgrade at any
               time.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {pricingPlans.map((plan, index) => (
               <div
                 key={index}
-                className={`relative p-8 bg-gray-800/50 rounded-2xl border transition-all duration-300 hover:transform hover:scale-105 ${
-                  plan.popular
-                    ? "border-blue-500 shadow-2xl shadow-blue-500/20"
-                    : "border-gray-700 hover:border-gray-600"
+                className={`p-6 ${bgClass} rounded-lg border ${
+                  plan.popular ? "border-blue-500" : borderClass
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold rounded-full">
+                  <div
+                    className={`mb-4 py-1 px-3 bg-blue-600 text-white text-xs font-semibold rounded-md inline-block`}
+                  >
                     Most Popular
                   </div>
                 )}
 
-                <div className="text-center mb-8">
-                  <h3 className="text-2xl font-bold text-white mb-2">
+                <div className="mb-6">
+                  <h3 className={`text-xl font-bold ${textClass} mb-2`}>
                     {plan.name}
                   </h3>
-                  <div className="flex items-baseline justify-center">
-                    <span className="text-4xl font-bold text-white">
+                  <div className="flex items-baseline">
+                    <span className={`text-3xl font-bold ${textClass}`}>
                       {plan.price}
                     </span>
-                    <span className="text-gray-400 ml-1">{plan.period}</span>
+                    <span className={`${mutedTextClass} ml-1`}>
+                      {plan.period}
+                    </span>
                   </div>
                 </div>
 
-                <ul className="space-y-4 mb-8">
+                <ul className="space-y-3 mb-6">
                   {plan.features.map((feature, featureIndex) => (
                     <li
                       key={featureIndex}
-                      className="flex items-center text-gray-300"
+                      className={`flex items-center ${secondaryTextClass}`}
                     >
-                      <CheckCircle className="w-5 h-5 text-green-400 mr-3" />
+                      <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                       {feature}
                     </li>
                   ))}
                 </ul>
 
                 <button
-                  onClick={handleLoginRedirect}
-                  className={`w-full py-3 rounded-xl font-semibold transition-all duration-300 ${
+                  onClick={handleSignupRedirect}
+                  className={`w-full py-2 rounded-md font-medium ${
                     plan.popular
-                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 transform hover:scale-105"
-                      : "bg-gray-700 text-white hover:bg-gray-600"
-                  }`}
+                      ? "bg-blue-600 text-white hover:bg-blue-700"
+                      : `${secondarySurfaceClass} ${textClass} hover:${bgClass}`
+                  } transition-colors`}
                 >
                   Get Started
                 </button>
@@ -400,25 +503,27 @@ const CodeEditorHomepage: React.FC = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+      <section className="py-16 px-4">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className={`text-3xl font-bold ${textClass} mb-4`}>
             Ready to Transform Your Development Workflow?
           </h2>
-          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+          <p className={`${secondaryTextClass} mb-8`}>
             Join thousands of developers who are already coding collaboratively
             with CodeSync.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={handleLoginRedirect}
-              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-2xl"
+              onClick={handleSignupRedirect}
+              className="px-6 py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors"
             >
               Start Free Trial
             </button>
 
-            <button className="px-8 py-4 border-2 border-gray-600 text-white rounded-xl font-semibold text-lg hover:border-gray-400 transition-all duration-300 hover:bg-gray-800/50">
+            <button
+              className={`px-6 py-3 border ${borderClass} ${textClass} rounded-md font-medium hover:${secondarySurfaceClass} transition-colors`}
+            >
               Schedule Demo
             </button>
           </div>
@@ -426,111 +531,126 @@ const CodeEditorHomepage: React.FC = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 py-12 px-4 border-t border-gray-800">
-        <div className="max-w-7xl mx-auto">
+      <footer className={`border-t ${borderClass} py-8 px-4`}>
+        <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center mb-4">
-                <Code2 className="w-8 h-8 text-blue-400 mr-2" />
-                <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  CodeSync
-                </span>
+                <Code2 className="w-5 h-5 text-blue-500 mr-2" />
+                <span className={`font-semibold ${textClass}`}>CodeSync</span>
               </div>
-              <p className="text-gray-400 mb-4">
+              <p className={`${mutedTextClass} mb-4`}>
                 The future of collaborative coding is here. Build amazing things
                 together.
               </p>
               <div className="flex space-x-4">
-                <Github className="w-5 h-5 text-gray-400 hover:text-white cursor-pointer transition-colors" />
-                <Twitter className="w-5 h-5 text-gray-400 hover:text-white cursor-pointer transition-colors" />
-                <Mail className="w-5 h-5 text-gray-400 hover:text-white cursor-pointer transition-colors" />
+                <Github
+                  className={`w-5 h-5 ${mutedTextClass} hover:${textClass} cursor-pointer transition-colors`}
+                />
+                <Twitter
+                  className={`w-5 h-5 ${mutedTextClass} hover:${textClass} cursor-pointer transition-colors`}
+                />
+                <Mail
+                  className={`w-5 h-5 ${mutedTextClass} hover:${textClass} cursor-pointer transition-colors`}
+                />
               </div>
             </div>
 
             <div>
-              <h3 className="text-white font-semibold mb-4">Product</h3>
-              <ul className="space-y-2 text-gray-400">
+              <h3 className={`${textClass} font-semibold mb-3`}>Product</h3>
+              <ul className={`space-y-2 ${mutedTextClass}`}>
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <a
+                    href="#features"
+                    className={`hover:${textClass} transition-colors`}
+                  >
                     Features
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <a
+                    href="#pricing"
+                    className={`hover:${textClass} transition-colors`}
+                  >
                     Pricing
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <a
+                    href="#"
+                    className={`hover:${textClass} transition-colors`}
+                  >
                     API
                   </a>
                 </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Integrations
-                  </a>
-                </li>
               </ul>
             </div>
 
             <div>
-              <h3 className="text-white font-semibold mb-4">Company</h3>
-              <ul className="space-y-2 text-gray-400">
+              <h3 className={`${textClass} font-semibold mb-3`}>Resources</h3>
+              <ul className={`space-y-2 ${mutedTextClass}`}>
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    About
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Blog
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Careers
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Contact
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-white font-semibold mb-4">Support</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <a
+                    href="#"
+                    className={`hover:${textClass} transition-colors`}
+                  >
                     Documentation
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Help Center
+                  <a
+                    href="#"
+                    className={`hover:${textClass} transition-colors`}
+                  >
+                    Blog
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Status
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <a
+                    href="#"
+                    className={`hover:${textClass} transition-colors`}
+                  >
                     Community
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className={`${textClass} font-semibold mb-3`}>Company</h3>
+              <ul className={`space-y-2 ${mutedTextClass}`}>
+                <li>
+                  <a
+                    href="#"
+                    className={`hover:${textClass} transition-colors`}
+                  >
+                    About
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className={`hover:${textClass} transition-colors`}
+                  >
+                    Contact
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className={`hover:${textClass} transition-colors`}
+                  >
+                    Legal
                   </a>
                 </li>
               </ul>
             </div>
           </div>
 
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-            <p className="text-gray-400">
-              © 2025 CodeSync. All rights reserved. Built with ❤️ for
-              developers.
-            </p>
+          <div
+            className={`border-t ${borderClass} mt-8 pt-6 text-center ${mutedTextClass}`}
+          >
+            <p>© 2025 RTC-Editor. All rights reserved.</p>
           </div>
         </div>
       </footer>
