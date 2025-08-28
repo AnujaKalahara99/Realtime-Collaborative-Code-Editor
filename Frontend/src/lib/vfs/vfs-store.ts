@@ -1,8 +1,8 @@
 import type {
   VFSEntry,
   VFSFile,
-  VFSDirectory,
-  VFSTreeDirectory,
+  VFSFolder,
+  VFSTreeFolder,
   VFSChangeEvent,
 } from "./types";
 const EXCLUDED_FILES = [".env", ".gitignore", ".ssh", "node_modules"];
@@ -12,8 +12,8 @@ export class VFSStore {
   private listeners: ((event: VFSChangeEvent) => void)[] = [];
 
   constructor() {
-    // start with root directory
-    this.addDirectory("/");
+    // start with root folder
+    this.addFolder("/");
   }
 
   private isExcluded(path: string): boolean {
@@ -48,16 +48,17 @@ export class VFSStore {
 
     const name = path.split("/").pop() || "";
     const parentPath = path.substring(0, path.lastIndexOf("/")) || "/";
-    const parent = this.entries.get(parentPath) as VFSDirectory;
+    const parent = this.entries.get(parentPath) as VFSFolder;
 
-    if (!parent || parent.type !== "directory") {
+    if (!parent || parent.type !== "folder") {
       console.error(
-        `Parent directory not found or not a directory for path: ${path}`
+        `Parent folder not found or not a folder for path: ${path}`
       );
       return null;
     }
 
     const file: VFSFile = {
+      id: path, //any other suggestion???
       path,
       name,
       type: "file",
@@ -70,40 +71,41 @@ export class VFSStore {
     return file;
   }
 
-  addDirectory(path: string): VFSDirectory | null {
+  addFolder(path: string): VFSFolder | null {
     if (this.isExcluded(path)) {
       console.warn(`Attempted to add excluded directory: ${path}`);
       return null;
     }
     if (this.entries.has(path)) {
       console.warn(`Directory already exists: ${path}`);
-      return this.entries.get(path) as VFSDirectory;
+      return this.entries.get(path) as VFSFolder;
     }
 
     const name = path.split("/").pop() || "";
     const parentPath = path.substring(0, path.lastIndexOf("/")) || "/";
-    const parent = this.entries.get(parentPath) as VFSDirectory;
+    const parent = this.entries.get(parentPath) as VFSFolder;
 
-    if (path !== "/" && (!parent || parent.type !== "directory")) {
+    if (path !== "/" && (!parent || parent.type !== "folder")) {
       console.error(
-        `Parent directory not found or not a directory for path: ${path}`
+        `Parent folder not found or not a folder for path: ${path}`
       );
       return null;
     }
 
-    const directory: VFSDirectory = {
+    const folder: VFSFolder = {
+      id: path,
       path,
       name,
-      type: "directory",
+      type: "folder",
       children: [],
       lastModified: Date.now(),
     };
-    this.entries.set(path, directory);
-    if (parent && parent.type === "directory") {
+    this.entries.set(path, folder);
+    if (parent && parent.type === "folder") {
       parent.children.push(name);
     }
     this.emitChange({ type: "create", path });
-    return directory;
+    return folder;
   }
 
   getFile(path: string): VFSFile | undefined {
@@ -111,11 +113,9 @@ export class VFSStore {
     return entry && entry.type === "file" ? (entry as VFSFile) : undefined;
   }
 
-  getDirectory(path: string): VFSDirectory | undefined {
+  getDirectory(path: string): VFSFolder | undefined {
     const entry = this.entries.get(path);
-    return entry && entry.type === "directory"
-      ? (entry as VFSDirectory)
-      : undefined;
+    return entry && entry.type === "folder" ? (entry as VFSFolder) : undefined;
   }
 
   getEntry(path: string): VFSEntry | undefined {
@@ -143,15 +143,15 @@ export class VFSStore {
 
     // Remove from parent's children list
     const parentPath = path.substring(0, path.lastIndexOf("/")) || "/";
-    const parent = this.entries.get(parentPath) as VFSDirectory;
-    if (parent && parent.type === "directory") {
+    const parent = this.entries.get(parentPath) as VFSFolder;
+    if (parent && parent.type === "folder") {
       parent.children = parent.children.filter(
         (childName) => childName !== entry.name
       );
     }
 
-    //  delete children if it's a directory
-    if (entry.type === "directory") {
+    //  delete children if it's a folder
+    if (entry.type === "folder") {
       const childrenPaths = Array.from(this.entries.keys()).filter(
         (key) => key.startsWith(path + "/") && key !== path
       );
@@ -181,8 +181,8 @@ export class VFSStore {
 
     // Update parent's children list
     const oldParentPath = oldPath.substring(0, oldPath.lastIndexOf("/")) || "/";
-    const oldParent = this.entries.get(oldParentPath) as VFSDirectory;
-    if (oldParent && oldParent.type === "directory") {
+    const oldParent = this.entries.get(oldParentPath) as VFSFolder;
+    if (oldParent && oldParent.type === "folder") {
       oldParent.children = oldParent.children.filter(
         (childName) => childName !== entry.name
       );
@@ -190,10 +190,10 @@ export class VFSStore {
 
     const newName = newPath.split("/").pop() || "";
     const newParentPath = newPath.substring(0, newPath.lastIndexOf("/")) || "/";
-    const newParent = this.entries.get(newParentPath) as VFSDirectory;
-    if (!newParent || newParent.type !== "directory") {
+    const newParent = this.entries.get(newParentPath) as VFSFolder;
+    if (!newParent || newParent.type !== "folder") {
       console.error(
-        `New parent directory not found or not a directory for path: ${newPath}`
+        `New parent folder not found or not a folder for path: ${newPath}`
       );
       return null;
     }
@@ -206,8 +206,8 @@ export class VFSStore {
     this.entries.delete(oldPath);
     this.entries.set(newPath, entry);
 
-    // If it's a directory, update all children paths recursively
-    if (entry.type === "directory") {
+    // If it's a folder, update all children paths recursively
+    if (entry.type === "folder") {
       const childrenToUpdate: [string, VFSEntry][] = [];
       this.entries.forEach((childEntry, childPath) => {
         if (childPath.startsWith(oldPath + "/") && childPath !== oldPath) {
@@ -238,9 +238,9 @@ export class VFSStore {
     if (!root) return undefined;
 
     const buildNode = (entry: VFSEntry): VFSEntry => {
-      if (entry.type === "directory") {
-        const dir = entry as VFSDirectory;
-        const treeDir: VFSTreeDirectory = {
+      if (entry.type === "folder") {
+        const dir = entry as VFSFolder;
+        const treeDir: VFSTreeFolder = {
           ...dir,
           children: dir.children
             .map((childName) => {
