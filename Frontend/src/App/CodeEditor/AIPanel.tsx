@@ -12,7 +12,7 @@ interface Message {
 
 export default function AskAIPanel() {
   // const CODESPACE_API_URL = "http://localhost:4000/codespaces";
-  const CODESPACE_API_URL = "https://www.rtc-app.linkpc.net/codespaces";
+  const CODESPACE_API_URL = "https://www.rtc-app.linkpc.net/api";
 
   const { theme } = useTheme();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -52,7 +52,7 @@ export default function AskAIPanel() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${CODESPACE_API_URL}/api/chat`, {
+      const response = await fetch(`${CODESPACE_API_URL}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
