@@ -7,6 +7,8 @@ export interface AvatarProps {
   size?: "small" | "medium" | "large";
   className?: string;
   alt?: string;
+  onClick?: () => void;
+  clickable?: boolean;
 }
 
 const Avatar: React.FC<AvatarProps> = ({
@@ -16,6 +18,8 @@ const Avatar: React.FC<AvatarProps> = ({
   size = "medium",
   className = "",
   alt,
+  onClick,
+  clickable = true,
 }) => {
   // Size configurations
   const sizeConfig = {
@@ -89,9 +93,11 @@ const Avatar: React.FC<AvatarProps> = ({
         ${currentSize.font}
         flex-shrink-0
         ${className}
+        ${clickable ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}
       `}
       style={{ backgroundColor }}
       title={name}
+      onClick={clickable ? onClick : undefined}
     >
       {src ? (
         <>

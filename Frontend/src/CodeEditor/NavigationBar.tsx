@@ -16,6 +16,18 @@ const NavigationBar = () => {
   const collaborationService = useCollaboration();
   const navigate = useNavigate();
 
+  // Simple function to handle avatar clicks
+  const handleAvatarClick = (userName: string) => {
+    // Show a more user-friendly notification
+    const shouldNavigate = confirm(
+      `Would you like to view ${userName}'s profile?\n\n`
+    );
+
+    if (shouldNavigate) {
+      navigate("/profile");
+    }
+  };
+
   useEffect(() => {
     const unsubscribeConnection =
       collaborationService.onConnectionChange(setIsConnected);
@@ -68,6 +80,8 @@ const NavigationBar = () => {
                   src={user.avatar}
                   color={undefined}
                   size="small"
+                  clickable={true}
+                  onClick={() => handleAvatarClick(user.name)}
                 />
               ))}
               {connectedUsers.length > 3 && (

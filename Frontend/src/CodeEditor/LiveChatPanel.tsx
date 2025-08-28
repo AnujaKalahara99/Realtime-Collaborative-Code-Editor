@@ -26,6 +26,20 @@ export function ChatSpace() {
 
   const collaboration = useCollaboration();
 
+  // Simple function to handle avatar clicks in chat
+  const handleChatAvatarClick = (userName: string) => {
+    // Show a more user-friendly notification
+    const shouldNavigate = confirm(
+      `Would you like to view ${userName}'s profile?\n\n`
+    );
+
+    if (shouldNavigate) {
+      // For now, navigate to current user's profile
+      // Later this will navigate to the specific user's profile
+      window.open("/profile", "_blank");
+    }
+  };
+
   useEffect(() => {
     const awareness = collaboration.getAwareness();
     if (awareness) {
@@ -114,8 +128,10 @@ export function ChatSpace() {
                   <Avatar
                     name={msg.user}
                     src={msg.avatar}
-                    color={undefined} // Blue for current user
+                    color={undefined}
                     size="medium"
+                    clickable={true}
+                    onClick={() => handleChatAvatarClick(msg.user)}
                   />
 
                   {/* Message bubble */}
