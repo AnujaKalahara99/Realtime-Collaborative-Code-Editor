@@ -5,6 +5,7 @@ import { google } from "@ai-sdk/google";
 const router = express.Router();
 
 router.post("/chat", async (req, res) => {
+  console.log("Received chat request");
   try {
     const { messages } = req.body;
 
@@ -44,6 +45,7 @@ router.post("/chat", async (req, res) => {
       res.setHeader("Transfer-Encoding", "chunked");
 
       for await (const chunk of result.textStream) {
+        console.log(chunk);
         res.write(chunk);
       }
 
