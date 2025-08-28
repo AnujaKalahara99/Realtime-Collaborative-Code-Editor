@@ -38,6 +38,15 @@ export default function AskAIPanel() {
     }, 100);
   };
 
+  const getToken = () => {
+    const storageKey = `sb-${
+      import.meta.env.VITE_SUPABASE_PROJECT_ID
+    }-auth-token`;
+    const sessionDataString = localStorage.getItem(storageKey);
+    const sessionData = JSON.parse(sessionDataString || "null");
+    return sessionData?.access_token || "";
+  };
+
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]); // Also scroll when loading state changes
@@ -56,6 +65,7 @@ export default function AskAIPanel() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: getToken(),
         },
         body: JSON.stringify({ messages: [...messages, userMessage] }),
       });
