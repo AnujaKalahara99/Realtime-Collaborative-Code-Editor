@@ -18,7 +18,7 @@ const NavigationBar = () => {
 
   // Simple function to handle avatar clicks
   const handleAvatarClick = (userName: string) => {
-    // Show a more user-friendly notification
+    
     const shouldNavigate = confirm(
       `Would you like to view ${userName}'s profile?\n\n`
     );

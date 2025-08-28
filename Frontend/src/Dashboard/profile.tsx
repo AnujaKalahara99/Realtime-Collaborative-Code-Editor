@@ -60,6 +60,14 @@ export default function ProfilePage() {
               onClick={() => navigate("/dashboard")}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
+              Dashboard
+            </button>
+            <button
+              className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${theme.hover} ${theme.text} h-9 px-3`}
+              // onClick={() => navigate("/dashboard")}
+              onClick={() => navigate(-1)}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </button>
             <h1 className={`text-2xl font-bold ${theme.text}`}></h1>
