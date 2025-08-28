@@ -49,7 +49,7 @@ function Login() {
       provider: "google",
       options: {
         redirectTo:
-          "https://68aee7a468a50f41d684ab8b--rtc-editor.netlify.app/login",
+          "https://68aee7a468a50f41d684ab8b--rtc-editor.netlify.app/dashboard",
       },
     });
 

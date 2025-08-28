@@ -10,9 +10,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.use("/api", aiRoutes);
 app.use("/codespaces", codespaceRoutes);
 app.use("/codespaces", memberRoutes);
-app.use("/api", aiRoutes);
 app.use(errorHandler);
 
 app.get("/health", (req, res) => {

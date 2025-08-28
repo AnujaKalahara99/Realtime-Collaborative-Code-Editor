@@ -17,6 +17,23 @@ const ROUTES = [
     },
   },
   {
+    url: "/api",
+    auth: true,
+    creditCheck: false,
+    rateLimit: {
+      windowMs: 60 * 1000,
+      limit: 100,
+    },
+    proxy: {
+      // target: "http://localhost:5000/codespaces",
+      target: "http://codespace-service:5000/api",
+      changeOrigin: true,
+      pathRewrite: {
+        [`^/api`]: "",
+      },
+    },
+  },
+  {
     url: "/free",
     auth: false,
     creditCheck: false,
