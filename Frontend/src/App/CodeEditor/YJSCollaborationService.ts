@@ -30,6 +30,7 @@ export interface Message {
 }
 
 class YjsCollaborationService {
+  private readonly WS_URL = `${import.meta.env.VITE_BACKEND_WS_URL}/ws`;
   private doc: Y.Doc | null = null;
   private provider: WebsocketProvider | null = null;
   private fileSystemMap: Y.Map<FileNode[]> | null = null;
@@ -86,9 +87,7 @@ class YjsCollaborationService {
     this.doc = new Y.Doc();
 
     this.provider = new WebsocketProvider(
-      // "ws://localhost:4000/ws",
-      // "ws://144.24.128.44:4000/ws",
-      "wss://www.rtc-app.linkpc.net/ws",
+      this.WS_URL,
       this.currentCodespaceId,
       this.doc
     );
