@@ -2,6 +2,8 @@ import { CodespaceService } from "../services/codespaceService.js";
 
 export class CodespaceController {
   static async getCodespaces(req, res, next) {
+    // console.log("Fetching codespaces for user:", req.user.id);
+
     try {
       const codespaces = await CodespaceService.getUserCodespaces(req.user.id);
       res.json({

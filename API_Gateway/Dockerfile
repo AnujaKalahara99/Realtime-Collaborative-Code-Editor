@@ -14,6 +14,8 @@ ENV HOST=0.0.0.0
 
 ENV SUPABASE_JWT_SECRET="5zUyIiUCwuVglYQiXu847i+uIoaphtR4dih5mnVCP+7cHgt8gOdbpslgKwkGhzoS+9+h8sL/iDlLg9WRheSqpQ=="
 
+ENV NODE_ENV="production"
+
 EXPOSE 4000
 
 CMD [ "npm", "start" ]
