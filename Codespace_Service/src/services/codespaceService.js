@@ -386,3 +386,267 @@ static async acceptInvitation(invitationId) {
   }
 }  
 }
+
+
+// import { supabase } from "./supabaseClient.js";
+// import nodemailer from "nodemailer";
+
+// const from = process.env.Email_user;
+// const key = process.env.Email_password;
+
+// export class CodespaceService {
+//   static async getUserCodespaces(userId) {
+//     const { data, error } = await supabase.rpc("get_user_codespaces", {
+//       p_user_id: userId,
+//     });
+
+//     if (error) throw error;
+
+//     return data; // Returns array of { id, name, last_modified, role }
+//   }
+
+//   static async createCodespace(name, userId) {
+//     const { data, error } = await supabase.rpc("create_codespace", {
+//       p_name: name,
+//       p_user_id: userId,
+//     });
+
+//     if (error) throw error;
+
+//     return data[0]; // Returns { id, name, last_modified, role }
+//   }
+
+//   static async updateCodespace(codespaceId, name, userId) {
+//     const { data, error } = await supabase.rpc("update_codespace", {
+//       p_codespace_id: codespaceId,
+//       p_name: name,
+//       p_user_id: userId,
+//     });
+
+//     if (error) {
+//       // Map custom error codes to match original error handling
+//       if (error.code === "CNF01") {
+//         const notFoundError = new Error("Codespace not found or access denied");
+//         notFoundError.statusCode = 404;
+//         notFoundError.code = "CODESPACE_NOT_FOUND";
+//         throw notFoundError;
+//       }
+//       if (error.code === "CIP01") {
+//         const permissionError = new Error("Insufficient permissions");
+//         permissionError.statusCode = 403;
+//         permissionError.code = "INSUFFICIENT_PERMISSIONS";
+//         throw permissionError;
+//       }
+//       throw error;
+//     }
+
+//     return data[0]; // Returns { id, name, last_modified, role }
+//   }
+
+//   static async deleteCodespace(codespaceId, userId) {
+//     const { data, error } = await supabase.rpc("delete_codespace", {
+//       p_codespace_id: codespaceId,
+//       p_user_id: userId,
+//     });
+
+//     if (error) {
+//       // Map custom error codes
+//       if (error.code === "CNF01") {
+//         const notFoundError = new Error("Codespace not found or access denied");
+//         notFoundError.statusCode = 404;
+//         notFoundError.code = "CODESPACE_NOT_FOUND";
+//         throw notFoundError;
+//       }
+//       if (error.code === "CIP01") {
+//         const permissionError = new Error("Insufficient permissions");
+//         permissionError.statusCode = 403;
+//         permissionError.code = "INSUFFICIENT_PERMISSIONS";
+//         throw permissionError;
+//       }
+//       throw error;
+//     }
+
+//     return data; // Returns true
+//   }
+
+//   static async checkUserPermission(codespaceId, userId, allowedRoles = []) {
+//     const { data, error } = await supabase.rpc("check_user_permission", {
+//       p_codespace_id: codespaceId,
+//       p_user_id: userId,
+//       p_allowed_roles: allowedRoles,
+//     });
+
+//     if (error) {
+//       // Map custom error codes
+//       if (error.code === "CNF01") {
+//         const notFoundError = new Error("Codespace not found or access denied");
+//         notFoundError.statusCode = 404;
+//         notFoundError.code = "CODESPACE_NOT_FOUND";
+//         throw notFoundError;
+//       }
+//       if (error.code === "CIP01") {
+//         const permissionError = new Error("Insufficient permissions");
+//         permissionError.statusCode = 403;
+//         permissionError.code = "INSUFFICIENT_PERMISSIONS";
+//         throw permissionError;
+//       }
+//       throw error;
+//     }
+
+//     return data[0]; // Returns { role }
+//   }
+
+//   static async getUserCodespaceMembership(codespaceId, userId) {
+//     const { data, error } = await supabase.rpc("get_user_codespace_membership", {
+//       p_codespace_id: codespaceId,
+//       p_user_id: userId,
+//     });
+
+//     if (error) {
+//       // Map custom error code
+//       if (error.code === "CMF01") {
+//         const notFoundError = new Error("Codespace membership not found");
+//         notFoundError.statusCode = 404;
+//         notFoundError.code = "MEMBERSHIP_NOT_FOUND";
+//         throw notFoundError;
+//       }
+//       throw error;
+//     }
+
+//     return data[0]; // Returns { role }
+//   }
+
+//   static async shareCodespaceByEmail(codespaceId, email, userId, role) {
+//     const trimmedCodespaceId = codespaceId.trim();
+//     if (!trimmedCodespaceId) throw new Error("Codespace ID is required");
+//     if (!email || !email.trim()) throw new Error("Email is required");
+//     if (!userId) throw new Error("User ID is required");
+
+//     try {
+//       // Call stored procedure to handle database operations
+//       const { data: invitation, error } = await supabase.rpc("share_codespace_by_email", {
+//         p_codespace_id: trimmedCodespaceId,
+//         p_email: email,
+//         p_user_id: userId,
+//         p_role: role,
+//       });
+
+//       if (error) {
+//         console.error("Supabase RPC error:", error);
+//         throw new Error(`Failed to create invitation: ${error.message}`);
+//       }
+
+//       // Configure SMTP transport
+//       const transporter = nodemailer.createTransport({
+//         service: "Gmail",
+//         auth: {
+//           user: from,
+//           pass: key,
+//         },
+//       });
+
+//       // Construct share link using invitation ID
+//       const shareLink = `http://localhost:5173/codespace/sharebyemail/${invitation[0].invitation_id}`;
+
+//       // Compose email
+//       const mailOptions = {
+//         from: '"Realtime Code Editor" <m.mannage@gmail.com>',
+//         to: email,
+//         subject: "A Codespace Has Been Shared With You",
+//         html: `
+//           <html>
+//             <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #e2e8f0;">
+//               <div style="max-width: 600px; margin: 20px auto; padding: 30px; background: linear-gradient(145deg, #1e293b 0%, #334155 100%); border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); border: 1px solid #475569;">
+//                 <!-- Header with Icon -->
+//                 <div style="text-align: center; margin-bottom: 30px;">
+//                   <div style="display: inline-block; width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 16px; margin-bottom: 20px; position: relative; box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);">
+//                     <svg style="width: 32px; height: 32px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); fill: white;" viewBox="0 0 24 24">
+//                       <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" stroke="currentColor" stroke-width="2" fill="none"/>
+//                     </svg>
+//                   </div>
+//                   <h2 style="color: #f1f5f9; font-size: 28px; font-weight: 700; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">You've Been Invited to a Codespace</h2>
+//                 </div>
+//                 <p style="font-size: 18px; color: #cbd5e1; font-weight: 500;">Hi there! 👋</p>
+//                 <p style="font-size: 16px; color: #cbd5e1; line-height: 1.6;">You've been invited to collaborate on a codespace as a <strong style="color: #60a5fa; background: rgba(96,165,250,0.1); padding: 2px 8px; border-radius: 6px; font-weight: 600;">${role}</strong>. Click the link below to access it:</p>
+//                 <div style="background: rgba(30, 41, 59, 0.5); border-radius: 12px; padding: 20px; margin: 25px 0; border: 1px solid #475569;">
+//                   <h3 style="margin: 0 0 15px; font-size: 16px; color: #f1f5f9; font-weight: 600;">🎯 What you'll get:</h3>
+//                   <div style="display: flex; justify-content: space-between; gap: 15px;">
+//                     <div style="flex: 1;">
+//                       <div style="display: flex; align-items: center; margin-bottom: 8px;">
+//                         <div style="width: 6px; height: 6px; background: #22c55e; border-radius: 50%; margin-right: 8px;"></div>
+//                         <span style="color: #e2e8f0; font-size: 14px;">Real-time collaboration</span>
+//                       </div>
+//                       <div style="display: flex; align-items: center;">
+//                         <div style="width: 6px; height: 6px; background: #f59e0b; border-radius: 50%; margin-right: 8px;"></div>
+//                         <span style="color: #e2e8f0; font-size: 14px;">Code synchronization</span>
+//                       </div>
+//                     </div>
+//                     <div style="flex: 1;">
+//                       <div style="display: flex; align-items: center; margin-bottom: 8px;">
+//                         <div style="width: 6px; height: 6px; background: #3b82f6; border-radius: 50%; margin-right: 8px;"></div>
+//                         <span style="color: #e2e8f0; font-size: 14px;">Shared workspace</span>
+//                       </div>
+//                       <div style="display: flex; align-items: center;">
+//                         <div style="width: 6px; height: 6px; background: #8b5cf6; border-radius: 50%; margin-right: 8px;"></div>
+//                         <span style="color: #e2e8f0; font-size: 14px;">Instant messaging</span>
+//                       </div>
+//                     </div>
+//                   </div>
+//                 </div>
+//                 <div style="text-align: center; margin: 30px 0;">
+//                   <a href="${shareLink}" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 16px 32px; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 12px; display: inline-block; box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3); border: 1px solid rgba(255,255,255,0.2); transition: all 0.3s ease;">🚀 Open Codespace</a>
+//                 </div>
+//                 <div style="background: rgba(15, 23, 42, 0.5); border-radius: 8px; padding: 15px; margin: 25px 0; border: 1px solid #334155;">
+//                   <p style="margin: 0 0 8px; font-size: 13px; color: #94a3b8; text-align: center;">Can't click the button? Copy this link:</p>
+//                   <div style="background: rgba(0,0,0,0.3); border-radius: 4px; padding: 8px; border: 1px solid #475569;">
+//                     <code style="font-family: monospace; font-size: 12px; color: #60a5fa; word-break: break-all; line-height: 1.3;">${shareLink}</code>
+//                   </div>
+//                 </div>
+//                 <p style="font-size: 14px; color: #94a3b8; text-align: center; margin-top: 25px;">If you weren't expecting this, you can ignore this email.</p>
+//                 <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #334155;">
+//                   <p style="font-size: 12px; color: #64748b; margin: 0;">This invitation expires in 7 days • Powered by Codespace</p>
+//                 </div>
+//               </div>
+//             </body>
+//           </html>
+//         `,
+//       };
+
+//       // Send email
+//       await transporter.sendMail(mailOptions);
+//       console.log(`Codespace sharing email sent to ${email} successfully.`);
+
+//       return { invitation: invitation[0] }; // Return invitation details
+//     } catch (err) {
+//       console.error("Error in shareCodespaceByEmail:", err);
+//       throw err;
+//     }
+//   }
+
+//   static async acceptInvitation(invitationId) {
+//     const { data, error } = await supabase.rpc("accept_invitation", {
+//       p_invitation_id: invitationId,
+//     });
+
+//     if (error) {
+//       console.error("Supabase RPC error:", error);
+//       throw new Error(`Failed to accept invitation: ${error.message}`);
+//     }
+
+//     return {
+//       invitation: {
+//         id: data[0].invitation_id,
+//         workspace_id: data[0].workspace_id,
+//         email: data[0].email,
+//         role: data[0].role,
+//         invited_by: data[0].invited_by,
+//         accepted_at: data[0].accepted_at,
+//       },
+//       member: {
+//         id: data[0].member_id,
+//         user_id: data[0].member_user_id,
+//         joined_at: data[0].member_joined_at,
+//       },
+//     };
+//   }
+// }
