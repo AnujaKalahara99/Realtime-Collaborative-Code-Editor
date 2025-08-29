@@ -233,7 +233,7 @@ export class YjsPersistence {
         if (!existingFile) {
           // Insert new file
           const { error } = await supabase.from("files").insert({
-            id: file.id,
+            
             workspace_id: workspaceId,
             name: file.name,
             file_type: file.type || "file",
