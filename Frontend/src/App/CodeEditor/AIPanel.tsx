@@ -11,8 +11,7 @@ interface Message {
 }
 
 export default function AskAIPanel() {
-  // const CODESPACE_API_URL = "http://localhost:4000/codespaces";
-  const CODESPACE_API_URL = "https://www.rtc-app.linkpc.net/codespaces";
+  const CODESPACE_API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
 
   const { theme } = useTheme();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -38,6 +37,15 @@ export default function AskAIPanel() {
     }, 100);
   };
 
+  const getToken = () => {
+    const storageKey = `sb-${
+      import.meta.env.VITE_SUPABASE_PROJECT_ID
+    }-auth-token`;
+    const sessionDataString = localStorage.getItem(storageKey);
+    const sessionData = JSON.parse(sessionDataString || "null");
+    return sessionData?.access_token || "";
+  };
+
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]); // Also scroll when loading state changes
@@ -52,10 +60,11 @@ export default function AskAIPanel() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${CODESPACE_API_URL}/api/chat`, {
+      const response = await fetch(`${CODESPACE_API_URL}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: getToken(),
         },
         body: JSON.stringify({ messages: [...messages, userMessage] }),
       });

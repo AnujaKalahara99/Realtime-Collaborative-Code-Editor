@@ -48,8 +48,7 @@ function Login() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo:
-          "https://68aee7a468a50f41d684ab8b--rtc-editor.netlify.app/login",
+        redirectTo: `${import.meta.env.VITE_AUTH_CALLBACK_URL}`,
       },
     });
 

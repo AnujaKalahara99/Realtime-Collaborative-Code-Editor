@@ -3,8 +3,7 @@ import { type Session } from "@supabase/supabase-js";
 import { type Codespace } from "./codespace.types";
 
 export const useCodespaces = (session: Session) => {
-  // const CODESPACE_API_URL = "http://localhost:4000/codespaces";
-  const CODESPACE_API_URL = "https://www.rtc-app.linkpc.net/codespaces";
+  const CODESPACE_API_URL = `${import.meta.env.VITE_BACKEND_URL}/codespaces`;
 
   const [codespaces, setCodespaces] = useState<Codespace[]>([]);
   const user = session.user;

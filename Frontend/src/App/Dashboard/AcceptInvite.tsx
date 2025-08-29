@@ -14,8 +14,7 @@ const getToken = () => {
 };
 
 const CollaboratePage: React.FC = () => {
-  // const CODESPACE_API_URL = "http://localhost:4000/codespaces";
-  const CODESPACE_API_URL = "https://www.rtc-app.linkpc.net/codespaces";
+  const CODESPACE_API_URL = `${import.meta.env.VITE_BACKEND_URL}/codespaces`;
 
   const navigate = useNavigate();
   const { invitationId } = useParams<{ invitationId: string }>();
@@ -24,10 +23,6 @@ const CollaboratePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showContent, setShowContent] = useState(false);
 
-  // Debugging: Log the invitationId
-  console.log("Invitation ID:", invitationId);
-
-  // Animation effect
   useEffect(() => {
     const timer = setTimeout(() => setShowContent(true), 100);
     return () => clearTimeout(timer);
@@ -36,7 +31,6 @@ const CollaboratePage: React.FC = () => {
   const handleProceed = async () => {
     if (!invitationId) {
       setError("No invitation ID found in URL");
-      console.error("No invitationId provided in URL");
       return;
     }
 
@@ -61,7 +55,6 @@ const CollaboratePage: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log("API response:", data);
       console.log("API response22:", data.invitation.workspace_id);
 
       navigate(
