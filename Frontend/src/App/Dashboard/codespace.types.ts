@@ -4,7 +4,17 @@ export interface Codespace {
   lastModified: string;
   created_at: string;
   owner: string;
-  role: string; 
+  role: string;
+}
+
+export interface CodespaceDetails extends Codespace {
+  sessions?: {
+    sessionId: string;
+    branchId: string;
+    name: string;
+  }[];
+  gitHubRepo?: string;
+  repoId?: string;
 }
 
 export type ViewMode = "grid" | "list";

@@ -1,25 +1,30 @@
-
-import { type Codespace, type ViewMode } from "./codespace.types";
+import { useCodespaceContext } from "../../Contexts/CodespaceContext";
+import { type ViewMode } from "./codespace.types";
 import CreateCodespaceCard from "./CreateCodespaceCard";
 import CodespaceCard from "./CodespaceCard";
 
 interface Props {
-  codespaces: Codespace[];
+  searchQuery: string;
   viewMode: ViewMode;
-  onCreateWorkspace: () => void;
-  onDeleteWorkspace: (id: string) => Promise<boolean>;
-  onShareWorkspace: (id: string, newEmail: string,newrole:string) => Promise<boolean>;
-  onEditWorkspace: (id: string, newName: string) => Promise<boolean>; // Update signature
+  onOpenCreateModal: () => void;
 }
 
-function CodespaceGrid({
-  codespaces,
-  viewMode,
-  onCreateWorkspace,
-  onDeleteWorkspace,
-  onShareWorkspace,
-  onEditWorkspace,
-}: Props) {
+function CodespaceGrid({ searchQuery, viewMode, onOpenCreateModal }: Props) {
+  const { codespaces, loading } = useCodespaceContext();
+
+  // Filter codespaces based on search query with null check
+  const filteredCodespaces = codespaces.filter((codespace) =>
+    codespace?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`${
@@ -28,19 +33,17 @@ function CodespaceGrid({
           : "space-y-3"
       } mb-8`}
     >
-      <CreateCodespaceCard viewMode={viewMode} onClick={onCreateWorkspace} />
+      <CreateCodespaceCard viewMode={viewMode} onClick={onOpenCreateModal} />
 
-      {codespaces.map((codespace) => (
+      {filteredCodespaces.map((codespace) => (
         <CodespaceCard
           key={codespace.id}
           codespace={codespace}
           viewMode={viewMode}
-          onDelete={() => onDeleteWorkspace(codespace.id)}
-          onShare={(newEmail,newrole) => onShareWorkspace(codespace.id, newEmail, newrole)} // Assuming "viewer" is the default role
-          onEdit={(newName) => onEditWorkspace(codespace.id, newName)} // Pass newName
         />
       ))}
     </div>
   );
 }
+
 export default CodespaceGrid;

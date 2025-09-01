@@ -30,50 +30,30 @@ export class CodespaceService {
         hour: "2-digit",
         minute: "2-digit",
       }),
-      role: workspace.workspace_members[0]?.role || "member",
+      role: workspace.workspace_members[0]?.role,
     }));
   }
 
   static async createCodespace(name, userId) {
-    // Start transaction-like operations
-    const { data: workspaceData, error: workspaceError } = await supabase
-      .from("workspaces")
-      .insert({
-        name,
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+    const { data, error } = await supabase.rpc("create_codespace", {
+      p_workspace_name: name,
+      p_user_id: userId,
+    });
 
-    if (workspaceError) throw workspaceError;
+    if (error) throw error;
 
-    try {
-      const { data: workspace_members, error: memberError } = await supabase
-        .from("workspace_members")
-        .insert({
-          workspace_id: workspaceData.id,
-          user_id: userId,
-          role: "owner",
-          joined_at: new Date().toISOString(),
-        });
+    // data is an array of one row returned by the function
+    const row = data[0];
 
-      if (memberError) {
-        // Cleanup: Delete the workspace if member creation fails
-        await supabase.from("workspaces").delete().eq("id", workspaceData.id);
-        throw memberError;
-      }
-
-      return {
-        id: workspaceData.id,
-        name: workspaceData.name,
-        lastModified: new Date().toISOString(),
-        role: "owner",
-      };
-    } catch (error) {
-      // Ensure cleanup on any error
-      await supabase.from("workspaces").delete().eq("id", workspaceData.id);
-      throw error;
-    }
+    return {
+      id: row.workspace_id,
+      name: row.workspace_name,
+      lastModified: row.workspace_created_at, // <-- mapped here
+      role: row.role,
+      repoId: row.repo_id,
+      branchId: row.branch_id,
+      sessionId: row.session_id,
+    };
   }
 
   static async updateCodespace(codespaceId, name, userId) {

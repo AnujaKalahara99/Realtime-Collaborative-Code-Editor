@@ -1,0 +1,18 @@
+{
+  "name": "worker-git",
+  "version": "1.0.0",
+  "description": "Worker service for handling Git operations in the Version Engine project.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "bullmq": "^5.56.1",
+    "dotenv": "^10.0.0",
+    "node-fetch": "^2.6.1",
+    "simple-git": "^3.28.0"
+  },
+  "author": "Your Name",
+  "license": "MIT"
+}

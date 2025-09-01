@@ -2,24 +2,19 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { FileText, Trash2, Share2, Edit, SettingsIcon } from "lucide-react";
 import { useTheme } from "../../Contexts/ThemeProvider";
+import { useCodespaceContext } from "../../Contexts/CodespaceContext";
 import { type Codespace, type ViewMode } from "./codespace.types";
 
 interface Props {
   codespace: Codespace;
   viewMode: ViewMode;
-  onDelete?: () => void;
-  onShare?: (email: string, role: "Developer" | "Admin") => void;
-  onEdit?: (newName: string) => void;
 }
 
-function CodespaceCard({
-  codespace,
-  viewMode,
-  onDelete,
-  onShare,
-  onEdit,
-}: Props) {
+function CodespaceCard({ codespace, viewMode }: Props) {
   const { theme } = useTheme();
+  const { deleteCodespace, shareCodespaceByEmail, editCodespace } =
+    useCodespaceContext();
+
   const [showMenu, setShowMenu] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -54,9 +49,9 @@ function CodespaceCard({
     setShowMenu((prev) => !prev);
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    onDelete?.();
+    await deleteCodespace(codespace.id);
     setShowMenu(false);
   };
 
@@ -73,11 +68,13 @@ function CodespaceCard({
     setShowMenu(false);
   };
 
-  const submitEdit = () => {
+  const submitEdit = async () => {
     if (nameInput.trim()) {
-      setDisplayName(nameInput.trim());
-      onEdit?.(nameInput.trim());
-      setEditModalOpen(false);
+      const success = await editCodespace(codespace.id, nameInput.trim());
+      if (success) {
+        setDisplayName(nameInput.trim());
+        setEditModalOpen(false);
+      }
     } else {
       alert("Codespace name cannot be empty");
     }
@@ -89,9 +86,9 @@ function CodespaceCard({
     }
   };
 
-  const submitShare = () => {
+  const submitShare = async () => {
     if (emailInput.trim()) {
-      onShare?.(emailInput.trim(), roleInput);
+      await shareCodespaceByEmail(codespace.id, emailInput.trim(), roleInput);
       setEmailInput("");
       setRoleInput("Developer");
       setShareModalOpen(false);
@@ -159,55 +156,47 @@ function CodespaceCard({
           </div>
         </div>
 
-        {(onDelete || onEdit || onShare) && (
-          <div className="relative" ref={menuRef}>
-            <button
-              onClick={toggleMenu}
-              className={`${
-                theme.hover
-              } cursor-pointer p-2 rounded-lg transition-colors ${
-                viewMode === "grid" ? " mt-4" : ""
-              } z-10`}
-            >
-              <SettingsIcon size={24} className={theme.textSecondary} />
-            </button>
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={toggleMenu}
+            className={`${
+              theme.hover
+            } cursor-pointer p-2 rounded-lg transition-colors ${
+              viewMode === "grid" ? " mt-4" : ""
+            } z-10`}
+          >
+            <SettingsIcon size={24} className={theme.textSecondary} />
+          </button>
 
-            {showMenu && (
-              <div
-                className={`${theme.surface} absolute right-0 ${
-                  viewMode === "grid"
-                    ? "top-[calc(100%+4px)]"
-                    : "top-[calc(100%+4px)]"
-                } z-50 border ${theme.border} rounded-md shadow-lg p-2 w-48`}
+          {showMenu && (
+            <div
+              className={`${theme.surface} absolute right-0 ${
+                viewMode === "grid"
+                  ? "top-[calc(100%+4px)]"
+                  : "top-[calc(100%+4px)]"
+              } z-50 border ${theme.border} rounded-md shadow-lg p-2 w-48`}
+            >
+              <button
+                onClick={handleEdit}
+                className={`flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 w-full px-3 py-2 rounded-md ${theme.hover}`}
               >
-                {onEdit && (
-                  <button
-                    onClick={handleEdit}
-                    className={`flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 w-full px-3 py-2 rounded-md ${theme.hover}`}
-                  >
-                    <Edit size={14} /> Edit
-                  </button>
-                )}
-                {onShare && (
-                  <button
-                    onClick={handleShare}
-                    className={`flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 w-full px-3 py-2 rounded-md ${theme.hover}`}
-                  >
-                    <Share2 size={14} /> Share
-                  </button>
-                )}
-                {onDelete && (
-                  <button
-                    onClick={handleDelete}
-                    className={`flex items-center gap-2 text-sm text-red-600 hover:text-red-700 w-full px-3 py-2 rounded-md ${theme.hover}`}
-                  >
-                    <Trash2 size={14} /> Delete
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+                <Edit size={14} /> Edit
+              </button>
+              <button
+                onClick={handleShare}
+                className={`flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 w-full px-3 py-2 rounded-md ${theme.hover}`}
+              >
+                <Share2 size={14} /> Share
+              </button>
+              <button
+                onClick={handleDelete}
+                className={`flex items-center gap-2 text-sm text-red-600 hover:text-red-700 w-full px-3 py-2 rounded-md ${theme.hover}`}
+              >
+                <Trash2 size={14} /> Delete
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Tooltip for double-click hint */}
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">

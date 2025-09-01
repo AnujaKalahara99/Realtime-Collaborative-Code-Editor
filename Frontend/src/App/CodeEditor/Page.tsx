@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FileText, GitBranch, MessageCircle, Play, Bot } from "lucide-react";
 import ProjectManagementPanel from "./ProjectManagementPanel/ProjectManagementPanel";
-import GitPanel from "./GitPanel";
+import GitPanel from "./GitPanel/GitPanel";
 import AskAIPanel from "./AIPanel";
 import LiveChatPanel from "./LiveChatPanel";
 import CompilerPanel from "./CompilerPanel";

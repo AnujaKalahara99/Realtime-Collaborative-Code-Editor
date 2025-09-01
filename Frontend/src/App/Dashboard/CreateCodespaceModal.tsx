@@ -1,121 +1,99 @@
-
 import { useState } from "react";
+import { useCodespaceContext } from "../../Contexts/CodespaceContext";
 import { useTheme } from "../../Contexts/ThemeProvider";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (name: string) => Promise<boolean>; // ✅ only name
 }
 
-function CreateCodespaceModal({ isOpen, onClose, onSubmit }: Props) {
+function CreateCodespaceModal({ isOpen, onClose }: Props) {
   const { theme } = useTheme();
-  const [codespaceName, setCodespaceName] = useState("");
-
-  // frontend-only states
-  const [language, setLanguage] = useState("javascript");
-  const [visibility, setVisibility] = useState("private");
+  const { createCodespace } = useCodespaceContext();
+  const [codespaceInput, setCodespaceInput] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!codespaceInput.trim()) {
+      setErrorMessage("Codespace name cannot be empty");
+      return;
+    }
 
-    const success = await onSubmit(codespaceName);
+    setIsSubmitting(true);
+    setErrorMessage("");
 
-    if (success) {
-      setCodespaceName("");
-      setLanguage("javascript"); // reset UI
-      setVisibility("private");  // reset UI
-      onClose();
+    try {
+      const success = await createCodespace(codespaceInput);
+      if (success) {
+        setCodespaceInput("");
+        onClose();
+      } else {
+        setErrorMessage("Failed to create codespace");
+      }
+    } catch (error) {
+      setErrorMessage(
+        "An error occurred while creating the codespace: " + error
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleClose = () => {
-    setCodespaceName("");
-    setLanguage("javascript");
-    setVisibility("private");
-    onClose();
-  };
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className={`${theme.surface} rounded-lg shadow-xl w-full max-w-md`}>
-        <div className="p-6">
-          <h3 className={`text-lg font-semibold ${theme.text} mb-4`}>
-            Create New Codespace
-          </h3>
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Codespace Name */}
-            <input
-              type="text"
-              value={codespaceName}
-              onChange={(e) => setCodespaceName(e.target.value)}
-              placeholder="Enter codespace name..."
-              className={`w-full p-3 ${theme.border} border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme.text}`}
-              autoFocus
-            />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div
+        className={`${theme.surface} p-6 rounded-lg shadow-lg w-full max-w-md`}
+      >
+        <h2 className={`text-xl font-semibold mb-4 ${theme.text}`}>
+          Create New Codespace
+        </h2>
+        <form onSubmit={handleSubmit}>
+          <label
+            htmlFor="workspace-name"
+            className={`block mb-2 text-sm font-medium ${theme.text}`}
+          >
+            Name
+          </label>
+          <input
+            type="text"
+            id="workspace-name"
+            className={`w-full px-3 py-2 border ${theme.border} rounded-md ${theme.surface} ${theme.text}`}
+            placeholder="Enter codespace name"
+            value={codespaceInput}
+            onChange={(e) => setCodespaceInput(e.target.value)}
+            autoFocus
+          />
 
-            <div>
-              <label className={`block mb-2 text-sm font-medium ${theme.text}`}>
-                Language
-              </label>
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className={`w-full p-3 ${theme.border} border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme.text} ${theme.surface}`}
-              >
-                <option value="javascript">JavaScript</option>
-                <option value="python">Python</option>
-                <option value="java">Java</option>
-                <option value="cpp">C++</option>
-                <option value="go">Go</option>
-              </select>
-            </div>
+          {errorMessage && (
+            <p className="mt-2 text-sm text-red-600">{errorMessage}</p>
+          )}
 
-            <div>
-              <label className={`block mb-2 text-sm font-medium ${theme.text}`}>
-                Visibility
-              </label>
-              <div className="flex space-x-3">
-                {["private", "public", "organization"].map((option) => (
-                  <label
-                    key={option}
-                    className={`flex items-center space-x-2 p-2 border rounded-lg cursor-pointer ${theme.border} ${theme.surface}`}
-                  >
-                    <input
-                      type="radio"
-                      value={option}
-                      checked={visibility === option}
-                      onChange={(e) => setVisibility(e.target.value)}
-                      className="form-radio text-blue-500"
-                    />
-                    <span className={theme.text}>
-                      {option.charAt(0).toUpperCase() + option.slice(1)}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-3 pt-2">
-              <button
-                type="button"
-                className={`px-4 py-2 ${theme.hover} ${theme.textSecondary} rounded-lg transition-colors`}
-                onClick={handleClose}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                disabled={!codespaceName.trim()}
-              >
-                Create
-              </button>
-            </div>
-          </form>
-        </div>
+          <div className="mt-6 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setCodespaceInput("");
+                setErrorMessage("");
+                onClose();
+              }}
+              className={`px-4 py-2 ${theme.surfaceSecondary} ${theme.text} text-sm rounded ${theme.hover}`}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Creating..." : "Create"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

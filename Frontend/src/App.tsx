@@ -13,6 +13,7 @@ import Homepage from "./App/Home/Homepage";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import { supabase } from "./database/superbase";
 import { type Session, type User } from "@supabase/supabase-js";
+import { CodespaceProvider } from "./Contexts/CodespaceContext";
 function App() {
   const [session, setSession] = useState<Session | null>(null);
   const lastTokenRef = useRef<string | undefined>(undefined);
@@ -54,53 +55,55 @@ function App() {
   return (
     <ThemeProvider>
       <ProfileProvider>
-        <Router>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/homepage" element={<Homepage />} />
+        <CodespaceProvider session={session}>
+          <Router>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/homepage" element={<Homepage />} />
 
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  {session && <Dashboard session={session} />}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <SettingsPage />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    {session && <Dashboard session={session} />}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <SettingsPage />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route path="/codeeditor/:id" element={<CodeEditorPage />} />
-            <Route
-              path="/codespace/sharebyemail/:invitationId"
-              element={<CodespaceInvitation />}
-            />
-            <Route
+              <Route path="/codeeditor/:id" element={<CodeEditorPage />} />
+              <Route
+                path="/codespace/sharebyemail/:invitationId"
+                element={<CodespaceInvitation />}
+              />
+              {/* <Route
               path="/codeeditor"
               element={
                 <ProtectedRoute>
                   <CodeEditorPage />
                 </ProtectedRoute>
               }
-            />
-            <Route path="/" element={<Homepage />} />
-          </Routes>
-        </Router>
+            /> */}
+              <Route path="/" element={<Homepage />} />
+            </Routes>
+          </Router>
+        </CodespaceProvider>
       </ProfileProvider>
     </ThemeProvider>
   );
