@@ -18,7 +18,7 @@ interface CodespaceContextType {
     role: string
   ) => Promise<boolean>;
   editCodespace: (id: string, newName: string) => Promise<boolean>;
-  selectCodespace: (id: string) => void;
+  selectCodespace: (id: string) => Promise<string>;
   clearSelectedCodespace: () => void;
   updateCodespaceDetails: (
     details: Partial<CodespaceDetails>
@@ -34,7 +34,7 @@ const initialCodespaceContext: CodespaceContextType = {
   deleteCodespace: async () => false,
   shareCodespaceByEmail: async () => false,
   editCodespace: async () => false,
-  selectCodespace: () => {},
+  selectCodespace: async () => "",
   clearSelectedCodespace: () => {},
   updateCodespaceDetails: async () => false,
 };
@@ -254,7 +254,7 @@ export const CodespaceProvider: React.FC<{
     return false;
   };
 
-  const selectCodespace = async (id: string) => {
+  const selectCodespace = async (id: string): Promise<string> => {
     const result = await handleApiRequest(
       `${CODESPACE_API_URL}/${id}`,
       "GET",
@@ -263,8 +263,22 @@ export const CodespaceProvider: React.FC<{
     );
 
     if (result.success && result.data?.codespace) {
-      setSelectedCodespace(result.data.codespace);
+      const codespaceDetails: CodespaceDetails = {
+        id: result.data.codespace.id,
+        name: result.data.codespace.name,
+        lastModified: formatDateTime(result.data.codespace.lastModified),
+        created_at: result.data.codespace.created_at,
+        owner: userName,
+        role: result.data.codespace.role,
+        sessions: result.data.codespace.sessions || [],
+        gitHubRepo: result.data.codespace.gitHubRepo || "",
+      };
+
+      setSelectedCodespace(codespaceDetails);
+      return result.data.codespace.sessions[0]?.sessionId || "";
     }
+
+    return "";
   };
 
   const clearSelectedCodespace = () => {

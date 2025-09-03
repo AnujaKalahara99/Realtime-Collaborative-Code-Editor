@@ -34,6 +34,28 @@ export class CodespaceService {
     }));
   }
 
+  static async getCodespaceDetails(userId, codespaceId) {
+    const { data, error } = await supabase.rpc("get_codespace_details", {
+      p_user_id: userId,
+      p_workspace_id: codespaceId,
+    });
+
+    if (error) throw error;
+
+    const row = data[0];
+
+    return {
+      id: row.id,
+      name: row.name,
+      lastModified: row.created_at,
+      created_at: row.created_at,
+      role: row.role,
+      owner: row.owner,
+      gitHubRepo: row.githubrepo,
+      sessions: row.sessions,
+    };
+  }
+
   static async createCodespace(name, userId) {
     const { data, error } = await supabase.rpc("create_codespace", {
       p_workspace_name: name,
@@ -42,13 +64,12 @@ export class CodespaceService {
 
     if (error) throw error;
 
-    // data is an array of one row returned by the function
     const row = data[0];
 
     return {
       id: row.workspace_id,
       name: row.workspace_name,
-      lastModified: row.workspace_created_at, // <-- mapped here
+      lastModified: row.workspace_created_at,
       role: row.role,
       repoId: row.repo_id,
       branchId: row.branch_id,
@@ -57,7 +78,6 @@ export class CodespaceService {
   }
 
   static async updateCodespace(codespaceId, name, userId) {
-    // Check permissions first
     await this.checkUserPermission(codespaceId, userId, ["admin", "owner"]);
 
     const { data, error } = await supabase

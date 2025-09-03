@@ -414,8 +414,6 @@ export const useCollaboration = (): YjsCollaborationService => {
   const segments = path.split("/");
   const codespaceId = segments[segments.length - 1];
 
-  console.log("Using collaboration service ", codespaceId);
-
   if (!service) {
     service = new YjsCollaborationService(codespaceId);
   }

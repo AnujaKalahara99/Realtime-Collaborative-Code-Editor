@@ -118,33 +118,14 @@ export class CodespaceController {
 
   static async getCodespaceById(req, res, next) {
     try {
-      const { id } = req.params;
-
-      // Check if user has access to this codespace
-      const memberData = await CodespaceService.getUserCodespaceMembership(
-        id,
-        req.user.id
+      const codespace = await CodespaceService.getCodespaceDetails(
+        req.user.id,
+        req.params.id
       );
-
-      // Get codespace details
-      const codespaces = await CodespaceService.getUserCodespaces(req.user.id);
-      const codespace = codespaces.find((cs) => cs.id === id);
-
-      if (!codespace) {
-        return res.status(404).json({
-          error: "Codespace not found",
-          code: "CODESPACE_NOT_FOUND",
-        });
-      }
-
-      res.json({ codespace });
+      res.json({
+        codespace,
+      });
     } catch (error) {
-      if (error.statusCode) {
-        return res.status(error.statusCode).json({
-          error: error.message,
-          code: error.code,
-        });
-      }
       next(error);
     }
   }

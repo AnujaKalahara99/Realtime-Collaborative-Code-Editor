@@ -14,7 +14,6 @@ export interface CodespaceDetails extends Codespace {
     name: string;
   }[];
   gitHubRepo?: string;
-  repoId?: string;
 }
 
 export type ViewMode = "grid" | "list";
