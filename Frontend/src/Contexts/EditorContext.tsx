@@ -5,14 +5,16 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
 } from "react";
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import { useParams } from "react-router";
 import { type FileNode } from "../App/CodeEditor/ProjectManagementPanel/file.types";
 import { type CodespaceDetails } from "../App/Dashboard/codespace.types";
-import { supabase } from "../database/superbase";
 import { type Awareness } from "y-protocols/awareness";
+import { formatDateTime, getTokenFromStorage } from "../utility/utility";
+import { type Session } from "@supabase/supabase-js";
 
 // Types
 export interface CollaborationUser {
@@ -40,7 +42,7 @@ export interface Message {
   timestamp: number;
 }
 
-type CursorPosition = {
+export type CursorPosition = {
   line: number;
   column: number;
   selection?: {
@@ -112,10 +114,14 @@ const initialContext: EditorCollaborationContextType = {
 const EditorCollaborationContext =
   createContext<EditorCollaborationContextType>(initialContext);
 
+const WS_URL = `${import.meta.env.VITE_BACKEND_WS_URL}/ws`;
+const CODESPACE_API_URL = `${import.meta.env.VITE_BACKEND_URL}/codespaces`;
+
 export const EditorCollaborationProvider: React.FC<{
   children: React.ReactNode;
-}> = ({ children }) => {
-  const { sessionId } = useParams<{ sessionId: string }>();
+  AuthSession: Session | null;
+}> = ({ children, AuthSession }) => {
+  const { codespaceId } = useParams<{ codespaceId: string }>();
   const [doc, setDoc] = useState<Y.Doc | null>(null);
   const [provider, setProvider] = useState<WebsocketProvider | null>(null);
   const [fileSystemMap, setFileSystemMap] = useState<Y.Map<FileNode[]> | null>(
@@ -123,12 +129,14 @@ export const EditorCollaborationProvider: React.FC<{
   );
   const [chatArray, setChatArray] = useState<Y.Array<Message> | null>(null);
   const [fileTexts] = useState<Map<string, Y.Text>>(new Map());
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [observers] = useState<WeakMap<Y.AbstractType<any>, () => void>>(
     new WeakMap()
   );
   const [callbacks] = useState<Map<string, Set<(data: string) => void>>>(
     new Map()
   );
+  const providerRef = useRef<WebsocketProvider | null>(null);
 
   // State
   const [codespace, setCodespace] = useState<CodespaceDetails | null>(null);
@@ -139,9 +147,6 @@ export const EditorCollaborationProvider: React.FC<{
   const [connectedUsers, setConnectedUsers] = useState<CollaborationUser[]>([]);
   const [files, setFiles] = useState<FileNode[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-
-  const WS_URL = `${import.meta.env.VITE_BACKEND_WS_URL}/ws`;
-  const CODESPACE_API_URL = `${import.meta.env.VITE_BACKEND_URL}/codespaces`;
 
   const userColors = useMemo(
     () => [
@@ -157,39 +162,50 @@ export const EditorCollaborationProvider: React.FC<{
     []
   );
 
+  const userName =
+    AuthSession?.user?.user_metadata?.full_name ||
+    AuthSession?.user?.email ||
+    "Anonymous";
+
+  const getAuthHeader = useCallback(() => {
+    return AuthSession?.access_token
+      ? { Authorization: AuthSession.access_token }
+      : { Authorization: getTokenFromStorage() };
+  }, [AuthSession]);
+
   // Fetch codespace details
   useEffect(() => {
-    if (!sessionId) return;
+    if (!codespaceId) return;
 
     const fetchCodespaceDetails = async () => {
       try {
         setLoading(true);
 
-        // Extract codespace ID from session ID or fetch from API
-        // This is a simplified example - you may need to adapt based on your API
-        const response = await fetch(
-          `${CODESPACE_API_URL}/session/${sessionId}`,
-          {
-            headers: { Authorization: getToken() },
-          }
-        );
+        const response = await fetch(`${CODESPACE_API_URL}/${codespaceId}`, {
+          headers: getAuthHeader(),
+        });
 
         if (!response.ok) {
           throw new Error("Failed to fetch codespace details");
         }
 
         const data = await response.json();
-        setCodespace(data.codespace);
 
-        // Find the session index
-        const sessionIndex =
-          data.codespace.sessions?.findIndex(
-            (s: any) => s.sessionId === sessionId
-          ) || 0;
-        setActiveSessionIndex(sessionIndex >= 0 ? sessionIndex : 0);
+        const codespaceDetails: CodespaceDetails = {
+          id: data.codespace.id,
+          name: data.codespace.name,
+          lastModified: formatDateTime(data.codespace.lastModified),
+          created_at: formatDateTime(data.codespace.created_at),
+          owner: userName,
+          role: data.codespace.role,
+          sessions: data.codespace.sessions || [],
+          gitHubRepo: data.codespace.gitHubRepo || "",
+        };
+
+        setCodespace(codespaceDetails);
 
         // Initialize YJS with session ID
-        initializeYJS(sessionId);
+        initializeYJS(codespaceDetails.sessions?.[0]?.sessionId || "");
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
       } finally {
@@ -202,19 +218,13 @@ export const EditorCollaborationProvider: React.FC<{
     return () => {
       cleanupYJS();
     };
-  }, [sessionId]);
-
-  const getToken = () => {
-    const storageKey = `sb-${
-      import.meta.env.VITE_SUPABASE_PROJECT_ID
-    }-auth-token`;
-    const sessionData = JSON.parse(localStorage.getItem(storageKey) || "null");
-    return sessionData?.access_token || "";
-  };
+  }, [codespaceId, getAuthHeader]);
 
   // YJS Initialization
   const initializeYJS = (roomId: string) => {
     cleanupYJS();
+
+    console.log("Initializing YJS with room ID:", roomId);
 
     const newDoc = new Y.Doc();
     const newProvider = new WebsocketProvider(WS_URL, roomId, newDoc);
@@ -223,6 +233,7 @@ export const EditorCollaborationProvider: React.FC<{
 
     setDoc(newDoc);
     setProvider(newProvider);
+    providerRef.current = newProvider; // Store in ref for cleanup
     setFileSystemMap(newFileSystemMap);
     setChatArray(newChatArray);
 
@@ -261,9 +272,8 @@ export const EditorCollaborationProvider: React.FC<{
 
   const setupAwareness = async (newProvider: WebsocketProvider) => {
     try {
-      const { data } = await supabase.auth.getSession();
-      if (data.session?.user) {
-        const user = data.session.user;
+      if (AuthSession?.user) {
+        const user = AuthSession.user;
         newProvider.awareness.setLocalStateField("user", {
           name: user.user_metadata.full_name || user.email,
           color: userColors[Math.floor(Math.random() * userColors.length)],
@@ -275,6 +285,7 @@ export const EditorCollaborationProvider: React.FC<{
           const users: CollaborationUser[] = [];
           const seenUserNames = new Map<string, CollaborationUser>();
 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           newProvider.awareness.getStates().forEach((state: any) => {
             if (state.user) {
               const userName = state.user.name;
@@ -290,7 +301,7 @@ export const EditorCollaborationProvider: React.FC<{
               }
             }
           });
-
+          console.log("Awareness changed. Connected users:", users);
           setConnectedUsers(users);
         };
 
@@ -303,15 +314,26 @@ export const EditorCollaborationProvider: React.FC<{
   };
 
   const cleanupYJS = () => {
+    console.log(
+      "YJS connection closing, clearing awareness ",
+      providerRef.current
+    );
     callbacks.clear();
     fileTexts.clear();
 
-    if (provider?.awareness) {
-      provider.awareness.setLocalState(null);
-    }
+    if (providerRef.current?.awareness) {
+      providerRef.current.awareness.setLocalState(null);
 
-    provider?.destroy();
-    doc?.destroy();
+      setTimeout(() => {
+        providerRef.current?.destroy();
+        doc?.destroy();
+        providerRef.current = null; // Clear ref
+        console.log("YJS connection closed");
+      }, 600);
+    } else {
+      providerRef.current?.destroy();
+      doc?.destroy();
+    }
   };
 
   // Helper functions for callbacks
@@ -440,6 +462,7 @@ export const EditorCollaborationProvider: React.FC<{
       if (!awareness) return [];
 
       const users: CollaborationUser[] = [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       awareness.getStates().forEach((state: any, clientId: number) => {
         if (
           state.user &&
@@ -480,13 +503,12 @@ export const EditorCollaborationProvider: React.FC<{
   }, [provider]);
 
   const destroy = useCallback(() => {
-    if (provider?.awareness) {
-      provider.awareness.setLocalState(null);
-    }
-
-    setTimeout(() => {
-      cleanupYJS();
-    }, 100);
+    // if (provider?.awareness) {
+    //   provider.awareness.setLocalState(null);
+    // }
+    // setTimeout(() => {
+    //   cleanupYJS();
+    // }, 100);
   }, [provider]);
 
   const contextValue: EditorCollaborationContextType = {

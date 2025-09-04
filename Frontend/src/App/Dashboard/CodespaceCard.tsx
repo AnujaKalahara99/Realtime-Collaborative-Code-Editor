@@ -12,13 +12,8 @@ interface Props {
 
 function CodespaceCard({ codespace, viewMode }: Props) {
   const { theme } = useTheme();
-  const {
-    deleteCodespace,
-    shareCodespaceByEmail,
-    editCodespace,
-    selectCodespace,
-    selectedCodespace,
-  } = useCodespaceContext();
+  const { deleteCodespace, shareCodespaceByEmail, editCodespace } =
+    useCodespaceContext();
 
   const [showMenu, setShowMenu] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -86,9 +81,8 @@ function CodespaceCard({ codespace, viewMode }: Props) {
   };
 
   const handleClick = async () => {
-    const sessionId = await selectCodespace(codespace.id);
-    if (!showMenu && sessionId != "") {
-      navigate(`/codeeditor/${sessionId}`);
+    if (!showMenu) {
+      navigate(`/codeeditor/${codespace.id}`);
     }
   };
 

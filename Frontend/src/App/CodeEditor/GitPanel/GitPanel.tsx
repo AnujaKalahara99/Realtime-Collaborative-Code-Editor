@@ -137,8 +137,8 @@ const GitPanel = () => {
     <div className={`h-full flex flex-col ${theme.surface} ${theme.text}`}>
       <div className={`p-4 ${theme.border} border-b`}>
         <BranchSelector
-          branches={gitState.branches}
-          onBranchSelect={handleBranchSelect}
+        // branches={gitState.branches}
+        // onBranchSelect={handleBranchSelect}
         />
       </div>
 

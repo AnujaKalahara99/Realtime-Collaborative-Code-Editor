@@ -7,11 +7,19 @@ export interface Codespace {
   role: string;
 }
 
+export type Commit = {
+  id: string;
+  message: string;
+  createdAt: string;
+  commitHash: string;
+};
+
 export interface CodespaceDetails extends Codespace {
   sessions?: {
     sessionId: string;
     branchId: string;
     name: string;
+    commits: Commit[];
   }[];
   gitHubRepo?: string;
 }

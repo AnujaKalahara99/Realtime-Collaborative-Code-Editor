@@ -14,6 +14,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import { supabase } from "./database/superbase";
 import { type Session, type User } from "@supabase/supabase-js";
 import { CodespaceProvider } from "./Contexts/CodespaceContext";
+import { EditorCollaborationProvider } from "./Contexts/EditorContext";
 function App() {
   const [session, setSession] = useState<Session | null>(null);
   const lastTokenRef = useRef<string | undefined>(undefined);
@@ -86,20 +87,19 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/codeeditor/:codespaceId"
+                element={
+                  <EditorCollaborationProvider AuthSession={session}>
+                    <CodeEditorPage />
+                  </EditorCollaborationProvider>
+                }
+              />
 
-              <Route path="/codeeditor/:id" element={<CodeEditorPage />} />
               <Route
                 path="/codespace/sharebyemail/:invitationId"
                 element={<CodespaceInvitation />}
               />
-              {/* <Route
-              path="/codeeditor"
-              element={
-                <ProtectedRoute>
-                  <CodeEditorPage />
-                </ProtectedRoute>
-              }
-            /> */}
               <Route path="/" element={<Homepage />} />
             </Routes>
           </Router>

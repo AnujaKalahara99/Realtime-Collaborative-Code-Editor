@@ -1,15 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { type Session } from "@supabase/supabase-js";
-import {
-  type Codespace,
-  type CodespaceDetails,
-} from "../App/Dashboard/codespace.types";
+import { type Codespace } from "../App/Dashboard/codespace.types";
+import { formatDateTime, getTokenFromStorage } from "../utility/utility";
 
 interface CodespaceContextType {
   codespaces: Codespace[];
   loading: boolean;
   error: string | null;
-  selectedCodespace: CodespaceDetails | null;
   createCodespace: (workspaceName: string) => Promise<boolean>;
   deleteCodespace: (id: string) => Promise<boolean>;
   shareCodespaceByEmail: (
@@ -18,25 +15,16 @@ interface CodespaceContextType {
     role: string
   ) => Promise<boolean>;
   editCodespace: (id: string, newName: string) => Promise<boolean>;
-  selectCodespace: (id: string) => Promise<string>;
-  clearSelectedCodespace: () => void;
-  updateCodespaceDetails: (
-    details: Partial<CodespaceDetails>
-  ) => Promise<boolean>;
 }
 
 const initialCodespaceContext: CodespaceContextType = {
   codespaces: [],
   loading: false,
   error: null,
-  selectedCodespace: null,
   createCodespace: async () => false,
   deleteCodespace: async () => false,
   shareCodespaceByEmail: async () => false,
   editCodespace: async () => false,
-  selectCodespace: async () => "",
-  clearSelectedCodespace: () => {},
-  updateCodespaceDetails: async () => false,
 };
 
 const CodespaceContext = createContext<CodespaceContextType>(
@@ -50,8 +38,6 @@ export const CodespaceProvider: React.FC<{
   const [codespaces, setCodespaces] = useState<Codespace[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCodespace, setSelectedCodespace] =
-    useState<CodespaceDetails | null>(null);
 
   const CODESPACE_API_URL = `${import.meta.env.VITE_BACKEND_URL}/codespaces`;
   const userName =
@@ -61,27 +47,7 @@ export const CodespaceProvider: React.FC<{
 
   const getToken = () => {
     if (session?.access_token) return session.access_token;
-
-    const storageKey = `sb-${
-      import.meta.env.VITE_SUPABASE_PROJECT_ID
-    }-auth-token`;
-    const sessionData = JSON.parse(localStorage.getItem(storageKey) || "null");
-    return sessionData?.access_token || "";
-  };
-
-  const formatDateTime = (dateString: string): string => {
-    const date = new Date(dateString);
-    const formattedDate = date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-    const formattedTime = date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-    return `${formattedDate}, ${formattedTime}`;
+    return getTokenFromStorage();
   };
 
   useEffect(() => {
@@ -254,73 +220,16 @@ export const CodespaceProvider: React.FC<{
     return false;
   };
 
-  const selectCodespace = async (id: string): Promise<string> => {
-    const result = await handleApiRequest(
-      `${CODESPACE_API_URL}/${id}`,
-      "GET",
-      undefined,
-      "Failed to fetch codespace details"
-    );
-
-    if (result.success && result.data?.codespace) {
-      const codespaceDetails: CodespaceDetails = {
-        id: result.data.codespace.id,
-        name: result.data.codespace.name,
-        lastModified: formatDateTime(result.data.codespace.lastModified),
-        created_at: result.data.codespace.created_at,
-        owner: userName,
-        role: result.data.codespace.role,
-        sessions: result.data.codespace.sessions || [],
-        gitHubRepo: result.data.codespace.gitHubRepo || "",
-      };
-
-      setSelectedCodespace(codespaceDetails);
-      return result.data.codespace.sessions[0]?.sessionId || "";
-    }
-
-    return "";
-  };
-
-  const clearSelectedCodespace = () => {
-    setSelectedCodespace(null);
-  };
-
-  const updateCodespaceDetails = async (
-    details: Partial<CodespaceDetails>
-  ): Promise<boolean> => {
-    if (!selectedCodespace) {
-      setError("No codespace selected");
-      return false;
-    }
-
-    const result = await handleApiRequest(
-      `${CODESPACE_API_URL}/${selectedCodespace.id}/details`,
-      "PUT",
-      details,
-      "Failed to update codespace details"
-    );
-
-    if (result.success && result.data?.codespace) {
-      setSelectedCodespace(result.data.codespace);
-      return true;
-    }
-    return false;
-  };
-
   return (
     <CodespaceContext.Provider
       value={{
         codespaces,
         loading,
         error,
-        selectedCodespace,
         createCodespace,
         deleteCodespace,
         shareCodespaceByEmail,
         editCodespace,
-        selectCodespace,
-        clearSelectedCodespace,
-        updateCodespaceDetails,
       }}
     >
       {children}
