@@ -1,31 +1,51 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCollaboration } from "../YJSCollaborationService";
 import type { FileNode } from "./file.types";
 import { v4 as uuidv4 } from "uuid";
+import { VFSBridge } from "../../../lib/vfs/vfs-bridge";
 
 export const useFileTree = () => {
   const [files, setFiles] = useState<FileNode[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const collaborationService = useCollaboration();
+  const vfsBridge = useRef(new VFSBridge()).current;
 
   // Initialize and subscribe to collaboration service
   useEffect(() => {
     const unsubscribeConnection =
       collaborationService.onConnectionChange(setIsConnected);
 
-    const unsubscribeFileSystem =
-      collaborationService.onFileSystemChange(setFiles);
+    const unsubscribeFileSystem = collaborationService.onFileSystemChange(
+      (newFiles: FileNode[]) => {
+        setFiles(newFiles);
+        // Sync to VFS when file system changes
+        vfsBridge.syncToVFS(newFiles);
+      }
+    );
+
+    // Subscribe to VFS changes
+    const unsubscribeVFS = vfsBridge.onVFSChange(
+      (updatedFileTree: FileNode[]) => {
+        if (updatedFileTree.length > 0) {
+          setFiles(updatedFileTree);
+          collaborationService.setFileSystem(updatedFileTree);
+        }
+      }
+    );
 
     return () => {
       unsubscribeConnection();
       unsubscribeFileSystem();
+      unsubscribeVFS();
     };
-  }, [collaborationService]);
+  }, [collaborationService, vfsBridge]);
 
   // Helper to update both local state and collaboration service
   const updateFiles = (newFiles: FileNode[]) => {
     setFiles(newFiles);
     collaborationService.setFileSystem(newFiles);
+    // Sync to VFS
+    vfsBridge.syncToVFS(newFiles);
   };
 
   const findNodeById = (nodes: FileNode[], id: string): FileNode | null => {
@@ -148,6 +168,8 @@ export const useFileTree = () => {
   const updateFileContent = (id: string, content: string) => {
     const newFiles = updateNode(files, id, { content });
     updateFiles(newFiles);
+    // Also update VFS directly for content changes
+    vfsBridge.updateFileContent(id, content);
   };
 
   const moveNode = (nodeId: string, targetId: string | null) => {
@@ -193,6 +215,7 @@ export const useFileTree = () => {
     removeNode,
     updateFileContent,
     moveNode,
+    vfsBridge, // Expose VFS bridge for advanced operations
   };
 };
 
