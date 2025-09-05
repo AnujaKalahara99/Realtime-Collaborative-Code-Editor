@@ -136,7 +136,6 @@ export const EditorCollaborationProvider: React.FC<{
   const [callbacks] = useState<Map<string, Set<(data: string) => void>>>(
     new Map()
   );
-  const providerRef = useRef<WebsocketProvider | null>(null);
 
   // State
   const [codespace, setCodespace] = useState<CodespaceDetails | null>(null);
@@ -214,16 +213,11 @@ export const EditorCollaborationProvider: React.FC<{
     };
 
     fetchCodespaceDetails();
-
-    return () => {
-      cleanupYJS();
-    };
-  }, [codespaceId, getAuthHeader]);
+  }, []);
 
   // YJS Initialization
   const initializeYJS = (roomId: string) => {
     cleanupYJS();
-
     console.log("Initializing YJS with room ID:", roomId);
 
     const newDoc = new Y.Doc();
@@ -233,7 +227,8 @@ export const EditorCollaborationProvider: React.FC<{
 
     setDoc(newDoc);
     setProvider(newProvider);
-    providerRef.current = newProvider; // Store in ref for cleanup
+    console.log("YJS provider status:", newProvider);
+
     setFileSystemMap(newFileSystemMap);
     setChatArray(newChatArray);
 
@@ -314,24 +309,22 @@ export const EditorCollaborationProvider: React.FC<{
   };
 
   const cleanupYJS = () => {
-    console.log(
-      "YJS connection closing, clearing awareness ",
-      providerRef.current
-    );
+    console.log("YJS connection closing, clearing awareness ", provider);
     callbacks.clear();
     fileTexts.clear();
 
-    if (providerRef.current?.awareness) {
-      providerRef.current.awareness.setLocalState(null);
+    if (provider?.awareness) {
+      provider.awareness.setLocalState(null);
 
       setTimeout(() => {
-        providerRef.current?.destroy();
+        provider?.destroy();
         doc?.destroy();
-        providerRef.current = null; // Clear ref
+        setProvider(null);
         console.log("YJS connection closed");
       }, 600);
     } else {
-      providerRef.current?.destroy();
+      provider?.destroy();
+      setProvider(null);
       doc?.destroy();
     }
   };
@@ -503,12 +496,12 @@ export const EditorCollaborationProvider: React.FC<{
   }, [provider]);
 
   const destroy = useCallback(() => {
-    // if (provider?.awareness) {
-    //   provider.awareness.setLocalState(null);
-    // }
-    // setTimeout(() => {
-    //   cleanupYJS();
-    // }, 100);
+    if (provider?.awareness) {
+      provider.awareness.setLocalState(null);
+    }
+    setTimeout(() => {
+      cleanupYJS();
+    }, 100);
   }, [provider]);
 
   const contextValue: EditorCollaborationContextType = {

@@ -24,7 +24,7 @@ const Dashboard = ({ session }: Props) => {
   // Display error message if context has an error
   useEffect(() => {
     if (error) {
-      console.error("Codespace error:", error);
+      // console.error("Codespace error:", error);
       // You could show a toast notification or error message here
     }
   }, [error]);
