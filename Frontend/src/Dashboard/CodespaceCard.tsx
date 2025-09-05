@@ -1,8 +1,10 @@
+
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { CheckCircle } from "lucide-react"; 
+
 import {
   FileText,
-  MoreVertical,
   Trash2,
   Share2,
   Edit,
@@ -37,10 +39,10 @@ function CodespaceCard({
   const [nameInput, setNameInput] = useState(codespace.name);
   const [displayName, setDisplayName] = useState(codespace.name);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [shareSuccess, setShareSuccess] = useState(false); 
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -88,10 +90,7 @@ function CodespaceCard({
     try {
       await navigator.clipboard.writeText(shareLink);
       setLinkCopied(true);
-
-      setTimeout(() => {
-        setLinkCopied(false);
-      }, 2000);
+      setTimeout(() => setLinkCopied(false), 2000);
     } catch (err) {
       const textArea = document.createElement("textarea");
       textArea.value = shareLink;
@@ -99,11 +98,8 @@ function CodespaceCard({
       textArea.select();
       document.execCommand("copy");
       document.body.removeChild(textArea);
-
       setLinkCopied(true);
-      setTimeout(() => {
-        setLinkCopied(false);
-      }, 2000);
+      setTimeout(() => setLinkCopied(false), 2000);
     }
 
     setShowMenu(false);
@@ -131,11 +127,15 @@ function CodespaceCard({
       setEmailInput("");
       setRoleInput("Developer");
       setShareModalOpen(false);
+
+      setShareSuccess(true);
+      setTimeout(() => setShareSuccess(false), 1000);
     }
   };
 
   return (
     <>
+      {/* Main Codespace Card */}
       <div
         onClick={handleClick}
         className={`${theme.surface} rounded-lg ${theme.border} border ${
@@ -152,9 +152,7 @@ function CodespaceCard({
           }`}
         >
           <div
-            className={`relative rounded-lg p-3 ${
-              viewMode === "list" ? "!p-2" : ""
-            }`}
+            className={`relative rounded-lg p-3 ${viewMode === "list" ? "!p-2" : ""}`}
           >
             <FileText
               size={viewMode === "grid" ? 32 : 20}
@@ -165,9 +163,7 @@ function CodespaceCard({
 
           <div className={`${viewMode === "grid" ? "mt-4" : ""}`}>
             <h3
-              className={`font-semibold ${
-                theme.text
-              } transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400 ${
+              className={`font-semibold ${theme.text} transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400 ${
                 viewMode === "grid" ? "text-lg mb-3" : "text-base"
               }`}
             >
@@ -199,9 +195,7 @@ function CodespaceCard({
           <div className="relative" ref={menuRef}>
             <button
               onClick={toggleMenu}
-              className={`${
-                theme.hover
-              } cursor-pointer p-2 rounded-lg transition-colors ${
+              className={`${theme.hover} cursor-pointer p-2 rounded-lg transition-colors ${
                 viewMode === "grid" ? " mt-4" : ""
               } z-10`}
             >
@@ -210,11 +204,7 @@ function CodespaceCard({
 
             {showMenu && (
               <div
-                className={`${theme.surface} absolute right-0 ${
-                  viewMode === "grid"
-                    ? "top-[calc(100%+4px)]"
-                    : "top-[calc(100%+4px)]"
-                } z-50 border ${theme.border} rounded-md shadow-lg p-2 w-48`}
+                className={`${theme.surface} absolute right-0 top-[calc(100%+4px)] z-50 border ${theme.border} rounded-md shadow-lg p-2 w-48`}
               >
                 {onEdit && (
                   <button
@@ -245,7 +235,7 @@ function CodespaceCard({
           </div>
         )}
 
-        {/* Tooltip for double-click hint */}
+        {/* Tooltip */}
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-lg">
             Double-click to open
@@ -253,15 +243,11 @@ function CodespaceCard({
         </div>
       </div>
 
-      {/* Enhanced Share Modal */}
+      {/* Share Modal */}
       {shareModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div
-            className={`${theme.surface} p-6 rounded-lg shadow-lg w-full max-w-sm`}
-          >
-            <h2 className={`text-lg font-semibold mb-4 ${theme.text}`}>
-              Share Codespace
-            </h2>
+          <div className={`${theme.surface} p-6 rounded-lg shadow-lg w-full max-w-sm`}>
+            <h2 className={`text-lg font-semibold mb-4 ${theme.text}`}>Share Codespace</h2>
             <input
               type="email"
               className={`w-full px-3 py-2 border ${theme.border} rounded-md ${theme.surface} ${theme.text} mb-4`}
@@ -297,15 +283,11 @@ function CodespaceCard({
         </div>
       )}
 
-      {/* Enhanced Edit Modal */}
+      {/* Edit Modal */}
       {editModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div
-            className={`${theme.surface} p-6 rounded-lg shadow-lg w-full max-w-sm`}
-          >
-            <h2 className={`text-lg font-semibold mb-4 ${theme.text}`}>
-              Edit Codespace Name
-            </h2>
+          <div className={`${theme.surface} p-6 rounded-lg shadow-lg w-full max-w-sm`}>
+            <h2 className={`text-lg font-semibold mb-4 ${theme.text}`}>Edit Codespace Name</h2>
             <input
               type="text"
               className={`w-full px-3 py-2 border ${theme.border} rounded-md ${theme.surface} ${theme.text}`}
@@ -329,6 +311,16 @@ function CodespaceCard({
             </div>
           </div>
         </div>
+      )}
+
+      {/* ✅ Share Success Notification */}
+      {shareSuccess && (
+         <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded shadow-lg animate-fadeInOut">
+      <CheckCircle size={20} />
+      <span>Invitation sent successfully!</span>
+    </div>
+  </div>
       )}
     </>
   );
