@@ -51,6 +51,13 @@ const CollaboratePage: React.FC = () => {
           },
         }
       );
+       if (response.status === 401) {
+      localStorage.setItem("invitationId", invitationId);
+      console.warn("Unauthorized! Redirecting to login.");
+       navigate("/login", { state: { invitationId } });
+
+      return;
+    }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -59,7 +66,7 @@ const CollaboratePage: React.FC = () => {
 
       const data = await response.json();
       console.log("API response:", data);
-      console.log("API response22:", data.invitation.workspace_id);
+
 
       navigate(data.invitation.workspace_id ? `/codeeditor/${data.invitation.workspace_id}` : "/", {
         state: { invitationId },
@@ -214,3 +221,4 @@ const CollaboratePage: React.FC = () => {
 };
 
 export default CollaboratePage;
+
