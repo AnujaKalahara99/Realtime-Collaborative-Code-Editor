@@ -172,8 +172,12 @@ export const EditorCollaborationProvider: React.FC<{
       : { Authorization: getTokenFromStorage() };
   }, [AuthSession]);
 
-  // Fetch codespace details
   useEffect(() => {
+    if (!AuthSession) {
+      setError("No active session. Please log in.");
+      return;
+    }
+
     if (!codespaceId) return;
 
     const fetchCodespaceDetails = async () => {
@@ -217,7 +221,7 @@ export const EditorCollaborationProvider: React.FC<{
     return () => {
       cleanupYJS();
     };
-  }, [codespaceId]);
+  }, [codespaceId, AuthSession]);
 
   // YJS Initialization
   const initializeYJS = (roomId: string) => {
@@ -271,7 +275,10 @@ export const EditorCollaborationProvider: React.FC<{
 
   const setupAwareness = async (newProvider: WebsocketProvider) => {
     try {
+      console.log("Setting up user awareness");
+
       if (AuthSession?.user) {
+        console.log("User found:", AuthSession.user);
         const user = AuthSession.user;
         newProvider.awareness.setLocalStateField("user", {
           name: user.user_metadata.full_name || user.email,
@@ -279,7 +286,6 @@ export const EditorCollaborationProvider: React.FC<{
           avatar: user.user_metadata.avatar_url || "",
         });
 
-        // Setup awareness change handler
         const awarenessHandler = () => {
           const users: CollaborationUser[] = [];
           const seenUserNames = new Map<string, CollaborationUser>();
@@ -305,7 +311,7 @@ export const EditorCollaborationProvider: React.FC<{
         };
 
         newProvider.awareness.on("change", awarenessHandler);
-        awarenessHandler(); // Initial call
+        awarenessHandler();
       }
     } catch (error) {
       console.warn("Failed to setup user awareness:", error);
@@ -325,7 +331,6 @@ export const EditorCollaborationProvider: React.FC<{
     providerRef.current = null;
   }, [callbacks, fileTexts]);
 
-  // Helper functions for callbacks
   const addCallback = useCallback(
     (type: string, callback: (data: string) => void): (() => void) => {
       if (!callbacks.has(type)) {
