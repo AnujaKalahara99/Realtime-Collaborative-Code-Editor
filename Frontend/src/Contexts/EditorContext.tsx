@@ -122,8 +122,8 @@ export const EditorCollaborationProvider: React.FC<{
   AuthSession: Session | null;
 }> = ({ children, AuthSession }) => {
   const { codespaceId } = useParams<{ codespaceId: string }>();
-  const [doc, setDoc] = useState<Y.Doc | null>(null);
-  const [provider, setProvider] = useState<WebsocketProvider | null>(null);
+  const docRef = useRef<Y.Doc | null>(null);
+  const providerRef = useRef<WebsocketProvider | null>(null);
   const [fileSystemMap, setFileSystemMap] = useState<Y.Map<FileNode[]> | null>(
     null
   );
@@ -225,8 +225,8 @@ export const EditorCollaborationProvider: React.FC<{
     const newFileSystemMap: Y.Map<FileNode[]> = newDoc.getMap("fileSystem");
     const newChatArray: Y.Array<Message> = newDoc.getArray("chat");
 
-    setDoc(newDoc);
-    setProvider(newProvider);
+    docRef.current = newDoc;
+    providerRef.current = newProvider;
     console.log("YJS provider status:", newProvider);
 
     setFileSystemMap(newFileSystemMap);
@@ -309,24 +309,16 @@ export const EditorCollaborationProvider: React.FC<{
   };
 
   const cleanupYJS = () => {
-    console.log("YJS connection closing, clearing awareness ", provider);
     callbacks.clear();
     fileTexts.clear();
 
-    if (provider?.awareness) {
-      provider.awareness.setLocalState(null);
-
-      setTimeout(() => {
-        provider?.destroy();
-        doc?.destroy();
-        setProvider(null);
-        console.log("YJS connection closed");
-      }, 600);
-    } else {
-      provider?.destroy();
-      setProvider(null);
-      doc?.destroy();
+    if (providerRef.current?.awareness) {
+      providerRef.current.awareness.setLocalState(null);
     }
+
+    providerRef.current?.destroy();
+    docRef.current?.destroy();
+    providerRef.current = null;
   };
 
   // Helper functions for callbacks
@@ -345,10 +337,10 @@ export const EditorCollaborationProvider: React.FC<{
   // File handling
   const getFileText = useCallback(
     (fileId: string): Y.Text => {
-      if (!doc) throw new Error("YJS not initialized");
+      if (!docRef.current) throw new Error("YJS not initialized");
 
       if (!fileTexts.has(fileId)) {
-        const fileText = doc.getText(`file-${fileId}`);
+        const fileText = docRef.current.getText(`file-${fileId}`);
         fileTexts.set(fileId, fileText);
 
         // Setup observer
@@ -366,7 +358,7 @@ export const EditorCollaborationProvider: React.FC<{
 
       return fileTexts.get(fileId)!;
     },
-    [doc, fileTexts, observers, callbacks]
+    [fileTexts, observers, callbacks]
   );
 
   // Public API
@@ -423,7 +415,7 @@ export const EditorCollaborationProvider: React.FC<{
     (text: string) => {
       if (!chatArray || !text.trim()) return;
 
-      const user = provider?.awareness.getLocalState()?.user;
+      const user = providerRef.current?.awareness.getLocalState()?.user;
       const message: Message = {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         user: user?.name || "Anonymous",
@@ -435,74 +427,71 @@ export const EditorCollaborationProvider: React.FC<{
 
       chatArray.push([message]);
     },
-    [chatArray, provider]
+    [chatArray]
   );
 
   const updateCursorPosition = useCallback(
     (fileId: string, position: CursorPosition) => {
-      provider?.awareness.setLocalStateField("cursor", {
+      providerRef.current?.awareness.setLocalStateField("cursor", {
         fileId,
         ...position,
         timestamp: Date.now(),
       });
     },
-    [provider]
+    []
   );
 
-  const getUsersInFile = useCallback(
-    (fileId: string): CollaborationUser[] => {
-      const awareness = provider?.awareness;
-      if (!awareness) return [];
+  const getUsersInFile = useCallback((fileId: string): CollaborationUser[] => {
+    const awareness = providerRef.current?.awareness;
+    if (!awareness) return [];
 
-      const users: CollaborationUser[] = [];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      awareness.getStates().forEach((state: any, clientId: number) => {
-        if (
-          state.user &&
-          state.cursor?.fileId === fileId &&
-          clientId !== awareness.clientID
-        ) {
-          users.push({
-            name: state.user.name,
-            color: state.user.color,
-            cursor: {
-              line: state.cursor.line,
-              column: state.cursor.column,
-              selection: state.cursor.selection,
-            },
-          });
-        }
-      });
+    const users: CollaborationUser[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    awareness.getStates().forEach((state: any, clientId: number) => {
+      if (
+        state.user &&
+        state.cursor?.fileId === fileId &&
+        clientId !== awareness.clientID
+      ) {
+        users.push({
+          name: state.user.name,
+          color: state.user.color,
+          cursor: {
+            line: state.cursor.line,
+            column: state.cursor.column,
+            selection: state.cursor.selection,
+          },
+        });
+      }
+    });
 
-      return users;
-    },
-    [provider]
-  );
+    return users;
+  }, []);
 
   const setUserInfo = useCallback(
     (name: string, color?: string, avatar?: string) => {
-      provider?.awareness.setLocalStateField("user", {
+      providerRef.current?.awareness.setLocalStateField("user", {
         name,
         color:
           color || userColors[Math.floor(Math.random() * userColors.length)],
         avatar,
       });
     },
-    [provider, userColors]
+    [userColors]
   );
 
   const getAwareness = useCallback((): Awareness | null => {
-    return provider?.awareness || null;
-  }, [provider]);
+    return providerRef.current?.awareness || null;
+  }, []);
 
   const destroy = useCallback(() => {
-    if (provider?.awareness) {
-      provider.awareness.setLocalState(null);
+    if (providerRef.current?.awareness) {
+      providerRef.current.awareness.setLocalState(null);
     }
     setTimeout(() => {
       cleanupYJS();
     }, 100);
-  }, [provider]);
+  }, []);
 
   const contextValue: EditorCollaborationContextType = {
     codespace,
