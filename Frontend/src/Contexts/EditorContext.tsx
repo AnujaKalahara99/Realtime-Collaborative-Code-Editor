@@ -213,7 +213,11 @@ export const EditorCollaborationProvider: React.FC<{
     };
 
     fetchCodespaceDetails();
-  }, []);
+
+    return () => {
+      cleanupYJS();
+    };
+  }, [codespaceId]);
 
   // YJS Initialization
   const initializeYJS = (roomId: string) => {
@@ -308,7 +312,7 @@ export const EditorCollaborationProvider: React.FC<{
     }
   };
 
-  const cleanupYJS = () => {
+  const cleanupYJS = useCallback(() => {
     callbacks.clear();
     fileTexts.clear();
 
@@ -319,7 +323,7 @@ export const EditorCollaborationProvider: React.FC<{
     providerRef.current?.destroy();
     docRef.current?.destroy();
     providerRef.current = null;
-  };
+  }, [callbacks, fileTexts]);
 
   // Helper functions for callbacks
   const addCallback = useCallback(
@@ -491,7 +495,7 @@ export const EditorCollaborationProvider: React.FC<{
     setTimeout(() => {
       cleanupYJS();
     }, 100);
-  }, []);
+  }, [cleanupYJS]);
 
   const contextValue: EditorCollaborationContextType = {
     codespace,

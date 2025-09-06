@@ -16,7 +16,7 @@ const NavigationBar = () => {
   // const [connectedUsers, setConnectedUsers] = useState<CollaborationUser[]>([]);
   // const collaborationService = useCollaboration();
   const navigate = useNavigate();
-  const { isConnected, connectedUsers, destroy } = useEditorCollaboration();
+  const { isConnected, connectedUsers } = useEditorCollaboration();
 
   // useEffect(() => {
   // const unsubscribeConnection =
@@ -33,7 +33,6 @@ const NavigationBar = () => {
   const handleBackToDashboard = () => {
     // Disconnect collaboration service before navigating
     // disconnectCollaboration();
-    destroy();
     navigate("/dashboard");
   };
 
