@@ -27,6 +27,11 @@ export interface Message {
   color: string;
   avatar?: string;
   timestamp: number;
+  replyTo?: {
+    messageId: string;
+    user: string;
+    text: string;
+  };
 }
 
 class YjsCollaborationService {
@@ -264,10 +269,30 @@ class YjsCollaborationService {
     return this.chatArray?.toArray() || [];
   }
 
-  sendChatMessage(text: string): void {
+  sendChatMessage(text: string, replyToMessageId?: string): void {
     if (!this.chatArray || !text.trim()) return;
 
     const user = this.provider?.awareness.getLocalState()?.user;
+    let replyTo: Message["replyTo"] | undefined;
+
+    // If replying to a message, find the original message
+    if (replyToMessageId) {
+      const messages = this.chatArray.toArray();
+      const originalMessage = messages.find(
+        (msg) => msg.id === replyToMessageId
+      );
+      if (originalMessage) {
+        replyTo = {
+          messageId: originalMessage.id,
+          user: originalMessage.user,
+          text:
+            originalMessage.text.length > 50
+              ? originalMessage.text.substring(0, 50) + "..."
+              : originalMessage.text,
+        };
+      }
+    }
+
     const message: Message = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       user: user?.name || "Anonymous",
@@ -275,6 +300,7 @@ class YjsCollaborationService {
       avatar: user?.avatar,
       text: text.trim(),
       timestamp: Date.now(),
+      replyTo,
     };
 
     this.chatArray.push([message]);

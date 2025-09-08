@@ -12,7 +12,7 @@ import {
   type Message,
 } from "./YJSCollaborationService";
 import { useTheme } from "../../Contexts/ThemeProvider";
-import { ChevronRight, Trash2 } from "lucide-react";
+import { ChevronRight, Trash2, Reply } from "lucide-react";
 import Avatar from "../../components/Avatar";
 
 export function ChatSpace() {
@@ -25,7 +25,9 @@ export function ChatSpace() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
     null
   );
+  const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const { theme } = useTheme();
 
   const collaboration = useCollaboration();
@@ -84,10 +86,11 @@ export function ChatSpace() {
 
   const handleSendMessage = useCallback(() => {
     if (inputMessage.trim()) {
-      collaboration.sendChatMessage(inputMessage);
+      collaboration.sendChatMessage(inputMessage, replyToMessage?.id);
       setInputMessage("");
+      setReplyToMessage(null); // Clear reply after sending
     }
-  }, [inputMessage, collaboration]);
+  }, [inputMessage, collaboration, replyToMessage]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -120,6 +123,17 @@ export function ChatSpace() {
 
   const cancelDelete = () => {
     setShowDeleteConfirm(null);
+  };
+
+  const handleReplyToMessage = useCallback((message: Message) => {
+    setReplyToMessage(message);
+    setShowDeleteConfirm(null); // Close any open delete confirmations
+    // Focus input after setting reply
+    setTimeout(() => inputRef.current?.focus(), 100);
+  }, []);
+
+  const cancelReply = () => {
+    setReplyToMessage(null);
   };
 
   return (
@@ -176,7 +190,7 @@ export function ChatSpace() {
                       </span>
                     )}
 
-                    {/* Message content with delete button */}
+                    {/* Message content with reply and delete buttons */}
                     <div className="relative">
                       <div
                         className={`px-4 py-2 text-sm shadow-sm ${
@@ -185,20 +199,50 @@ export function ChatSpace() {
                             : `${theme.surfaceSecondary} ${theme.text} rounded-bl-md`
                         }`}
                       >
+                        {/* Reply indicator */}
+                        {msg.replyTo && (
+                          <div
+                            className={`mb-2 pb-2 border-l-2 pl-2 text-xs opacity-75 ${
+                              isCurrentUser
+                                ? "border-blue-200"
+                                : `border-gray-300 ${theme.textSecondary}`
+                            }`}
+                          >
+                            <div className="font-medium">
+                              Replying to {msg.replyTo.user}
+                            </div>
+                            {/* <div className="truncate">{msg.replyTo.text}</div> */}
+                          </div>
+                        )}
                         <p className="break-words">{msg.text}</p>
                       </div>
 
-                      {/* Delete button (only for current user's messages) */}
-                      {isCurrentUser && hoveredMessageId === msg.id && (
-                        <button
-                          onClick={() => confirmDelete(msg.id)}
+                      {hoveredMessageId === msg.id && (
+                        <div
                           className={`absolute -top-2 ${
-                            isCurrentUser ? "-left-8" : "-right-8"
-                          } p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-all duration-200 shadow-lg`}
-                          title="Delete message"
+                            isCurrentUser ? "-left-16" : "-right-16"
+                          } flex gap-1`}
                         >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+                          {/* Reply button (for all messages) */}
+                          <button
+                            onClick={() => handleReplyToMessage(msg)}
+                            className="p-1 bg-gray-500 text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-gray-600 transition-all duration-200 shadow-lg"
+                            title="Reply to message"
+                          >
+                            <Reply className="w-3 h-3" />
+                          </button>
+
+                          {/* Delete button  */}
+                          {isCurrentUser && (
+                            <button
+                              onClick={() => confirmDelete(msg.id)}
+                              className="p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-all duration-200 shadow-lg"
+                              title="Delete message"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
 
@@ -248,35 +292,68 @@ export function ChatSpace() {
       </div>
 
       {/* Input Area */}
-      <div
-        className={`flex-shrink-0 min-h-20 flex items-end gap-2 pt-4 p-4 ${theme.border} border-t`}
-      >
-        <textarea
-          placeholder="Type a message... "
-          value={inputMessage}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          rows={1}
-          className={`flex-1 px-4 py-2 ${theme.border} border ${theme.surface} focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme.text} transition-all resize-none min-h-[40px] max-h-[120px]`}
-          style={{
-            height: "auto",
-            minHeight: "40px",
-            maxHeight: "120px",
-            overflowY: inputMessage.split("\n").length > 3 ? "auto" : "hidden",
-          }}
-          onInput={(e) => {
-            const target = e.target as HTMLTextAreaElement;
-            target.style.height = "auto";
-            target.style.height = Math.min(target.scrollHeight, 120) + "px";
-          }}
-        />
-        <button
-          onClick={handleSendMessage}
-          disabled={!inputMessage.trim()}
-          className={`p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${theme.hover}`}
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
+      <div className={`flex-shrink-0 ${theme.border} border-t`}>
+        {/* Reply Preview */}
+        {replyToMessage && (
+          <div
+            className={`p-3 ${theme.surfaceSecondary} border-l-4 border-blue-500 mx-4 mt-3 rounded`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div
+                  className={`text-xs font-medium ${theme.textSecondary} mb-1`}
+                >
+                  Replying to {replyToMessage.user}
+                </div>
+                <div className={`text-sm ${theme.text} truncate`}>
+                  {replyToMessage.text}
+                </div>
+              </div>
+              <button
+                onClick={cancelReply}
+                className={`ml-2 p-1 hover:${theme.hover} rounded`}
+                title="Cancel reply"
+              >
+                <span className={`text-lg ${theme.textSecondary}`}>×</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="min-h-20 flex items-end gap-2 pt-4 p-4">
+          <textarea
+            ref={inputRef}
+            placeholder={
+              replyToMessage
+                ? `Replying to ${replyToMessage.user}...`
+                : "Type a message... "
+            }
+            value={inputMessage}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            rows={1}
+            className={`flex-1 px-4 py-2 ${theme.border} border ${theme.surface} focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme.text} transition-all resize-none min-h-[40px] max-h-[120px]`}
+            style={{
+              height: "auto",
+              minHeight: "40px",
+              maxHeight: "120px",
+              overflowY:
+                inputMessage.split("\n").length > 3 ? "auto" : "hidden",
+            }}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = "auto";
+              target.style.height = Math.min(target.scrollHeight, 120) + "px";
+            }}
+          />
+          <button
+            onClick={handleSendMessage}
+            disabled={!inputMessage.trim()}
+            className={`p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${theme.hover}`}
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </div>
   );
