@@ -84,6 +84,7 @@ interface EditorCollaborationContextType {
   getUsersInFile: (fileId: string) => CollaborationUser[];
   setUserInfo: (name: string, color?: string, avatar?: string) => void;
   getAwareness: () => Awareness | null;
+  getFileText: (fileId: string) => Y.Text | null
 
   // Lifecycle
   destroy: () => void;
@@ -108,6 +109,7 @@ const initialContext: EditorCollaborationContextType = {
   getUsersInFile: () => [],
   setUserInfo: () => {},
   getAwareness: () => null,
+  getFileText: () => null,
   destroy: () => {},
 };
 
@@ -521,6 +523,7 @@ export const EditorCollaborationProvider: React.FC<{
     getUsersInFile,
     setUserInfo,
     getAwareness,
+    getFileText,
     destroy,
   };
 

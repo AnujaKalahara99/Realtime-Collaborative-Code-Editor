@@ -1,32 +1,10 @@
-import { useState, useEffect } from "react";
-import { useCollaboration } from "../YJSCollaborationService";
+import { useEditorCollaboration } from "../../../Contexts/EditorContext";
 import type { FileNode } from "./file.types";
 import { v4 as uuidv4 } from "uuid";
 
 export const useFileTree = () => {
-  const [files, setFiles] = useState<FileNode[]>([]);
-  const [isConnected, setIsConnected] = useState(false);
-  const collaborationService = useCollaboration();
-
-  // Initialize and subscribe to collaboration service
-  useEffect(() => {
-    const unsubscribeConnection =
-      collaborationService.onConnectionChange(setIsConnected);
-
-    const unsubscribeFileSystem =
-      collaborationService.onFileSystemChange(setFiles);
-
-    return () => {
-      unsubscribeConnection();
-      unsubscribeFileSystem();
-    };
-  }, [collaborationService]);
-
-  // Helper to update both local state and collaboration service
-  const updateFiles = (newFiles: FileNode[]) => {
-    setFiles(newFiles);
-    collaborationService.setFileSystem(newFiles);
-  };
+  const { isConnected, files, updateFiles, initializeFileContent } =
+    useEditorCollaboration();
 
   const findNodeById = (nodes: FileNode[], id: string): FileNode | null => {
     for (const node of nodes) {
@@ -106,7 +84,7 @@ export const useFileTree = () => {
 
     const newFiles = addNode(files, parentId, newFile);
     updateFiles(newFiles);
-    collaborationService.initializeFileContent(newFile.id, "");
+    initializeFileContent(newFile.id, "");
 
     return newFile;
   };
@@ -135,12 +113,7 @@ export const useFileTree = () => {
   };
 
   const removeNode = (id: string) => {
-    const node = findNodeById(files, id);
-
-    if (node?.type === "file") {
-      collaborationService.deleteFileContent(id);
-    }
-
+    // Remove the node from files
     const newFiles = deleteNode(files, id);
     updateFiles(newFiles);
   };

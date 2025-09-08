@@ -1,38 +1,15 @@
 import { Sun, Moon, ArrowLeft } from "lucide-react";
 import { useTheme } from "../../Contexts/ThemeProvider";
-// import { useEffect, useState } from "react";
-// import {
-//   useCollaboration,
-//   type CollaborationUser,
-//   disconnectCollaboration, // Add this import
-// } from "./YJSCollaborationService";
 import Avatar from "../../components/Avatar";
 import { useNavigate } from "react-router";
 import { useEditorCollaboration } from "../../Contexts/EditorContext";
 
 const NavigationBar = () => {
   const { theme, toggleTheme, isDark } = useTheme();
-  // const [isConnected, setIsConnected] = useState(false);
-  // const [connectedUsers, setConnectedUsers] = useState<CollaborationUser[]>([]);
-  // const collaborationService = useCollaboration();
   const navigate = useNavigate();
   const { isConnected, connectedUsers } = useEditorCollaboration();
 
-  // useEffect(() => {
-  // const unsubscribeConnection =
-  //   collaborationService.onConnectionChange(setIsConnected);
-  // const unsubscribeUsers =
-  // collaborationService.onUsersChange(setConnectedUsers);
-
-  // return () => {
-  // unsubscribeConnection();
-  // unsubscribeUsers();
-  // };
-  // }, []);
-
   const handleBackToDashboard = () => {
-    // Disconnect collaboration service before navigating
-    // disconnectCollaboration();
     navigate("/dashboard");
   };
 

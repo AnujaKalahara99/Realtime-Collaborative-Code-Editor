@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import * as monaco from "monaco-editor";
 import {
-  useCollaboration,
+  useEditorCollaboration,
   type CollaborationUser,
-} from "../YJSCollaborationService";
+} from "../../../Contexts/EditorContext";
 import "./CollaborativeCursor.css";
 
 interface CollaborativeCursorProps {
@@ -26,7 +26,22 @@ export default function CollaborativeCursor({
   const nameWidgetsRef = useRef<Map<string, monaco.editor.IContentWidget>>(
     new Map()
   );
-  const collaborationService = useCollaboration();
+  const collaborationService = useEditorCollaboration();
+
+  const clearAllCursors = useCallback(() => {
+    if (!editor) return;
+
+    cursorsRef.current.forEach((cursor) => {
+      editor.deltaDecorations(cursor.decorationIds, []);
+      const widget = nameWidgetsRef.current.get(cursor.nameWidgetId);
+      if (widget) {
+        editor.removeContentWidget(widget);
+        nameWidgetsRef.current.delete(cursor.nameWidgetId);
+      }
+    });
+
+    cursorsRef.current.clear();
+  }, [editor]);
 
   useEffect(() => {
     if (!editor || !selectedFile || selectedFile.type !== "file") {
@@ -35,12 +50,14 @@ export default function CollaborativeCursor({
     }
 
     const updateUsers = () => {
-      const fileUsers = collaborationService?.getUsersInFile(selectedFile.id);
+      const fileUsers = collaborationService.getUsersInFile(selectedFile.id);
       setUsers(fileUsers || []);
     };
 
-    const unsubscribe = collaborationService?.onUsersChange(updateUsers);
-    // updateUsers();
+    // Instead of onUsersChange, we'll use an interval to periodically update users
+    // as EditorContext doesn't provide a subscription mechanism for user changes
+    const userUpdateInterval = setInterval(updateUsers, 500);
+    updateUsers(); // Initial update
 
     const handleCursorChange = () => {
       if (!editor) return;
@@ -70,14 +87,97 @@ export default function CollaborativeCursor({
       editor.onDidChangeCursorSelection(handleCursorChange);
 
     return () => {
-      if (typeof unsubscribe === "function") {
-        unsubscribe();
-      }
+      clearInterval(userUpdateInterval);
       cursorChangeDisposable.dispose();
       selectionChangeDisposable.dispose();
       clearAllCursors();
     };
-  }, [editor, selectedFile]);
+  }, [editor, selectedFile, collaborationService, clearAllCursors]);
+
+  const renderUserCursor = useCallback(
+    (user: CollaborationUser, clientId: number) => {
+      if (!editor || !user.cursor) return;
+
+      const { line, column, selection } = user.cursor;
+      const decorationIds: string[] = [];
+
+      if (
+        selection &&
+        (selection.startLine !== selection.endLine ||
+          selection.startColumn !== selection.endColumn)
+      ) {
+        const selectionDecorations = [
+          {
+            range: new monaco.Range(
+              selection.startLine,
+              selection.startColumn,
+              selection.endLine,
+              selection.endColumn
+            ),
+            options: {
+              className: "collaborative-selection",
+              stickiness:
+                monaco.editor.TrackedRangeStickiness
+                  .NeverGrowsWhenTypingAtEdges,
+              inlineClassName: "collaborative-selection-inline",
+              inlineStyle: `background-color: ${user.color}30;`,
+            },
+          },
+        ];
+
+        const selectionIds = editor.deltaDecorations([], selectionDecorations);
+        decorationIds.push(...selectionIds);
+      }
+
+      const cursorContainer = document.createElement("div");
+      cursorContainer.className = "collaborative-cursor-container";
+
+      const cursorHoverArea = document.createElement("div");
+      cursorHoverArea.className = "collaborative-cursor-hover-area";
+
+      const cursorLine = document.createElement("div");
+      cursorLine.className = "collaborative-cursor-line";
+      cursorLine.style.backgroundColor = user.color;
+
+      const nameTag = document.createElement("div");
+      nameTag.className = "collaborative-cursor-name";
+      nameTag.style.backgroundColor = user.color;
+      nameTag.textContent = user.name;
+
+      cursorContainer.appendChild(cursorLine);
+      cursorContainer.appendChild(cursorHoverArea);
+      cursorContainer.appendChild(nameTag);
+
+      cursorHoverArea.addEventListener("mouseenter", () => {
+        nameTag.style.opacity = "1";
+        nameTag.style.visibility = "visible";
+      });
+
+      cursorHoverArea.addEventListener("mouseleave", () => {
+        nameTag.style.opacity = "0";
+        nameTag.style.visibility = "hidden";
+      });
+
+      const cursorWidget: monaco.editor.IContentWidget = {
+        getId: () => `cursor-widget-${clientId}`,
+        getDomNode: () => cursorContainer,
+        getPosition: () => ({
+          position: { lineNumber: line, column },
+          preference: [monaco.editor.ContentWidgetPositionPreference.EXACT],
+        }),
+      };
+
+      editor.addContentWidget(cursorWidget);
+      nameWidgetsRef.current.set(`cursor-widget-${clientId}`, cursorWidget);
+
+      cursorsRef.current.set(clientId, {
+        id: `cursor-${clientId}`,
+        decorationIds,
+        nameWidgetId: `cursor-widget-${clientId}`,
+      });
+    },
+    [editor]
+  );
 
   useEffect(() => {
     if (!editor) return;
@@ -120,103 +220,11 @@ export default function CollaborativeCursor({
     };
 
     setTimeout(addHoverListeners, 100);
-  }, [users, editor]);
+  }, [users, editor, clearAllCursors, renderUserCursor]);
 
-  const renderUserCursor = (user: CollaborationUser, clientId: number) => {
-    if (!editor || !user.cursor) return;
+  // Removed duplicate renderUserCursor function as it's now defined with useCallback above
 
-    const { line, column, selection } = user.cursor;
-    const decorationIds: string[] = [];
-
-    if (
-      selection &&
-      (selection.startLine !== selection.endLine ||
-        selection.startColumn !== selection.endColumn)
-    ) {
-      const selectionDecorations = [
-        {
-          range: new monaco.Range(
-            selection.startLine,
-            selection.startColumn,
-            selection.endLine,
-            selection.endColumn
-          ),
-          options: {
-            className: "collaborative-selection",
-            stickiness:
-              monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
-            inlineClassName: "collaborative-selection-inline",
-            inlineStyle: `background-color: ${user.color}30;`,
-          },
-        },
-      ];
-
-      const selectionIds = editor.deltaDecorations([], selectionDecorations);
-      decorationIds.push(...selectionIds);
-    }
-
-    const cursorContainer = document.createElement("div");
-    cursorContainer.className = "collaborative-cursor-container";
-
-    const cursorHoverArea = document.createElement("div");
-    cursorHoverArea.className = "collaborative-cursor-hover-area";
-
-    const cursorLine = document.createElement("div");
-    cursorLine.className = "collaborative-cursor-line";
-    cursorLine.style.backgroundColor = user.color;
-
-    const nameTag = document.createElement("div");
-    nameTag.className = "collaborative-cursor-name";
-    nameTag.style.backgroundColor = user.color;
-    nameTag.textContent = user.name;
-
-    cursorContainer.appendChild(cursorLine);
-    cursorContainer.appendChild(cursorHoverArea);
-    cursorContainer.appendChild(nameTag);
-
-    cursorHoverArea.addEventListener("mouseenter", () => {
-      nameTag.style.opacity = "1";
-      nameTag.style.visibility = "visible";
-    });
-
-    cursorHoverArea.addEventListener("mouseleave", () => {
-      nameTag.style.opacity = "0";
-      nameTag.style.visibility = "hidden";
-    });
-
-    const cursorWidget: monaco.editor.IContentWidget = {
-      getId: () => `cursor-widget-${clientId}`,
-      getDomNode: () => cursorContainer,
-      getPosition: () => ({
-        position: { lineNumber: line, column },
-        preference: [monaco.editor.ContentWidgetPositionPreference.EXACT],
-      }),
-    };
-
-    editor.addContentWidget(cursorWidget);
-    nameWidgetsRef.current.set(`cursor-widget-${clientId}`, cursorWidget);
-
-    cursorsRef.current.set(clientId, {
-      id: `cursor-${clientId}`,
-      decorationIds,
-      nameWidgetId: `cursor-widget-${clientId}`,
-    });
-  };
-
-  const clearAllCursors = () => {
-    if (!editor) return;
-
-    cursorsRef.current.forEach((cursor) => {
-      editor.deltaDecorations(cursor.decorationIds, []);
-      const widget = nameWidgetsRef.current.get(cursor.nameWidgetId);
-      if (widget) {
-        editor.removeContentWidget(widget);
-        nameWidgetsRef.current.delete(cursor.nameWidgetId);
-      }
-    });
-
-    cursorsRef.current.clear();
-  };
+  // Removed duplicate clearAllCursors function as it's now defined with useCallback above
 
   return null;
 }

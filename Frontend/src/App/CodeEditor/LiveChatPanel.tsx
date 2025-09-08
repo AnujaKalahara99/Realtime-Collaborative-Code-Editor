@@ -7,27 +7,26 @@ import {
   type ChangeEvent,
 } from "react";
 import {
-  useCollaboration,
+  useEditorCollaboration,
   type CollaborationUser,
   type Message,
-} from "./YJSCollaborationService";
+} from "../../Contexts/EditorContext";
 import { useTheme } from "../../Contexts/ThemeProvider";
 import { ChevronRight } from "lucide-react";
 import Avatar from "../../components/Avatar";
 
 export function ChatSpace() {
   const [inputMessage, setInputMessage] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
   const [currentUser, setCurrentUser] = useState<CollaborationUser | null>(
     null
   );
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
 
-  const collaboration = useCollaboration();
+  const { messages, getAwareness, sendChatMessage } = useEditorCollaboration();
 
   useEffect(() => {
-    const awareness = collaboration.getAwareness();
+    const awareness = getAwareness();
     if (awareness) {
       const user = awareness.getLocalState()?.user;
       setCurrentUser(user);
@@ -45,13 +44,7 @@ export function ChatSpace() {
         awareness.off("change", handleAwarenessChange);
       };
     }
-  }, [collaboration]);
-
-  // Subscribe to chat messages
-  useEffect(() => {
-    const unsubscribe = collaboration.onChatChange(setMessages);
-    return unsubscribe;
-  }, [collaboration]);
+  }, [getAwareness]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -62,10 +55,10 @@ export function ChatSpace() {
 
   const handleSendMessage = useCallback(() => {
     if (inputMessage.trim()) {
-      collaboration.sendChatMessage(inputMessage);
+      sendChatMessage(inputMessage);
       setInputMessage("");
     }
-  }, [inputMessage, collaboration]);
+  }, [inputMessage, sendChatMessage]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {

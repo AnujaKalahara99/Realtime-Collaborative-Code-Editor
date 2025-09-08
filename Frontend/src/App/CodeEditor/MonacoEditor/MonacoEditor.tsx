@@ -3,9 +3,9 @@ import { Editor } from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
 import { MonacoBinding } from "y-monaco";
 import {
-  useCollaboration,
+  useEditorCollaboration,
   type CollaborationUser,
-} from "../YJSCollaborationService";
+} from "../../../Contexts/EditorContext";
 import { useTheme } from "../../../Contexts/ThemeProvider";
 import type { FileNode } from "../ProjectManagementPanel/file.types";
 import CollaborativeCursor from "./CollaborativeCursor";
@@ -29,46 +29,31 @@ export default function MonacoEditor({
   const contentUnsubscribeRef = useRef<(() => void) | null>(null);
 
   const [language, setLanguage] = useState<string>("plaintext");
-  const [isConnected, setIsConnected] = useState(false);
   const [fileUsers, setFileUsers] = useState<CollaborationUser[]>([]);
-  const collaborationService = useCollaboration();
 
-  // Subscribe to connection status
+  const {
+    isConnected,
+    getUsersInFile,
+    getFileText,
+    initializeFileContent,
+    onFileContentChange: registerFileContentChange,
+    getAwareness,
+    updateCursorPosition,
+  } = useEditorCollaboration();
+
   useEffect(() => {
-    const unsubscribeConnection =
-      collaborationService.onConnectionChange(setIsConnected);
-
-    return () => {
-      unsubscribeConnection();
-    };
-  }, []);
-
-  useEffect(() => {
-    setFileUsers([]); //Clear prev file users
+    setFileUsers([]);
 
     if (selectedFile && selectedFile.type === "file" && editorRef.current) {
       setLanguage(getLanguageFromFileName(selectedFile.name));
 
-      // Switching to a different file
       if (currentFileRef.current !== selectedFile.id) {
         bindEditorToFile(selectedFile);
       }
 
-      const updateUsers = () => {
-        const users = collaborationService.getUsersInFile(selectedFile.id);
-        setFileUsers(users);
-        console.log("Connected File users:", users);
-      };
-
-      const unsubscribeFileUsers =
-        collaborationService.onUsersChange(updateUsers);
-      updateUsers();
-
-      return () => {
-        unsubscribeFileUsers();
-      };
+      const users = getUsersInFile(selectedFile.id);
+      setFileUsers(users);
     } else if (!selectedFile) {
-      // No file selected, cleanup
       if (currentBindingRef.current) {
         currentBindingRef.current.destroy();
         currentBindingRef.current = null;
@@ -79,9 +64,8 @@ export default function MonacoEditor({
       }
       currentFileRef.current = null;
     }
-  }, [selectedFile]);
+  }, [selectedFile, getUsersInFile]);
 
-  // Bind editor to a specific file
   const bindEditorToFile = (file: FileNode) => {
     if (!editorRef.current) return;
 
@@ -99,33 +83,47 @@ export default function MonacoEditor({
       contentUnsubscribeRef.current = null;
     }
 
-    // Get the Y.Text for this file
-    const fileYText = collaborationService.getFileText(file.id);
-
-    // Initialize file content if needed
     if (file.content) {
-      collaborationService.initializeFileContent(file.id, file.content);
+      initializeFileContent(file.id, file.content);
     }
 
-    // Set model content from Y.Text
-    const yjsContent = fileYText.toString();
-    if (model.getValue() !== yjsContent) {
-      model.setValue(yjsContent);
+    const fileYText = getFileText(file.id);
+    if (model.getValue() !== fileYText?.toString()) {
+      model.setValue(fileYText?.toString() || "");
     }
 
-    // Create Monaco binding for collaborative editing
-    const awareness = collaborationService.getAwareness();
+    const awareness = getAwareness();
     if (awareness) {
-      currentBindingRef.current = new MonacoBinding(
-        fileYText,
-        model,
-        new Set([editor]),
-        awareness
-      );
+      if (fileYText) {
+        currentBindingRef.current = new MonacoBinding(
+          fileYText,
+          model,
+          new Set([editor]),
+          awareness
+        );
+
+        editor.onDidChangeCursorPosition(() => {
+          const position = editor.getPosition();
+          if (position) {
+            const selection = editor.getSelection();
+            updateCursorPosition(file.id, {
+              line: position.lineNumber,
+              column: position.column,
+              selection: selection
+                ? {
+                    startLine: selection.startLineNumber,
+                    startColumn: selection.startColumn,
+                    endLine: selection.endLineNumber,
+                    endColumn: selection.endColumn,
+                  }
+                : undefined,
+            });
+          }
+        });
+      }
     }
 
-    // Subscribe to content changes
-    contentUnsubscribeRef.current = collaborationService.onFileContentChange(
+    contentUnsubscribeRef.current = registerFileContentChange(
       file.id,
       (content) => {
         onFileContentChange?.(file.id, content);
@@ -302,20 +300,6 @@ export default function MonacoEditor({
                 ? "Select a file from the explorer to start editing"
                 : "Select a file (not a folder) to edit its contents"}
             </p>
-
-            {/* Connection status in placeholder */}
-            <div className="mt-4 flex items-center justify-center gap-2">
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  isConnected ? "bg-green-500" : "bg-red-500"
-                }`}
-              />
-              <span className="text-xs">
-                {isConnected
-                  ? "Connected to collaboration server"
-                  : "Disconnected from server"}
-              </span>
-            </div>
           </div>
         </div>
       )}
