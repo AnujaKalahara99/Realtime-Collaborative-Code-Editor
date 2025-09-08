@@ -15,42 +15,73 @@ export class YjsPersistence {
     this.SAVE_DELAY = 3000; // 3 seconds
   }
 
-  async bindState(workspaceId, ydoc) {
-    console.log(`Binding state for workspace: ${workspaceId}`);
-    this.docs.set(workspaceId, ydoc);
+  async bindState(sessionId, ydoc) {
+    console.log(`Binding state for session: ${sessionId}`);
+    this.docs.set(sessionId, ydoc);
 
-    await this.loadFromDatabase(workspaceId, ydoc);
-    this.setupUpdateHandler(workspaceId, ydoc);
+    await this.loadFromDatabase(sessionId, ydoc);
+    this.setupUpdateHandler(sessionId, ydoc);
   }
 
-  async loadFromDatabase(workspaceId, ydoc) {
+  async loadFromDatabase(sessionId, ydoc) {
     try {
-      const { data: files, error } = await supabase
-        .from("files")
-        .select("id, name, file_type, storage_path, content")
-        .eq("workspace_id", workspaceId);
+      const { data: filesMeta, error: metaError } = await supabase
+        .from("session_files")
+        .select("id, file_path, storage_path")
+        .eq("session_id", sessionId);
 
-      if (error) {
-        console.error(`Error loading files for ${workspaceId}:`, error);
+      if (metaError) {
+        console.error(
+          `Error loading session_files for ${sessionId}:`,
+          metaError
+        );
         return;
       }
 
+      const files = [];
+      if (filesMeta && filesMeta.length > 0) {
+        for (const meta of filesMeta) {
+          let content = "";
+          if (meta.storage_path) {
+            const { data: fileData, error: storageError } =
+              await supabase.storage
+                .from("sessionFiles")
+                .download(meta.storage_path);
+
+            if (storageError) {
+              console.error(
+                `Error downloading file ${meta.storage_path}:`,
+                storageError
+              );
+            } else if (fileData) {
+              content = new TextDecoder().decode(await fileData.arrayBuffer());
+            }
+          }
+          files.push({
+            id: meta.id,
+            file_type: "file",
+            file_path: meta.file_path,
+            storage_path: meta.storage_path,
+            content,
+          });
+        }
+      }
+
       console.log(
-        `Loading ${files?.length || 0} files for workspace: ${workspaceId}`
+        `Loading ${files?.length || 0} files for session: ${sessionId}`
       );
 
       if (files && files.length > 0) {
         const fileSystemMap = ydoc.getMap("fileSystem");
 
-        // Convert flat file list to nested structure
         const createNestedStructure = (filesList) => {
           const root = [];
-          const pathMap = new Map(); // To track created folders
+          const pathMap = new Map();
 
           filesList.forEach((file) => {
-            const filePath = file.storage_path || file.name;
+            const filePath = file.file_path;
             const pathParts = filePath.split("/").filter(Boolean);
-            const fileName = pathParts.pop() || file.name;
+            const fileName = pathParts.pop();
 
             let currentLevel = root;
             let currentPath = "";
@@ -109,35 +140,35 @@ export class YjsPersistence {
       }
     } catch (error) {
       console.error(
-        `Failed to load from database for workspace ${workspaceId}:`,
+        `Failed to load from database for session ${sessionId}:`,
         error
       );
     }
   }
 
-  setupUpdateHandler(workspaceId, ydoc) {
+  setupUpdateHandler(sessionId, ydoc) {
     ydoc.on("update", (update, origin) => {
       if (origin !== "persistence") {
-        this.debouncedSave(workspaceId, ydoc);
+        this.debouncedSave(sessionId, ydoc);
       }
     });
   }
 
-  debouncedSave(workspaceId, ydoc) {
+  debouncedSave(sessionId, ydoc) {
     // Clear existing timeout
-    if (this.saveTimeouts.has(workspaceId)) {
-      clearTimeout(this.saveTimeouts.get(workspaceId));
+    if (this.saveTimeouts.has(sessionId)) {
+      clearTimeout(this.saveTimeouts.get(sessionId));
     }
 
     // Set new timeout
     const timeoutId = setTimeout(async () => {
-      await this.syncToDatabase(workspaceId, ydoc);
+      await this.syncToDatabase(sessionId, ydoc);
     }, this.SAVE_DELAY);
 
-    this.saveTimeouts.set(workspaceId, timeoutId);
+    this.saveTimeouts.set(sessionId, timeoutId);
   }
 
-  async syncToDatabase(workspaceId, ydoc) {
+  async syncToDatabase(sessionId, ydoc) {
     try {
       const fileSystemMap = ydoc.getMap("fileSystem");
       const files = fileSystemMap.get("files") || [];
@@ -177,116 +208,139 @@ export class YjsPersistence {
       };
 
       const allFiles = getAllFiles(files);
-      console.log(
-        `Syncing ${allFiles.length} files for workspace ${workspaceId}`
-      );
+      console.log(`Syncing ${allFiles.length} files for session ${sessionId}`);
 
-      // Get current file IDs from document
       const currentFileIds = new Set(
         allFiles.map((file) => file.id).filter(Boolean)
       );
 
-      // Fetch all files for this workspace from database
       const { data: dbFiles, error: fetchError } = await supabase
-        .from("files")
-        .select("id")
-        .eq("workspace_id", workspaceId);
+        .from("session_files")
+        .select("id, storage_path")
+        .eq("session_id", sessionId);
 
       if (fetchError) {
         console.error(
-          `Error fetching files for workspace ${workspaceId}:`,
+          `Error fetching files for session ${sessionId}:`,
           fetchError
         );
-      } else {
-        // Check for files that exist in DB but not in the document - these need to be deleted
-        for (const dbFile of dbFiles) {
-          if (!currentFileIds.has(dbFile.id)) {
-            // This file exists in DB but not in document, so delete it
-            const { error: deleteError } = await supabase
-              .from("files")
-              .delete()
-              .eq("id", dbFile.id);
+        return;
+      }
 
-            if (deleteError) {
-              console.error(`Error deleting file ${dbFile.id}:`, deleteError);
-            } else {
-              console.log(`🗑️ Deleted file with ID: ${dbFile.id}`);
-            }
+      const idsToDelete = dbFiles
+        .map((dbFile) => dbFile.id)
+        .filter((id) => !currentFileIds.has(id));
+
+      if (idsToDelete.length > 0) {
+        const pathsToDelete = dbFiles
+          .filter((dbFile) => idsToDelete.includes(dbFile.id))
+          .map((dbFile) => dbFile.storage_path)
+          .filter(Boolean);
+
+        const { error: deleteError } = await supabase
+          .from("session_files")
+          .delete()
+          .in("id", idsToDelete);
+
+        if (deleteError) {
+          console.error(`Error deleting files:`, deleteError);
+        } else {
+          console.log(`🗑️ Deleted files with IDs: ${idsToDelete.join(", ")}`);
+        }
+
+        if (pathsToDelete.length > 0) {
+          const { error: storageError } = await supabase.storage
+            .from("sessionFiles")
+            .remove(pathsToDelete);
+
+          if (storageError) {
+            console.error(`Error deleting files from storage:`, storageError);
+          } else {
+            console.log(
+              `🗑️ Deleted files from storage: ${pathsToDelete.join(", ")}`
+            );
           }
         }
       }
 
-      // Process existing files (add/update)
+      const filesToUpsert = [];
+      const storageUploads = [];
+
       for (const file of allFiles) {
         if (!file.id) continue;
 
         const fileText = ydoc.getText(`file-${file.id}`);
         const content = fileText.toString();
         const filePath = buildFilePath(file.id, files) || file.name;
+        const storagePath = `${sessionId}/${file.name}_${file.id}`;
 
-        const { data: existingFile } = await supabase
-          .from("files")
-          .select("id")
-          .eq("id", file.id)
-          .single();
+        filesToUpsert.push({
+          id: file.id,
+          session_id: sessionId,
+          file_path: filePath,
+          storage_path: storagePath,
+          created_by: "4e4f8c26-6557-4578-a05c-612d1ebef6ee",
+          updated_at: new Date().toISOString(),
+        });
 
-        if (!existingFile) {
-          // Insert new file
-          const { error } = await supabase.from("files").insert({
-            
-            workspace_id: workspaceId,
-            name: file.name,
-            file_type: file.type || "file",
-            storage_path: filePath,
-            content: content,
-            created_by: "4e4f8c26-6557-4578-a05c-612d1ebef6ee",
+        storageUploads.push({
+          path: storagePath,
+          content: content,
+        });
+      }
+
+      if (filesToUpsert.length > 0) {
+        const { error: upsertError } = await supabase
+          .from("session_files")
+          .upsert(filesToUpsert, { onConflict: ["id"] });
+
+        if (upsertError) {
+          console.error(`Error upserting files:`, upsertError);
+        } else {
+          console.log(`✅ Upserted ${filesToUpsert.length} files`);
+        }
+      }
+
+      for (const upload of storageUploads) {
+        const { error: storageError } = await supabase.storage
+          .from("sessionFiles")
+          .upload(upload.path, upload.content, {
+            upsert: true,
+            contentType: "text/plain",
           });
 
-          if (error) {
-            console.error(`Error inserting file ${file.id}:`, error);
-          } else {
-            console.log(`✅ Inserted file: ${file.name}`);
+        if (storageError) {
+          // Ignore "The resource already exists" error if upsert is true
+          if (storageError.message !== "The resource already exists") {
+            console.error(
+              `Error uploading file to storage (${upload.path}):`,
+              storageError
+            );
           }
         } else {
-          // Update existing file
-          const { error } = await supabase
-            .from("files")
-            .update({
-              name: file.name,
-              file_type: file.type || "file",
-              storage_path: filePath,
-              content: content,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", file.id);
-
-          if (error) {
-            console.error(`Error updating file ${file.id}:`, error);
-          } else {
-            console.log(`✅ Updated file: ${file.name}`);
-          }
+          console.log(`✅ Uploaded file to storage: ${upload.path}`);
         }
       }
     } catch (error) {
       console.error(
-        `Failed to sync to database for workspace ${workspaceId}:`,
+        `Failed to sync to database for session ${sessionId}:`,
         error
       );
     }
   }
 
-  async writeState(workspaceId, ydoc) {
+  async writeState(sessionId, ydoc) {
     // Clear any pending save
-    if (this.saveTimeouts.has(workspaceId)) {
-      clearTimeout(this.saveTimeouts.get(workspaceId));
-      this.saveTimeouts.delete(workspaceId);
+    if (this.saveTimeouts.has(sessionId)) {
+      clearTimeout(this.saveTimeouts.get(sessionId));
+      this.saveTimeouts.delete(sessionId);
     }
 
     // Final sync
-    await this.syncToDatabase(workspaceId, ydoc);
+    await this.syncToDatabase(sessionId, ydoc);
 
     // Cleanup
-    this.docs.delete(workspaceId);
+    this.docs.delete(sessionId);
   }
 }
 
