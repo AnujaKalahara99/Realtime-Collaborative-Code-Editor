@@ -285,6 +285,24 @@ class YjsCollaborationService {
     return this.addCallback("chat", callback);
   }
 
+  deleteChatMessage(messageId: string): boolean {
+    if (!this.chatArray) return false;
+
+    const messages = this.chatArray.toArray();
+    const messageIndex = messages.findIndex((msg) => msg.id === messageId);
+
+    if (messageIndex === -1) return false;
+
+    // Check if the current user is the message owner
+    const user = this.provider?.awareness.getLocalState()?.user;
+    const message = messages[messageIndex];
+
+    if (message.user !== user?.name) return false; // Only allow deleting own messages hv to notify others that they cannot delete
+
+    this.chatArray.delete(messageIndex, 1);
+    return true;
+  }
+
   clearChat(): void {
     if (this.chatArray?.length) {
       this.chatArray.delete(0, this.chatArray.length);

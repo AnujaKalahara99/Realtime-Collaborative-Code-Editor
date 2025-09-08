@@ -12,13 +12,17 @@ import {
   type Message,
 } from "./YJSCollaborationService";
 import { useTheme } from "../../Contexts/ThemeProvider";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Trash2 } from "lucide-react";
 import Avatar from "../../components/Avatar";
 
 export function ChatSpace() {
   const [inputMessage, setInputMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentUser, setCurrentUser] = useState<CollaborationUser | null>(
+    null
+  );
+  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
     null
   );
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -60,6 +64,24 @@ export function ChatSpace() {
     }
   }, [messages]);
 
+  // Close delete confirmation when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showDeleteConfirm &&
+        !(event.target as Element).closest(".delete-confirmation")
+      ) {
+        setShowDeleteConfirm(null);
+      }
+    };
+
+    if (showDeleteConfirm) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [showDeleteConfirm]);
+
   const handleSendMessage = useCallback(() => {
     if (inputMessage.trim()) {
       collaboration.sendChatMessage(inputMessage);
@@ -82,6 +104,24 @@ export function ChatSpace() {
     setInputMessage(e.target.value);
   };
 
+  const handleDeleteMessage = useCallback(
+    (messageId: string) => {
+      const success = collaboration.deleteChatMessage(messageId);
+      if (success) {
+        setShowDeleteConfirm(null);
+      }
+    },
+    [collaboration]
+  );
+
+  const confirmDelete = (messageId: string) => {
+    setShowDeleteConfirm(messageId);
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(null);
+  };
+
   return (
     <div className={`flex flex-col ${theme.surface}`}>
       {/* Header */}
@@ -101,6 +141,7 @@ export function ChatSpace() {
           <div className="space-y-3">
             {messages.map((msg: Message) => {
               const isCurrentUser = msg.user === currentUser?.name;
+              const isDeleteConfirmOpen = showDeleteConfirm === msg.id;
 
               return (
                 <div
@@ -110,11 +151,13 @@ export function ChatSpace() {
                       ? "justify-start flex-row-reverse"
                       : "justify-start"
                   }`}
+                  onMouseEnter={() => setHoveredMessageId(msg.id)}
+                  onMouseLeave={() => setHoveredMessageId(null)}
                 >
                   <Avatar
                     name={msg.user}
                     src={msg.avatar}
-                    color={undefined} // Blue for current user
+                    color={undefined}
                     size="medium"
                   />
 
@@ -122,7 +165,7 @@ export function ChatSpace() {
                   <div
                     className={`flex flex-col max-w-[75%] ${
                       isCurrentUser ? "items-end" : "items-start"
-                    }`}
+                    } relative group`}
                   >
                     {/* Username (only for other users) */}
                     {!isCurrentUser && (
@@ -133,16 +176,61 @@ export function ChatSpace() {
                       </span>
                     )}
 
-                    {/* Message content */}
-                    <div
-                      className={`px-4 py-2 text-sm shadow-sm ${
-                        isCurrentUser
-                          ? "bg-blue-500 text-white rounded-br-md"
-                          : `${theme.surfaceSecondary} ${theme.text} rounded-bl-md`
-                      }`}
-                    >
-                      <p className="break-words">{msg.text}</p>
+                    {/* Message content with delete button */}
+                    <div className="relative">
+                      <div
+                        className={`px-4 py-2 text-sm shadow-sm ${
+                          isCurrentUser
+                            ? "bg-blue-500 text-white rounded-br-md"
+                            : `${theme.surfaceSecondary} ${theme.text} rounded-bl-md`
+                        }`}
+                      >
+                        <p className="break-words">{msg.text}</p>
+                      </div>
+
+                      {/* Delete button (only for current user's messages) */}
+                      {isCurrentUser && hoveredMessageId === msg.id && (
+                        <button
+                          onClick={() => confirmDelete(msg.id)}
+                          className={`absolute -top-2 ${
+                            isCurrentUser ? "-left-8" : "-right-8"
+                          } p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-all duration-200 shadow-lg`}
+                          title="Delete message"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
+
+                    {/* Delete confirmation dialog */}
+                    {isDeleteConfirmOpen && (
+                      <div
+                        className={`delete-confirmation absolute z-10 mt-1 p-3 ${
+                          theme.surface
+                        } ${theme.border} border rounded-lg shadow-lg ${
+                          isCurrentUser ? "right-0" : "left-0"
+                        }`}
+                        style={{ top: "100%" }}
+                      >
+                        <p className={`text-xs ${theme.text} mb-2`}>
+                          Delete this message?
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleDeleteMessage(msg.id)}
+                            className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                          >
+                            Delete
+                          </button>
+                          <button
+                            onClick={cancelDelete}
+                            className={`px-2 py-1 text-xs ${theme.surfaceSecondary} ${theme.text} rounded hover:${theme.hover} transition-colors`}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Timestamp */}
                     <span className={`text-xs ${theme.textMuted} mt-1 px-1`}>
