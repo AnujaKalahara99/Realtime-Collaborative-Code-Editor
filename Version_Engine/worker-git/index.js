@@ -24,7 +24,11 @@ new Worker(
         let msg = "Unknown job type";
         switch (job.data.type) {
           case "COMMIT":
-            msg = await handleCommit(job.data);
+            msg = await handleCommit(
+              job.data.sessionId,
+              job.data.message,
+              job.data.branchId
+            );
             break;
           case "ROLLBACK":
             msg = await handleRollback(job.data);

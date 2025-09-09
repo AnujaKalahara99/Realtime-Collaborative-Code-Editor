@@ -193,6 +193,97 @@ export default function MonacoEditor({
     return initialValue;
   };
 
+  // Add this to your MonacoEditor.tsx, updating your existing useEffect
+
+  useEffect(() => {
+    if (editorRef.current) {
+      // Configure TypeScript compiler options with more advanced settings
+      monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+        target: monaco.languages.typescript.ScriptTarget.Latest,
+        allowNonTsExtensions: true,
+        moduleResolution:
+          monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+        module: monaco.languages.typescript.ModuleKind.ESNext,
+        noEmit: true,
+        typeRoots: ["node_modules/@types"],
+        jsx: monaco.languages.typescript.JsxEmit.React,
+        allowJs: true,
+        checkJs: true, // Enable JavaScript validation
+        strict: true,
+        esModuleInterop: true,
+        allowSyntheticDefaultImports: true,
+        resolveJsonModule: true,
+        noImplicitAny: false, // More permissive for quick editing
+      });
+
+      // Set diagnostic options to show errors for imports
+      monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+        noSemanticValidation: false,
+        noSyntaxValidation: false,
+        noSuggestionDiagnostics: false,
+        diagnosticCodesToIgnore: [],
+      });
+
+      // Add basic browser and DOM typings
+      monaco.languages.typescript.javascriptDefaults.addExtraLib(
+        `
+      // Basic DOM and browser APIs
+      interface Window {
+        document: Document;
+        console: Console;
+        localStorage: Storage;
+        sessionStorage: Storage;
+        setTimeout(callback: Function, ms: number): number;
+        clearTimeout(id: number): void;
+        setInterval(callback: Function, ms: number): number;
+        clearInterval(id: number): void;
+      }
+      declare var window: Window;
+      declare var document: Document;
+      declare var console: Console;
+      
+      // Common modules
+      declare module "react" {
+        export const useState: any;
+        export const useEffect: any;
+        export const useRef: any;
+        export const useCallback: any;
+        export const useMemo: any;
+        export const useContext: any;
+        export default any;
+      }
+      declare module "react-dom" {
+        export const createRoot: any;
+        export default any;
+      }
+      `,
+        "ts:filename/lib.d.ts"
+      );
+
+      // Register a mock file system for handling imports
+      const fileMap = {
+        "/src/utils.js": `
+        export const add = (a, b) => a + b;
+        export const subtract = (a, b) => a - b;
+        export default { add, subtract };
+      `,
+        "/src/constants.js": `
+        export const PI = 3.14159;
+        export const MAX_VALUE = 1000;
+        export default { PI, MAX_VALUE };
+      `,
+      };
+
+      // Register each mock file
+      Object.entries(fileMap).forEach(([filePath, content]) => {
+        monaco.languages.typescript.javascriptDefaults.addExtraLib(
+          content,
+          `file:${filePath}`
+        );
+      });
+    }
+  }, [editorRef.current]);
+
   return (
     <div className="h-full flex flex-col">
       <CollaborativeCursor
