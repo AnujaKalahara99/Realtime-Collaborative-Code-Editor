@@ -5,7 +5,7 @@ import { useTheme } from "../ThemeProvider";
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (name: string) => Promise<boolean>; // ✅ only name
+  onSubmit: (name: string) => Promise<boolean>; 
 }
 
 function CreateCodespaceModal({ isOpen, onClose, onSubmit }: Props) {

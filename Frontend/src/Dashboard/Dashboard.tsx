@@ -10,7 +10,7 @@ import CreateCodespaceModal from "./CreateCodespaceModal";
 import { useCodespaces } from "./useCodespaces";
 import { type ViewMode } from "./codespace.types";
 import type { Codespace } from "./codespace.types";
-import { useNavigate } from "react-router-dom"; // ✅ import navigate
+import { useNavigate } from "react-router-dom";
 
 type Props = {
   session: Session;

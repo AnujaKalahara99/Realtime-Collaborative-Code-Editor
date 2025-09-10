@@ -21,10 +21,8 @@ const CollaboratePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showContent, setShowContent] = useState(false);
 
-  // Debugging: Log the invitationId
   console.log("Invitation ID:", invitationId);
 
-  // Animation effect
   useEffect(() => {
     const timer = setTimeout(() => setShowContent(true), 100);
     return () => clearTimeout(timer);
