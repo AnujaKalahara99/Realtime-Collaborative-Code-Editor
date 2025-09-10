@@ -5,7 +5,6 @@ import { supabase } from "../database/superbase";
 import { useTheme } from "../ThemeProvider";
 import { Mail, Lock, User, AlertCircle, Sun, Moon, Code, Zap, UserPlus, Shield, CheckCircle2 } from "lucide-react";
 
-// ThemeToggleButton component integrated into the same file
 type ThemeToggleButtonProps = {
   size?: "small" | "medium" | "large";
 };
@@ -317,7 +316,7 @@ function Signup() {
                   {loading ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Creating your account...
+                      We’ve sent an invitation email to your account. Please check your inbox and click the verification link to accept the invitation and log in to CodeSync
                     </>
                   ) : (
                     <>
