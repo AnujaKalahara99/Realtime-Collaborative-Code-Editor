@@ -1,4 +1,4 @@
-import { vfsPlugin } from "./esbuildPlugin";
+import { vfsPlugin, type PluginOptions } from "./esbuildPlugin";
 import type { VFSStore } from "../vfs/vfs-store";
 import * as esbuild from "esbuild-wasm";
 import type { Plugin } from "esbuild-wasm";
@@ -7,9 +7,16 @@ let esbuildInitializationPromise: Promise<void> | null = null;
 
 export class Bundler {
   private vfs: VFSStore;
+  private pluginOptions: PluginOptions;
 
-  constructor(vfs: VFSStore) {
+  constructor(vfs: VFSStore, pluginOptions: PluginOptions = {}) {
     this.vfs = vfs;
+    this.pluginOptions = {
+      enableDetailedErrors: true,
+      enableDependencyTracking: true,
+      allowedExtensions: [".js", ".jsx", ".ts", ".tsx", ".json", ".css"],
+      ...pluginOptions,
+    };
   }
 
   async initialize() {
@@ -58,7 +65,7 @@ export class Bundler {
         entryPoints: [entryPoint],
         bundle: true,
         write: false,
-        plugins: [vfsPlugin(this.vfs) as Plugin], // Cast to Plugin type for type safety
+        plugins: [vfsPlugin(this.vfs, this.pluginOptions) as Plugin], // Use enhanced plugin with options
         define: {
           "process.env.NODE_ENV": '"production"', // Define environment for React/Next.js
         },
