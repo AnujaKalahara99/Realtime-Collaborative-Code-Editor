@@ -1,8 +1,8 @@
-import { CodespaceService } from "./codespaceService.js";
-import { supabase } from "./supabaseClient.js";
+import { CodespaceService } from "../services/codespaceService.js";
+import { supabase } from "../services/supabaseClient.js";
 import nodemailer from "nodemailer";
 
-jest.mock("./supabaseClient.js", () => ({
+jest.mock("../services/supabaseClient.js", () => ({
   supabase: {
     from: jest.fn(() => ({
       select: jest.fn(),

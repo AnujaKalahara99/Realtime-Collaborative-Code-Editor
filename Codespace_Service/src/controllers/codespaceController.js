@@ -90,7 +90,7 @@ export class CodespaceController {
           code: "INVALID_EMAIL",
         });
       }
-      console.log("Sharing codespace by email:", id, email, req.user.id);
+      //console.log("Sharing codespace by email:", id, email, req.user.id);
 
       const result = await CodespaceService.shareCodespaceByEmail(
         id,

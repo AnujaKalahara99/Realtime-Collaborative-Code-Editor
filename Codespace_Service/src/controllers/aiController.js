@@ -7,9 +7,7 @@ export async function handleChatRequest(messages) {
     if (!result || typeof result.toAIStream !== "function") {
       throw new Error("Invalid AI service response");
     }
-    // Optionally, you can add data to the stream, e.g., for sources or tool calls
     const data = new StreamData();
-    // data.append({ someCustomData: 'value' }); // Example of appending custom data
 
     const stream = result.toAIStream({
       onFinal() {

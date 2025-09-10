@@ -274,9 +274,7 @@ static async shareCodespaceByEmail(codespaceId, email, userid, role) {
       `,
     };
 
-    // Send email
     await transporter.sendMail(mailOptions);
-    console.log(`Codespace sharing email sent to ${email} successfully.`);
 
     return { invitation };
   } catch (err) {
