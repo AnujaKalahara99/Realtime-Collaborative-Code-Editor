@@ -4,18 +4,9 @@ import BranchSelector from "./BranchSelector";
 import CommitHistory from "./CommitHistory";
 // import CommitTree from "./CommitTree";
 import CommitForm from "./CommitForm";
-import type { GitState } from "./GitTypes";
-import { fetchBranches, fetchCommits } from "./gitOperations";
 
 const GitPanel = () => {
   const { theme } = useTheme();
-
-  // Initial state - will be populated from API
-  const [gitState, setGitState] = useState<GitState>({
-    branches: [],
-    commits: [],
-    currentBranch: "",
-  });
 
   // Loading states
   const [isLoading, setIsLoading] = useState(true);
@@ -27,25 +18,6 @@ const GitPanel = () => {
       try {
         setIsLoading(true);
         setError(null);
-
-        // Fetch branches
-        const branches = await fetchBranches();
-
-        // Find the active branch
-        const activeBranch = branches.find((branch) => branch.isActive);
-        if (!activeBranch) {
-          throw new Error("No active branch found");
-        }
-
-        // Fetch commits for active branch
-        const commits = await fetchCommits(activeBranch.name);
-
-        // Set initial state
-        setGitState({
-          branches,
-          commits,
-          currentBranch: activeBranch.name,
-        });
       } catch (err) {
         setError("Failed to initialize Git panel");
         console.error(err);
@@ -84,7 +56,7 @@ const GitPanel = () => {
       </div>
 
       <div className="flex-grow overflow-auto p-4 Simple-Scrollbar">
-        {isLoading && gitState.commits.length === 0 && (
+        {isLoading && (
           <div
             className={`flex items-center justify-center h-full ${theme.textMuted}`}
           >
@@ -121,7 +93,7 @@ const GitPanel = () => {
           </div>
         )}
 
-        {!isLoading && gitState.commits.length > 0 && (
+        {!isLoading && (
           <>
             <CommitHistory
             // commits={gitState.commits}
