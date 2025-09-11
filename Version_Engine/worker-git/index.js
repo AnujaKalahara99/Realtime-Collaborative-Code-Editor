@@ -21,26 +21,31 @@ new Worker(
     console.log("Received job:", job.data);
     return new Promise(async (resolve) => {
       try {
-        let msg = "Unknown job type";
+        let result;
         switch (job.data.type) {
           case "COMMIT":
-            msg = await handleCommit(
+            result = await handleCommit(
               job.data.sessionId,
               job.data.message,
               job.data.branchId
             );
             break;
           case "ROLLBACK":
-            msg = await handleRollback(job.data);
+            result = await handleRollback(
+              job.data.sessionId,
+              job.data.commitHash
+            );
             break;
           case "BRANCH":
-            msg = await handleBranch(job.data);
+            result = await handleBranch(job.data);
             break;
           case "MERGE":
-            msg = await handleMerge(job.data);
+            result = await handleMerge(job.data);
             break;
+          default:
+            result = { success: false, error: "Unknown job type" };
         }
-        resolve({ success: true, output: msg.toString() });
+        resolve(result);
       } catch (err) {
         resolve({ success: false, error: err.message });
       }

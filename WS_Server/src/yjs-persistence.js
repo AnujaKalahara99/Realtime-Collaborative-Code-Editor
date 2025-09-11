@@ -25,34 +25,34 @@ export class YjsPersistence {
 
   async loadFromDatabase(sessionId, ydoc) {
     try {
-      const { data: filesMeta, error: metaError } = await supabase
-        .from("session_files")
-        .select("id, file_path, storage_path")
-        .eq("session_id", sessionId);
+        const { data: filesMeta, error: metaError } = await supabase
+          .from("session_files")
+          .select("id, file_path, storage_path")
+          .eq("session_id", sessionId);
 
-      if (metaError) {
-        console.error(
-          `Error loading session_files for ${sessionId}:`,
-          metaError
-        );
-        return;
-      }
+        if (metaError) {
+          console.error(
+            `Error loading session_files for ${sessionId}:`,
+            metaError
+          );
+          return;
+        }
 
-      const files = [];
-      if (filesMeta && filesMeta.length > 0) {
-        for (const meta of filesMeta) {
-          let content = "";
-          if (meta.storage_path) {
-            const { data: fileData, error: storageError } =
-              await supabase.storage
-                .from("sessionFiles")
-                .download(meta.storage_path);
+        const files = [];
+        if (filesMeta && filesMeta.length > 0) {
+          for (const meta of filesMeta) {
+            let content = "";
+            if (meta.storage_path) {
+              const { data: fileData, error: storageError } =
+                await supabase.storage
+                  .from("sessionFiles")
+                  .download(meta.storage_path);
 
-            if (storageError) {
-              console.error(
-                `Error downloading file ${meta.storage_path}:`,
-                storageError
-              );
+              if (storageError) {
+                console.error(
+                  `Error downloading file ${meta.storage_path}:`,
+                  storageError
+                );
             } else if (fileData) {
               content = new TextDecoder().decode(await fileData.arrayBuffer());
             }

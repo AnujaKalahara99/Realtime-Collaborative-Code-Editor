@@ -1,14 +1,15 @@
-import fs from "fs/promises";
-import path from "path";
 import { exec } from "child_process";
 import { promisify } from "util";
+import fs from "fs/promises";
 import {
   getGitFolderFromStorage,
   checkGitFolderExists,
   saveGitFolderToStorage,
   saveCommitToDatabase,
   getLatestCommit,
+  loadSessionFiles,
 } from "../utils/database.js";
+import os from "os";
 
 const execPromise = promisify(exec);
 
@@ -22,15 +23,20 @@ const execPromise = promisify(exec);
  */
 const handleCommit = async (sessionId, message, branchId) => {
   console.log(`Handling commit for session: ${sessionId}`);
+  const gitRepoPath = os.homedir() + `/repo`;
 
   try {
-    const gitRepoPath = await getGitFolderFromStorage(sessionId);
+    await fs.mkdir(gitRepoPath, { recursive: true });
+    await loadSessionFiles(sessionId, gitRepoPath);
 
     const gitInitialized = await checkGitFolderExists(sessionId);
+    console.log(`Git initialized for session ${sessionId}: ${gitInitialized}`);
+
     if (!gitInitialized) {
       console.log(
         `Git not initialized for session ${sessionId}, initializing now...`
       );
+
       await execPromise("git init", { cwd: gitRepoPath });
       await execPromise(
         'git config --local user.email "system@codespace.com"',
@@ -39,6 +45,8 @@ const handleCommit = async (sessionId, message, branchId) => {
       await execPromise('git config --local user.name "Codespace System"', {
         cwd: gitRepoPath,
       });
+    } else {
+      await getGitFolderFromStorage(sessionId, gitRepoPath);
     }
 
     await execPromise("git add .", { cwd: gitRepoPath });
@@ -54,6 +62,8 @@ const handleCommit = async (sessionId, message, branchId) => {
     }
     const commitHash = commitHashMatch[2];
 
+    await saveGitFolderToStorage(sessionId, gitRepoPath);
+
     const commitRecord = await saveCommitToDatabase(
       branchId,
       null,
@@ -61,7 +71,7 @@ const handleCommit = async (sessionId, message, branchId) => {
       commitMessage
     );
 
-    await saveGitFolderToStorage(sessionId);
+    fs.rm(gitRepoPath, { recursive: true, force: true });
 
     return {
       success: true,
@@ -70,6 +80,8 @@ const handleCommit = async (sessionId, message, branchId) => {
       commitHash: commitHash,
     };
   } catch (error) {
+    await fs.rm(gitRepoPath, { recursive: true, force: true });
+
     if (error.message && error.message.includes("nothing to commit")) {
       console.log("No changes to commit");
       return {
