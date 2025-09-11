@@ -10,7 +10,7 @@ import CreateCodespaceModal from "./CreateCodespaceModal";
 import { useCodespaces } from "./useCodespaces";
 import { type ViewMode } from "./codespace.types";
 import type { Codespace } from "./codespace.types";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 type Props = {
   session: Session;
@@ -41,16 +41,17 @@ const Dashboard = ({ session }: Props) => {
     return await createCodespace(name);
   };
 
-  // 🚩 check invitationId and redirect
+
+
+  // handle invitation link redirect
   useEffect(() => {
     if (invitationId) {
-      // clear after using, so it doesn’t loop
       localStorage.removeItem("invitationId");
       navigate(`/codespace/sharebyemail/${invitationId}`);
     }
   }, [invitationId, navigate]);
 
-  // 🚩 first load spinner
+
   useEffect(() => {
     const timer = setTimeout(() => setFirstLoad(false), 1000);
     return () => clearTimeout(timer);

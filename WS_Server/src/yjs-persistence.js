@@ -268,10 +268,10 @@ export class YjsPersistence {
         }
       }
     } catch (error) {
-      console.error(
-        `Failed to sync to database for workspace ${workspaceId}:`,
-        error
-      );
+      // console.error(
+      //   `Failed to sync to database for workspace ${workspaceId}:`,
+      //   error
+      // );
     }
   }
 

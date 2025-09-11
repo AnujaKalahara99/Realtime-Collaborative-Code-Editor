@@ -11,7 +11,6 @@ import CodespaceInvitation from "./Dashboard/AcceptInvite";
 import ProfilePage from "./Dashboard/profile";
 import SettingsPage from "./Dashboard/ProfileSetting";
 import Homepage from "./Home/Homepage";
-
 import {
   BrowserRouter as Router,
   Routes,
@@ -23,14 +22,12 @@ import { supabase } from "./database/superbase";
 import { type Session, type User } from "@supabase/supabase-js";
 
 function App() {
-  // 🚩 allow undefined for loading state
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const lastTokenRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     console.log("App mounted");
 
-    // 🚩 initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session ?? null);
       if (session) upsertProfile(session.user);
@@ -64,10 +61,9 @@ function App() {
     if (error) console.error("Error upserting profile:", error.message);
   }
 
-  // 🚩 ProtectedRoute now handles loading
   function ProtectedRoute({ children }: { children: React.ReactNode }) {
     if (session === undefined) {
-      return <div></div>; // still checking session
+      return <div></div>; 
     }
     return session ? children : <Navigate to="/login" />;
   }
@@ -106,7 +102,12 @@ function App() {
               }
             />
 
-            <Route path="/codeeditor/:id" element={<CodeEditorPage />} />
+            <Route path="/codeeditor/:id" 
+            element={
+              <ProtectedRoute>
+                <CodeEditorPage /> 
+              </ProtectedRoute>}
+            /> 
             <Route
               path="/codespace/sharebyemail/:invitationId"
               element={<CodespaceInvitation />}

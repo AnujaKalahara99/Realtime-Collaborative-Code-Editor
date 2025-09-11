@@ -25,8 +25,8 @@ function CreateCodespaceModal({ isOpen, onClose, onSubmit }: Props) {
 
     if (success) {
       setCodespaceName("");
-      setLanguage("javascript"); // reset UI
-      setVisibility("private");  // reset UI
+      setLanguage("javascript"); 
+      setVisibility("private");  
       onClose();
     }
   };

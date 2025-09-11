@@ -1,10 +1,9 @@
 import { supabase } from "../database/superbase";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useTheme } from "../ThemeProvider";
 import { AlertCircle, Sun, Moon, Code } from "lucide-react";
 
-// Simple theme toggle button
 const ThemeToggleButton = () => {
   const { toggleTheme, isDark, theme } = useTheme();
 
@@ -32,16 +31,6 @@ function Login() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Redirect if session exists
-  useEffect(() => {
-    const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session) navigate("/dashboard");
-    };
-    checkSession();
-  }, [navigate]);
 
   const signInWithGoogle = async () => {
     setError(null);
@@ -138,16 +127,6 @@ function Login() {
               <label htmlFor="password" className={`text-sm ${theme.text}`}>
                 Password
               </label>
-              <a
-                href="#"
-                className="text-sm text-blue-500 hover:underline"
-                onClick={(e) => {
-                  e.preventDefault();
-                  // Password reset logic
-                }}
-              >
-                Forgot password?
-              </a>
             </div>
             <div className="relative">
               <input
