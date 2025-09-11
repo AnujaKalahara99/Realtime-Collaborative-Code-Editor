@@ -2,16 +2,10 @@ import { useState, useEffect } from "react";
 import { useTheme } from "../../../Contexts/ThemeProvider";
 import BranchSelector from "./BranchSelector";
 import CommitHistory from "./CommitHistory";
-import CommitTree from "./CommitTree";
+// import CommitTree from "./CommitTree";
 import CommitForm from "./CommitForm";
 import type { GitState } from "./GitTypes";
-import {
-  fetchBranches,
-  fetchCommits,
-  switchBranch,
-  createCommit,
-  rollbackToCommit,
-} from "./gitOperations";
+import { fetchBranches, fetchCommits } from "./gitOperations";
 
 const GitPanel = () => {
   const { theme } = useTheme();
@@ -64,74 +58,21 @@ const GitPanel = () => {
   }, []);
 
   // Handle branch selection
-  const handleBranchSelect = async (branchName: string) => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  // const handleBranchSelect = async (branchName: string) => {
+  //   try {
+  //     setIsLoading(true);
+  //     setError(null);
 
-      // Switch branch and get updated state
-      const updatedState = await switchBranch(branchName);
-      setGitState(updatedState);
-    } catch (err) {
-      setError(`Failed to switch to branch: ${branchName}`);
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle commit creation
-  const handleCommit = async (message: string) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      // Create new commit
-      const newCommit = await createCommit(message);
-
-      // Update commits - mark current as not current
-      const updatedCommits = gitState.commits.map((commit) => ({
-        ...commit,
-        isCurrent: false,
-      }));
-
-      // Add new commit
-      updatedCommits.push(newCommit);
-
-      // Update state
-      setGitState({
-        ...gitState,
-        commits: updatedCommits,
-      });
-    } catch (err) {
-      setError("Failed to create commit");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle rollback to a specific commit
-  const handleRollback = async (commitId: string) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      // Rollback to commit
-      const updatedCommits = await rollbackToCommit(commitId);
-
-      // Update state
-      setGitState({
-        ...gitState,
-        commits: updatedCommits,
-      });
-    } catch (err) {
-      setError(`Failed to rollback to commit: ${commitId}`);
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //     // Switch branch and get updated state
+  //     const updatedState = await switchBranch(branchName);
+  //     setGitState(updatedState);
+  //   } catch (err) {
+  //     setError(`Failed to switch to branch: ${branchName}`);
+  //     console.error(err);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   return (
     <div className={`h-full flex flex-col ${theme.surface} ${theme.text}`}>
@@ -183,15 +124,15 @@ const GitPanel = () => {
         {!isLoading && gitState.commits.length > 0 && (
           <>
             <CommitHistory
-              commits={gitState.commits}
-              onRollback={handleRollback}
+            // commits={gitState.commits}
+            // onRollback={handleRollback}
             />
           </>
         )}
       </div>
 
       <div className="p-4">
-        <CommitForm onCommit={handleCommit} />
+        <CommitForm />
       </div>
     </div>
   );

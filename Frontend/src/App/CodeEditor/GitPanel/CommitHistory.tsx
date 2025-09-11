@@ -1,12 +1,17 @@
-import { useEditorCollaboration } from "../../../Contexts/EditorContext";
 import { useTheme } from "../../../Contexts/ThemeProvider";
-import { RotateCcw, GitCommit, Clock } from "lucide-react";
+import { RotateCcw, GitCommit, Clock, Loader2 } from "lucide-react";
 import type { Commit } from "../../Dashboard/codespace.types";
 import { formatDateTime } from "../../../utility/utility";
+import { useEditorCollaboration } from "../../../Contexts/EditorContext";
 
 const CommitHistory = () => {
   const { theme } = useTheme();
-  const { codespace, activeSessionIndex } = useEditorCollaboration();
+  const {
+    codespace,
+    activeSessionIndex,
+    rollbackToCommit,
+    gitOperationLoading,
+  } = useEditorCollaboration();
   const commits = codespace?.sessions?.[activeSessionIndex]?.commits || [];
 
   if (commits.length === 0) {
@@ -17,9 +22,14 @@ const CommitHistory = () => {
     );
   }
 
-  const onRollback = (commitId: string) => {
-    // Implement rollback logic here
-    console.log("Rollback to commit:", commitId);
+  const handleRollback = async (commitHash: string) => {
+    if (gitOperationLoading) return; // Prevent multiple operations
+
+    const success = await rollbackToCommit(commitHash);
+    if (success) {
+      console.log("Successfully rolled back to commit:", commitHash);
+      // You might want to refresh the UI or show a success message
+    }
   };
 
   return (
@@ -27,9 +37,22 @@ const CommitHistory = () => {
       <h3 className={`text-sm font-medium mb-2 ${theme.text}`}>
         Commit History
       </h3>
+      {gitOperationLoading && (
+        <div
+          className={`flex items-center justify-center p-2 text-xs ${theme.textMuted}`}
+        >
+          <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+          Operation in progress...
+        </div>
+      )}
       <ul className={`space-y-2`}>
         {commits.map((commit) => (
-          <CommitItem key={commit.id} commit={commit} onRollback={onRollback} />
+          <CommitItem
+            key={commit.id}
+            commit={commit}
+            onRollback={handleRollback}
+            isLoading={gitOperationLoading}
+          />
         ))}
       </ul>
     </div>
@@ -38,28 +61,16 @@ const CommitHistory = () => {
 
 interface CommitItemProps {
   commit: Commit;
-  onRollback: (commitId: string) => void;
+  onRollback: (commitHash: string) => void;
+  isLoading: boolean;
 }
 
-const CommitItem = ({ commit, onRollback }: CommitItemProps) => {
+const CommitItem = ({ commit, onRollback, isLoading }: CommitItemProps) => {
   const { theme } = useTheme();
-
-  // Format date to a more readable format
-  // const formattedDate = new Date(commit.createdAt).toLocaleDateString(
-  //   undefined,
-  //   {
-  //     day: "2-digit",
-  //     month: "short",
-  //     year: "numeric",
-  //     hour: "2-digit",
-  //     minute: "2-digit",
-  //   }
-  // );
 
   return (
     <li
       className={`relative p-2 rounded-md ${
-        // commit.isCurrent
         commit.id === "current"
           ? `${theme.active} border-l-4 border-blue-500`
           : `${theme.surface} ${theme.hover}`
@@ -84,14 +95,24 @@ const CommitItem = ({ commit, onRollback }: CommitItemProps) => {
         </span>
       </div>
 
-      {/* Rollback button - only show for past commits */}
       {
         <button
-          onClick={() => onRollback(commit.id)}
-          className={`absolute top-2 right-2 p-1 rounded-full ${theme.hover} text-gray-500 hover:text-blue-500`}
-          title="Rollback to this commit"
+          onClick={() => onRollback(commit.commitHash)}
+          disabled={isLoading}
+          className={`absolute top-2 right-2 p-1 rounded-full ${theme.hover} ${
+            isLoading
+              ? "opacity-50 cursor-not-allowed"
+              : "text-gray-500 hover:text-blue-500"
+          }`}
+          title={
+            isLoading ? "Operation in progress" : "Rollback to this commit"
+          }
         >
-          <RotateCcw className="w-4 h-4" />
+          {isLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <RotateCcw className="w-4 h-4" />
+          )}
         </button>
       }
     </li>

@@ -39,6 +39,20 @@ jobs:
           push: true
           tags: anujakalahara99/ws-server:latest
 
+      - name: Build & Push Version Engine Producer
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Version_Engine/producer
+          push: true
+          tags: anujakalahara99/version-engine-producer:latest
+
+      - name: Build & Push Version Engine Worker
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Version_Engine/worker-git
+          push: true
+          tags: anujakalahara99/version-engine-worker:latest
+
   deploy:
     runs-on: ubuntu-latest
     needs: build
@@ -52,5 +66,27 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /home/${{ secrets.SERVER_USER }}/app
+            sudo docker compose pull
+            sudo docker compose up -d --remove-orphans
+
+  deploy-version-engine:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code for compose file
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            app/compose.yaml
+
+      - name: Start Version Engine services
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VERSION_ENGINE_HOST }}
+          username: ${{ secrets.VERSION_ENGINE_USER }}
+          key: ${{ secrets.VERSION_ENGINE_SSH_KEY }}
+          script: |
+            cd /home/${{ secrets.VERSION_ENGINE_USER }}/app
             sudo docker compose pull
             sudo docker compose up -d --remove-orphans

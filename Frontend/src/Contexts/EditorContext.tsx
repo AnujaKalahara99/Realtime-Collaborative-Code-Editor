@@ -84,7 +84,11 @@ interface EditorCollaborationContextType {
   getUsersInFile: (fileId: string) => CollaborationUser[];
   setUserInfo: (name: string, color?: string, avatar?: string) => void;
   getAwareness: () => Awareness | null;
-  getFileText: (fileId: string) => Y.Text | null
+  getFileText: (fileId: string) => Y.Text | null;
+
+  commitChanges: (message: string) => Promise<boolean>;
+  rollbackToCommit: (commitHash: string) => Promise<boolean>;
+  gitOperationLoading: boolean;
 
   // Lifecycle
   destroy: () => void;
@@ -110,6 +114,9 @@ const initialContext: EditorCollaborationContextType = {
   setUserInfo: () => {},
   getAwareness: () => null,
   getFileText: () => null,
+  commitChanges: async () => false,
+  rollbackToCommit: async () => false,
+  gitOperationLoading: false,
   destroy: () => {},
 };
 
@@ -118,6 +125,7 @@ const EditorCollaborationContext =
 
 const WS_URL = `${import.meta.env.VITE_BACKEND_WS_URL}/ws`;
 const CODESPACE_API_URL = `${import.meta.env.VITE_BACKEND_URL}/codespaces`;
+const VERSIONING_API_URL = `${import.meta.env.VITE_BACKEND_URL}/versioning`;
 
 export const EditorCollaborationProvider: React.FC<{
   children: React.ReactNode;
@@ -142,6 +150,7 @@ export const EditorCollaborationProvider: React.FC<{
   // State
   const [codespace, setCodespace] = useState<CodespaceDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [gitOperationLoading, setGitOperationLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeSessionIndex, setActiveSessionIndex] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
@@ -185,6 +194,7 @@ export const EditorCollaborationProvider: React.FC<{
     const fetchCodespaceDetails = async () => {
       try {
         setLoading(true);
+        setGitOperationLoading(true);
 
         const response = await fetch(`${CODESPACE_API_URL}/${codespaceId}`, {
           headers: getAuthHeader(),
@@ -215,6 +225,7 @@ export const EditorCollaborationProvider: React.FC<{
         setError(err instanceof Error ? err.message : "An error occurred");
       } finally {
         setLoading(false);
+        setGitOperationLoading(false);
       }
     };
 
@@ -231,6 +242,8 @@ export const EditorCollaborationProvider: React.FC<{
     console.log("Initializing YJS with room ID:", roomId);
 
     const newDoc = new Y.Doc();
+    console.log(WS_URL, roomId);
+
     const newProvider = new WebsocketProvider(WS_URL, roomId, newDoc);
     const newFileSystemMap: Y.Map<FileNode[]> = newDoc.getMap("fileSystem");
     const newChatArray: Y.Array<Message> = newDoc.getArray("chat");
@@ -343,6 +356,119 @@ export const EditorCollaborationProvider: React.FC<{
       return () => callbacks.get(type)?.delete(callback);
     },
     [callbacks]
+  );
+
+  // Git operations
+  const commitChanges = useCallback(
+    async (message: string): Promise<boolean> => {
+      if (
+        !codespace ||
+        !codespace.sessions ||
+        activeSessionIndex >= codespace.sessions.length
+      ) {
+        console.error("Cannot commit: No active session available");
+        return false;
+      }
+
+      try {
+        setGitOperationLoading(true);
+        const sessionId = codespace.sessions[activeSessionIndex].sessionId;
+        const branchId = codespace.sessions[activeSessionIndex].branchId;
+
+        if (!sessionId || !branchId) {
+          console.error("Missing sessionId or branchId for commit");
+          return false;
+        }
+
+        const payload = {
+          type: "COMMIT",
+          sessionId,
+          branchId,
+          message,
+        };
+
+        const response = await fetch(`${VERSIONING_API_URL}/versioning`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeader(),
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("Commit failed:", errorData);
+          return false;
+        }
+
+        const result = await response.json();
+        console.log("Commit successful:", result);
+        return true;
+      } catch (error) {
+        console.error("Error committing changes:", error);
+        return false;
+      } finally {
+        setGitOperationLoading(false);
+      }
+    },
+    [codespace, activeSessionIndex, getAuthHeader]
+  );
+
+  const rollbackToCommit = useCallback(
+    async (commitHash: string): Promise<boolean> => {
+      if (
+        !codespace ||
+        !codespace.sessions ||
+        activeSessionIndex >= codespace.sessions.length
+      ) {
+        console.error("Cannot rollback: No active session available");
+        return false;
+      }
+
+      try {
+        setGitOperationLoading(true);
+        const sessionId = codespace.sessions[activeSessionIndex].sessionId;
+
+        if (!sessionId) {
+          console.error("Missing sessionId for rollback");
+          return false;
+        }
+
+        const payload = {
+          type: "ROLLBACK",
+          sessionId,
+          commitHash,
+        };
+
+        console.log("Sending rollback request:", payload);
+
+        const response = await fetch(`${VERSIONING_API_URL}/versioning`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeader(),
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("Rollback failed:", errorData);
+          return false;
+        }
+
+        const result = await response.json();
+        console.log("Rollback successful:", result);
+        return true;
+      } catch (error) {
+        console.error("Error rolling back to commit:", error);
+        return false;
+      } finally {
+        setGitOperationLoading(false);
+      }
+    },
+    [codespace, activeSessionIndex, getAuthHeader]
   );
 
   // File handling
@@ -524,6 +650,9 @@ export const EditorCollaborationProvider: React.FC<{
     setUserInfo,
     getAwareness,
     getFileText,
+    commitChanges,
+    rollbackToCommit,
+    gitOperationLoading,
     destroy,
   };
 

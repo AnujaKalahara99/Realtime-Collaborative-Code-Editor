@@ -1,20 +1,20 @@
 import { useState } from "react";
 import { useTheme } from "../../../Contexts/ThemeProvider";
-import { Send } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
+import { useEditorCollaboration } from "../../../Contexts/EditorContext";
 
-interface CommitFormProps {
-  onCommit: (message: string) => void;
-}
-
-const CommitForm = ({ onCommit }: CommitFormProps) => {
+const CommitForm = () => {
   const { theme } = useTheme();
+  const { commitChanges, gitOperationLoading } = useEditorCollaboration();
   const [message, setMessage] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim()) {
-      onCommit(message);
-      setMessage("");
+      const success = await commitChanges(message);
+      if (success) {
+        setMessage("");
+      }
     }
   };
 
@@ -27,14 +27,19 @@ const CommitForm = ({ onCommit }: CommitFormProps) => {
           placeholder="Commit message..."
           className={`w-full px-3 py-2 text-sm ${theme.surface} ${theme.border} border ${theme.text} focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none min-h-[60px] mb-2`}
           required
+          disabled={gitOperationLoading}
         />
         <button
           type="submit"
-          disabled={!message.trim()}
+          disabled={!message.trim() || gitOperationLoading}
           className={`flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
         >
-          <Send className="w-4 h-4 mr-2" />
-          Commit Changes
+          {gitOperationLoading ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Send className="w-4 h-4 mr-2" />
+          )}
+          {gitOperationLoading ? "Committing..." : "Commit Changes"}
         </button>
       </form>
     </div>

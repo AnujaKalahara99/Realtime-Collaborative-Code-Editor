@@ -73,6 +73,25 @@ const ROUTES = [
       },
     },
   },
+  {
+    url: "/versioning",
+    auth: true,
+    creditCheck: false,
+    rateLimit: {
+      windowMs: 60 * 1000,
+      limit: 1000,
+    },
+    proxy: {
+      target:
+        process.env.NODE_ENV === "production"
+          ? "http://144.24.150.8:6000/versioning"
+          : "http://192.168.56.82:6000/versioning",
+      changeOrigin: true,
+      pathRewrite: {
+        [`^/versioning`]: "",
+      },
+    },
+  },
 ];
 
 export default ROUTES;
