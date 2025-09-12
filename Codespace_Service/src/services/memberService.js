@@ -55,7 +55,7 @@ export class MemberService {
 
     // Check if user is already a member
     const { data: existingMember } = await supabase
-      .from("workspace_members")
+      .from("workspace_member s")
       .select("user_id")
       .eq("workspace_id", codespaceId)
       .eq("user_id", userData.id)

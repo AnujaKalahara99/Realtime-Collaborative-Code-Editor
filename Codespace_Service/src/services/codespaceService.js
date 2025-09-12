@@ -242,77 +242,44 @@ export class CodespaceService {
         to: email,
         subject: "A Codespace Has Been Shared With You",
         html: `
-       <html>
-  <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #e2e8f0;">
-    <div style="max-width: 600px; margin: 20px auto; padding: 30px; background: linear-gradient(145deg, #1e293b 0%, #334155 100%); border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); border: 1px solid #475569;">
-      <!-- Header with Icon -->
-      <div style="text-align: center; margin-bottom: 30px;">
-        <div style="display: inline-block; width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 16px; margin-bottom: 20px; position: relative; box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);">
-          <svg style="width: 32px; height: 32px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); fill: white;" viewBox="0 0 24 24">
-            <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" stroke="currentColor" stroke-width="2" fill="none"/>
-          </svg>
+         <html>
+    <body style="font-family: Arial, sans-serif; background: #0f172a; padding: 40px; color: #f1f5f9; margin: 0;">
+      <div style="max-width: 600px; margin: auto; background: #1e293b; padding: 28px; border-radius: 10px; border: 1px solid #334155;">
+        
+        <h2 style="color: #f1f5f9; font-size: 22px; font-weight: bold; margin-bottom: 20px; text-align: center;">
+          You've been invited to a Codespace
+        </h2>
+        
+        <p style="font-size: 15px; color: #cbd5e1;">Hi ${
+          email.split("@")[0]
+        },</p>
+        
+        <p style="font-size: 15px; color: #cbd5e1; line-height: 1.6;">
+          You've been invited to collaborate on a codespace as a 
+          <strong style="color: #60a5fa;">${role}</strong>.
+        </p>
+
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${shareLink}" 
+             style="background: #2563eb; color: #fff; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; display: inline-block;">
+             Join Codespace
+          </a>
         </div>
-        <h2 style="color: #f1f5f9; font-size: 28px; font-weight: 700; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">You've Been Invited to a Codespace</h2>
+
+        <p style="font-size: 13px; color: #94a3b8;">If you can’t click the button, copy this link:</p>
+        <p style="font-size: 13px; color: #60a5fa; word-break: break-all;">${shareLink}</p>
+
+        <p style="font-size: 12px; color: #64748b; margin-top: 20px; text-align: center;">
+          This invitation expires in 7 days.
+        </p>
       </div>
+    </body>
+  </html>
       
-      <p style="font-size: 18px; color: #cbd5e1; font-weight: 500;">Hi there! 👋</p>
-      
-      <p style="font-size: 16px; color: #cbd5e1; line-height: 1.6;">You've been invited to collaborate on a codespace as a <strong style="color: #60a5fa; background: rgba(96,165,250,0.1); padding: 2px 8px; border-radius: 6px; font-weight: 600;">${role}</strong>. Click the link below to access it:</p>
-      
-      <!-- Features Box -->
-      <div style="background: rgba(30, 41, 59, 0.5); border-radius: 12px; padding: 20px; margin: 25px 0; border: 1px solid #475569;">
-        <h3 style="margin: 0 0 15px; font-size: 16px; color: #f1f5f9; font-weight: 600;">🎯 What you'll get:</h3>
-        <div style="display: flex; justify-content: space-between; gap: 15px;">
-          <div style="flex: 1;">
-            <div style="display: flex; align-items: center; margin-bottom: 8px;">
-              <div style="width: 6px; height: 6px; background: #22c55e; border-radius: 50%; margin-right: 8px;"></div>
-              <span style="color: #e2e8f0; font-size: 14px;">Real-time collaboration</span>
-            </div>
-            <div style="display: flex; align-items: center;">
-              <div style="width: 6px; height: 6px; background: #f59e0b; border-radius: 50%; margin-right: 8px;"></div>
-              <span style="color: #e2e8f0; font-size: 14px;">Code synchronization</span>
-            </div>
-          </div>
-          <div style="flex: 1;">
-            <div style="display: flex; align-items: center; margin-bottom: 8px;">
-              <div style="width: 6px; height: 6px; background: #3b82f6; border-radius: 50%; margin-right: 8px;"></div>
-              <span style="color: #e2e8f0; font-size: 14px;">Shared workspace</span>
-            </div>
-            <div style="display: flex; align-items: center;">
-              <div style="width: 6px; height: 6px; background: #8b5cf6; border-radius: 50%; margin-right: 8px;"></div>
-              <span style="color: #e2e8f0; font-size: 14px;">Instant messaging</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${shareLink}" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 16px 32px; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 12px; display: inline-block; box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3); border: 1px solid rgba(255,255,255,0.2); transition: all 0.3s ease;">🚀 Open Codespace</a>
-      </div>
-      
-      <!-- Alternative Link Section -->
-      <div style="background: rgba(15, 23, 42, 0.5); border-radius: 8px; padding: 15px; margin: 25px 0; border: 1px solid #334155;">
-        <p style="margin: 0 0 8px; font-size: 13px; color: #94a3b8; text-align: center;">Can't click the button? Copy this link:</p>
-        <div style="background: rgba(0,0,0,0.3); border-radius: 4px; padding: 8px; border: 1px solid #475569;">
-          <code style="font-family: monospace; font-size: 12px; color: #60a5fa; word-break: break-all; line-height: 1.3;">${shareLink}</code>
-        </div>
-      </div>
-      
-      <p style="font-size: 14px; color: #94a3b8; text-align: center; margin-top: 25px;">If you weren't expecting this, you can ignore this email.</p>
-      
-      <!-- Footer -->
-      <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #334155;">
-        <p style="font-size: 12px; color: #64748b; margin: 0;">This invitation expires in 7 days • Powered by Codespace</p>
-      </div>
-    </div>
-  </body>
-</html>
       `,
       };
 
-      // Send email
       await transporter.sendMail(mailOptions);
-      console.log(`Codespace sharing email sent to ${email} successfully.`);
 
       return { invitation };
     } catch (err) {

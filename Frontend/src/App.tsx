@@ -1,3 +1,4 @@
+
 import "./App.css";
 import { useState, useEffect, useRef } from "react";
 import CodeEditorPage from "./App/CodeEditor/Page";
@@ -16,11 +17,16 @@ import { type Session, type User } from "@supabase/supabase-js";
 import { CodespaceProvider } from "./Contexts/CodespaceContext";
 import { EditorCollaborationProvider } from "./Contexts/EditorContext";
 function App() {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
   const lastTokenRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     console.log("App mounted");
+
+    // supabase.auth.getSession().then(({ data: { session } }) => {
+    //   setSession(session ?? null);
+    //   if (session) upsertProfile(session.user);
+    // });
 
     const {
       data: { subscription },
@@ -30,10 +36,11 @@ function App() {
       if (lastTokenRef.current !== currentToken) {
         console.log("Session updated:", session);
         lastTokenRef.current = currentToken;
-        setSession(session);
+        setSession(session ?? null);
         if (session) upsertProfile(session.user);
       }
     });
+
     return () => subscription.unsubscribe();
   }, []);
 
@@ -50,13 +57,16 @@ function App() {
   }
 
   function ProtectedRoute({ children }: { children: React.ReactNode }) {
+    if (session === undefined) {
+      return <div></div>; 
+    }
     return session ? children : <Navigate to="/login" />;
   }
 
   return (
     <ThemeProvider>
       <ProfileProvider>
-        <CodespaceProvider session={session}>
+        <CodespaceProvider session={session ?? null}>
           <Router>
             <Routes>
               <Route path="/login" element={<Login />} />
@@ -90,7 +100,7 @@ function App() {
               <Route
                 path="/codeeditor/:codespaceId"
                 element={
-                  <EditorCollaborationProvider AuthSession={session}>
+                  <EditorCollaborationProvider AuthSession={session ?? null}>
                     <CodeEditorPage />
                   </EditorCollaborationProvider>
                 }

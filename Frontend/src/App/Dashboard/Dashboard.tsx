@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { type Session } from "@supabase/supabase-js";
 import { useTheme } from "../../Contexts/ThemeProvider";
@@ -8,6 +9,7 @@ import CodespaceGrid from "./CodespaceGrid";
 import EmptyState from "./EmptyState";
 import CreateCodespaceModal from "./CreateCodespaceModal";
 import { type ViewMode } from "./codespace.types";
+import { useNavigate } from "react-router";
 
 type Props = {
   session: Session;
@@ -20,14 +22,22 @@ const Dashboard = ({ session }: Props) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const navigate = useNavigate();
+    const invitationId = localStorage.getItem("invitationId");
+  
   // Display error message if context has an error
   useEffect(() => {
     if (error) {
-      // console.error("Codespace error:", error);
-      // You could show a toast notification or error message here
+      console.error("Error:", error);
     }
   }, [error]);
+
+  useEffect(() => {
+    if (invitationId) {
+      localStorage.removeItem("invitationId");
+      navigate(`/codespace/sharebyemail/${invitationId}`);
+    }
+  }, [invitationId, navigate]);
 
   return (
     <div className={`min-h-screen ${theme.surface}`}>
