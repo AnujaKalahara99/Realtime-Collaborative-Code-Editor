@@ -29,10 +29,10 @@ export function ChatSpace() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { theme } = useTheme();
 
-  const { messages, getAwareness, sendChatMessage } = useEditorCollaboration();
+  const { messages, awareness, sendChatMessage, deleteChatMessage } =
+    useEditorCollaboration();
 
   useEffect(() => {
-    const awareness = getAwareness();
     if (awareness) {
       const user = awareness.getLocalState()?.user;
       setCurrentUser(user);
@@ -50,7 +50,7 @@ export function ChatSpace() {
         awareness.off("change", handleAwarenessChange);
       };
     }
-  }, [getAwareness]);
+  }, [awareness]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -79,11 +79,11 @@ export function ChatSpace() {
 
   const handleSendMessage = useCallback(() => {
     if (inputMessage.trim()) {
-      sendChatMessage(inputMessage);
+      sendChatMessage(inputMessage, replyToMessage?.id);
       setInputMessage("");
       setReplyToMessage(null); // Clear reply after sending
     }
-  }, [inputMessage, sendChatMessage]);
+  }, [inputMessage, sendChatMessage, replyToMessage]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -102,12 +102,12 @@ export function ChatSpace() {
 
   const handleDeleteMessage = useCallback(
     (messageId: string) => {
-      const success = collaboration.deleteChatMessage(messageId);
+      const success = deleteChatMessage(messageId);
       if (success) {
         setShowDeleteConfirm(null);
       }
     },
-    [collaboration]
+    [deleteChatMessage]
   );
 
   const confirmDelete = (messageId: string) => {
@@ -148,6 +148,8 @@ export function ChatSpace() {
           <div className="space-y-3">
             {messages.map((msg: Message) => {
               const isCurrentUser = msg.user === currentUser?.name;
+              console.log(currentUser);
+
               const isDeleteConfirmOpen = showDeleteConfirm === msg.id;
 
               return (

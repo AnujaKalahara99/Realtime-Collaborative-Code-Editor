@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import { Editor } from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
+import { MonacoBinding } from "y-monaco";
 import {
   useEditorCollaboration,
   type CollaborationUser,
@@ -8,30 +9,6 @@ import {
 import { useTheme } from "../../../Contexts/ThemeProvider";
 import type { FileNode } from "../ProjectManagementPanel/file.types";
 import CollaborativeCursor from "./CollaborativeCursor";
-import { VFSMonacoIntegration } from "../../../lib/integration/vfs-monaco-integration";
-import { useFileTree } from "../ProjectManagementPanel/useFileTree";
-
-// Import our modular functions
-import {
-  configureMonacoBeforeMount,
-  configureMonacoLanguageServices,
-} from "./modules/monaco-config";
-import {
-  setupVFSWithMonacoTypeScript,
-  registerVFSCompletionProviders,
-} from "./modules/monaco-vfs-setup";
-import {
-  updateMonacoDiagnostics,
-  createDebouncedDiagnostics,
-  type DiagnosticsCount,
-} from "./modules/monaco-diagnostics";
-import {
-  bindEditorToFile,
-  setupCollaborationListeners,
-  cleanupCollaboration,
-  type CollaborationRefs,
-} from "./modules/monaco-collaboration";
-import { getLanguageFromFileName } from "./modules/monaco-utils";
 
 interface MonacoEditorProps {
   selectedFile?: FileNode | null;
@@ -45,9 +22,7 @@ export default function MonacoEditor({
   onFileContentChange,
 }: MonacoEditorProps) {
   const { theme } = useTheme();
-  const { vfsBridge } = useFileTree();
 
-  // Refs
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const currentBindingRef = useRef<MonacoBinding | null>(null);
   const currentFileRef = useRef<string | null>(null);
@@ -66,12 +41,10 @@ export default function MonacoEditor({
     updateCursorPosition,
   } = useEditorCollaboration();
 
-  // Handle file changes
   useEffect(() => {
     setFileUsers([]);
 
-    if (selectedFile && selectedFile.type === "file") {
-      // Update language first
+    if (selectedFile && selectedFile.type === "file" && editorRef.current) {
       setLanguage(getLanguageFromFileName(selectedFile.name));
 
       if (currentFileRef.current !== selectedFile.id) {
@@ -163,35 +136,53 @@ export default function MonacoEditor({
   const handleEditorDidMount = (
     editorInstance: monaco.editor.IStandaloneCodeEditor
   ): void => {
-    try {
-      editorRef.current = editorInstance;
-      console.log("Monaco Editor mounted successfully");
+    editorRef.current = editorInstance;
 
-      // Configure Monaco language services
-      configureMonacoLanguageServices();
-
-      // Set up VFS integration with Monaco TypeScript service
-      setupVFSWithMonacoTypeScript(vfsBridge, integrationRef);
-
-      // Register VFS completion providers
-      registerVFSCompletionProviders(integrationRef);
-
-      // Set up initial content
-      if (selectedFile && selectedFile.type === "file") {
-        // Bind to the selected file
-        bindEditorToFile(
-          selectedFile,
-          editorRef,
-          collaborationRefs,
-          collaborationService,
-          vfsBridge,
-          onFileContentChange,
-          debouncedUpdateDiagnostics
-        );
+    if (selectedFile && selectedFile.type === "file") {
+      bindEditorToFile(selectedFile);
+    } else {
+      // Set placeholder content
+      const model = editorInstance.getModel();
+      if (model) {
+        model.setValue(initialValue);
       }
-    } catch (error) {
-      console.error("Error in handleEditorDidMount:", error);
     }
+  };
+
+  const getLanguageFromFileName = (fileName: string): string => {
+    const extension = fileName.split(".").pop()?.toLowerCase();
+    const languageMap: Record<string, string> = {
+      js: "javascript",
+      jsx: "javascript",
+      ts: "typescript",
+      tsx: "typescript",
+      py: "python",
+      java: "java",
+      json: "json",
+      md: "markdown",
+      html: "html",
+      css: "css",
+      scss: "scss",
+      sass: "sass",
+      less: "less",
+      xml: "xml",
+      yaml: "yaml",
+      yml: "yaml",
+      sql: "sql",
+      sh: "shell",
+      bash: "shell",
+      php: "php",
+      rb: "ruby",
+      go: "go",
+      rs: "rust",
+      cpp: "cpp",
+      c: "c",
+      cs: "csharp",
+      kt: "kotlin",
+      swift: "swift",
+      dart: "dart",
+    };
+    return languageMap[extension || ""] || "plaintext";
   };
 
   const getDisplayContent = () => {
@@ -219,18 +210,6 @@ export default function MonacoEditor({
           <div className="flex items-center gap-2">
             <span className={`text-sm ${theme.text}`}>{selectedFile.name}</span>
             <span className={`text-xs ${theme.textMuted}`}>({language})</span>
-            {diagnosticsCount.errors > 0 && (
-              <span className="text-red-500 text-xs">
-                {diagnosticsCount.errors} error
-                {diagnosticsCount.errors !== 1 ? "s" : ""}
-              </span>
-            )}
-            {diagnosticsCount.warnings > 0 && (
-              <span className="text-yellow-500 text-xs">
-                {diagnosticsCount.warnings} warning
-                {diagnosticsCount.warnings !== 1 ? "s" : ""}
-              </span>
-            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -274,104 +253,37 @@ export default function MonacoEditor({
 
       {/* Editor */}
       <div className="flex-1">
-        <div style={{ height: "100%" }}>
-          <Editor
-            height="100%"
-            language={language}
-            theme={theme.monacoTheme}
-            // Use key to force re-render when file changes
-            key={selectedFile?.id || "no-file"}
-            defaultValue={getDisplayContent()}
-            onMount={handleEditorDidMount}
-            beforeMount={configureMonacoBeforeMount}
-            options={{
-              minimap: { enabled: true },
-              fontSize: 14,
-              lineNumbers: "on",
-              roundedSelection: false,
-              scrollBeyondLastLine: false,
-              automaticLayout: true,
-              wordWrap: "on",
-              tabSize: 2,
-              insertSpaces: true,
-              formatOnPaste: true,
-              formatOnType: true,
-              suggestOnTriggerCharacters: true,
-              acceptSuggestionOnEnter: "on",
-              quickSuggestions: {
-                other: true,
-                comments: true,
-                strings: true,
-              },
-              autoClosingBrackets: "always",
-              autoClosingQuotes: "always",
-              autoIndent: "full",
-              bracketPairColorization: { enabled: true },
-              codeLens: true,
-              colorDecorators: true,
-              cursorBlinking: "blink",
-              cursorSmoothCaretAnimation: "on",
-              definitionLinkOpensInPeek: false,
-              dragAndDrop: true,
-              folding: true,
-              foldingHighlight: true,
-              foldingStrategy: "auto",
-              fontLigatures: true,
-              guides: {
-                bracketPairs: "active",
-                highlightActiveIndentation: true,
-                indentation: true,
-              },
-              hover: { enabled: true },
-              inlineSuggest: { enabled: true },
-              lightbulb: { enabled: "on" as any },
-              links: true,
-              mouseWheelZoom: true,
-              occurrencesHighlight: "singleFile",
-              overviewRulerBorder: true,
-              parameterHints: { enabled: true },
-              peekWidgetDefaultFocus: "editor",
-              renderLineHighlight: "line",
-              renderWhitespace: "selection",
-              showFoldingControls: "mouseover",
-              smoothScrolling: true,
-              snippetSuggestions: "top",
-              suggest: {
-                showWords: false,
-                showMethods: true,
-                showFunctions: true,
-                showConstructors: true,
-                showFields: true,
-                showVariables: true,
-                showClasses: true,
-                showStructs: true,
-                showInterfaces: true,
-                showModules: true,
-                showProperties: true,
-                showEvents: true,
-                showOperators: true,
-                showUnits: true,
-                showValues: true,
-                showConstants: true,
-                showEnums: true,
-                showEnumMembers: true,
-                showKeywords: true,
-                showColors: true,
-                showFiles: true,
-                showReferences: true,
-                showFolders: true,
-                showTypeParameters: true,
-                showIssues: true,
-                showUsers: true,
-                showSnippets: true,
-              },
-              renderValidationDecorations: "on",
-              useTabStops: true,
-              // Show read-only when no file is selected
-              readOnly: !selectedFile || selectedFile.type !== "file",
-            }}
-          />
-        </div>
+        <Editor
+          height="100%"
+          language={language}
+          theme={theme.monacoTheme}
+          // Use key to force re-render when file changes
+          key={selectedFile?.id || "no-file"}
+          defaultValue={getDisplayContent()}
+          onMount={handleEditorDidMount}
+          options={{
+            minimap: { enabled: true },
+            fontSize: 14,
+            lineNumbers: "on",
+            roundedSelection: false,
+            scrollBeyondLastLine: false,
+            automaticLayout: true,
+            wordWrap: "on",
+            tabSize: 2,
+            insertSpaces: true,
+            formatOnPaste: true,
+            formatOnType: true,
+            suggestOnTriggerCharacters: true,
+            acceptSuggestionOnEnter: "on",
+            quickSuggestions: {
+              other: true,
+              comments: true,
+              strings: true,
+            },
+            // Show read-only when no file is selected
+            readOnly: !selectedFile || selectedFile.type !== "file",
+          }}
+        />
       </div>
 
       {/* Placeholder when no file is selected */}

@@ -40,6 +40,11 @@ export interface Message {
   color: string;
   avatar?: string;
   timestamp: number;
+  replyTo?: {
+    messageId: string;
+    user: string;
+    text: string;
+  };
 }
 
 export type CursorPosition = {
@@ -77,12 +82,14 @@ interface EditorCollaborationContextType {
 
   // Chat
   messages: Message[];
-  sendChatMessage: (text: string) => void;
+  sendChatMessage: (text: string, replyToMessageId?: string) => void;
+  deleteChatMessage: (messageId: string) => boolean;
 
   // Collaboration
   updateCursorPosition: (fileId: string, position: CursorPosition) => void;
   getUsersInFile: (fileId: string) => CollaborationUser[];
   setUserInfo: (name: string, color?: string, avatar?: string) => void;
+  awareness: Awareness | null;
   getAwareness: () => Awareness | null;
   getFileText: (fileId: string) => Y.Text | null;
 
@@ -109,9 +116,11 @@ const initialContext: EditorCollaborationContextType = {
   onFileContentChange: () => () => {},
   messages: [],
   sendChatMessage: () => {},
+  deleteChatMessage: () => false,
   updateCursorPosition: () => {},
   getUsersInFile: () => [],
   setUserInfo: () => {},
+  awareness: null,
   getAwareness: () => null,
   getFileText: () => null,
   commitChanges: async () => false,
@@ -157,6 +166,7 @@ export const EditorCollaborationProvider: React.FC<{
   const [connectedUsers, setConnectedUsers] = useState<CollaborationUser[]>([]);
   const [files, setFiles] = useState<FileNode[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [awareness, setAwareness] = useState<Awareness | null>(null);
 
   const userColors = useMemo(
     () => [
@@ -252,6 +262,7 @@ export const EditorCollaborationProvider: React.FC<{
     providerRef.current = newProvider;
     console.log("YJS provider status:", newProvider);
 
+    setAwareness(newProvider.awareness);
     setFileSystemMap(newFileSystemMap);
     setChatArray(newChatArray);
 
@@ -344,6 +355,8 @@ export const EditorCollaborationProvider: React.FC<{
     providerRef.current?.destroy();
     docRef.current?.destroy();
     providerRef.current = null;
+
+    setAwareness(null);
   }, [callbacks, fileTexts]);
 
   const addCallback = useCallback(
@@ -549,10 +562,45 @@ export const EditorCollaborationProvider: React.FC<{
   );
 
   const sendChatMessage = useCallback(
-    (text: string) => {
+    // (text: string) => {
+    //   if (!chatArray || !text.trim()) return;
+
+    //   const user = providerRef.current?.awareness.getLocalState()?.user;
+    //   const message: Message = {
+    //     id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    //     user: user?.name || "Anonymous",
+    //     color: user?.color || "#aac25f",
+    //     avatar: user?.avatar,
+    //     text: text.trim(),
+    //     timestamp: Date.now(),
+    //   };
+
+    //   chatArray.push([message]);
+    // },
+    (text: string, replyToMessageId?: string): void => {
       if (!chatArray || !text.trim()) return;
 
-      const user = providerRef.current?.awareness.getLocalState()?.user;
+      const user = awareness?.getLocalState()?.user;
+      let replyTo: Message["replyTo"] | undefined;
+
+      // If replying to a message, find the original message
+      if (replyToMessageId) {
+        const messages = chatArray.toArray();
+        const originalMessage = messages.find(
+          (msg) => msg.id === replyToMessageId
+        );
+        if (originalMessage) {
+          replyTo = {
+            messageId: originalMessage.id,
+            user: originalMessage.user,
+            text:
+              originalMessage.text.length > 50
+                ? originalMessage.text.substring(0, 50) + "..."
+                : originalMessage.text,
+          };
+        }
+      }
+
       const message: Message = {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         user: user?.name || "Anonymous",
@@ -560,12 +608,31 @@ export const EditorCollaborationProvider: React.FC<{
         avatar: user?.avatar,
         text: text.trim(),
         timestamp: Date.now(),
+        replyTo,
       };
 
       chatArray.push([message]);
     },
-    [chatArray]
+    [chatArray, awareness]
   );
+
+  const deleteChatMessage = (messageId: string): boolean => {
+    if (!chatArray) return false;
+
+    const messages = chatArray.toArray();
+    const messageIndex = messages.findIndex((msg) => msg.id === messageId);
+
+    if (messageIndex === -1) return false;
+
+    // Check if the current user is the message owner
+    const user = providerRef.current?.awareness.getLocalState()?.user;
+    const message = messages[messageIndex];
+
+    if (message.user !== user?.name) return false;
+
+    chatArray.delete(messageIndex, 1);
+    return true;
+  };
 
   const updateCursorPosition = useCallback(
     (fileId: string, position: CursorPosition) => {
@@ -645,9 +712,11 @@ export const EditorCollaborationProvider: React.FC<{
     onFileContentChange,
     messages,
     sendChatMessage,
+    deleteChatMessage,
     updateCursorPosition,
     getUsersInFile,
     setUserInfo,
+    awareness,
     getAwareness,
     getFileText,
     commitChanges,
