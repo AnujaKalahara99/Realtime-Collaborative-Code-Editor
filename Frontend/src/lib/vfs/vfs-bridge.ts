@@ -1,0 +1,389 @@
+import { VFSStore } from "./vfs-store";
+import type { VFSChangeEvent } from "./types";
+import type { FileNode } from "../../App/CodeEditor/ProjectManagementPanel/file.types";
+
+export class VFSBridge {
+  private vfsStore: VFSStore;
+  private idToPathMap: Map<string, string> = new Map();
+  private pathToIdMap: Map<string, string> = new Map();
+  private listeners: ((fileTree: FileNode[]) => void)[] = [];
+  private isUpdatingFromVFS = false;
+
+  constructor() {
+    this.vfsStore = new VFSStore();
+    this.setupVFSListener();
+  }
+
+  private setupVFSListener() {
+    this.vfsStore.on((_: VFSChangeEvent) => {
+      if (this.isUpdatingFromVFS) return; // Prevent circular updates
+
+      // Notify listeners about VFS changes
+      this.notifyListeners();
+    });
+  }
+
+  /**
+   * Normalize path to prevent double slashes and ensure consistent format
+   */
+  private normalizePath(path: string): string {
+    // Handle empty or root path
+    if (!path || path === "/" || path === "") return "/";
+
+    // Ensure path starts with / and remove double slashes
+    let normalized = path.startsWith("/") ? path : "/" + path;
+    normalized = normalized.replace(/\/+/g, "/");
+
+    // Remove trailing slash unless it's root
+    if (normalized.length > 1 && normalized.endsWith("/")) {
+      normalized = normalized.slice(0, -1);
+    }
+
+    return normalized;
+  }
+
+  /**
+   * Generate path from file tree structure
+   */
+  private generatePath(node: FileNode, parentPath: string = ""): string {
+    // Generate basic path
+    const path =
+      parentPath === "" || parentPath === "/"
+        ? `/${node.name}`
+        : `${parentPath}/${node.name}`;
+
+    // Normalize to prevent double slashes
+    const normalizedPath = this.normalizePath(path);
+
+    console.log(
+      `VFSBridge: Generated path for node "${node.name}":`,
+      normalizedPath,
+      "(parent:",
+      parentPath,
+      "-> raw:",
+      path,
+      ")"
+    );
+    return normalizedPath;
+  }
+
+  //    * Recursively build path mappings from file tree
+
+  private buildPathMappings(nodes: FileNode[], parentPath: string = "") {
+    nodes.forEach((node) => {
+      const path = this.generatePath(node, parentPath);
+      this.idToPathMap.set(node.id, path);
+      this.pathToIdMap.set(path, node.id);
+
+      if (node.children) {
+        this.buildPathMappings(node.children, path);
+      }
+    });
+  }
+
+  // Sync file tree to VFS
+
+  syncToVFS(fileTree: FileNode[]) {
+    console.log("VFSBridge: Syncing file tree to VFS:", fileTree);
+    this.isUpdatingFromVFS = true;
+
+    // Clear existing mappings
+    this.idToPathMap.clear();
+    this.pathToIdMap.clear();
+
+    // Build new mappings
+    this.buildPathMappings(fileTree);
+    console.log("VFSBridge: Built path mappings:");
+    console.log(
+      "VFSBridge: ID to Path:",
+      Array.from(this.idToPathMap.entries())
+    );
+    console.log(
+      "VFSBridge: Path to ID:",
+      Array.from(this.pathToIdMap.entries())
+    );
+
+    // Clear VFS and rebuild
+    const currentEntries = this.vfsStore.getAllEntries();
+    currentEntries.forEach((_, path) => {
+      if (path !== "/") {
+        this.vfsStore.deleteEntry(path);
+      }
+    });
+
+    // Add all nodes to VFS
+    this.addNodesToVFS(fileTree);
+
+    this.isUpdatingFromVFS = false;
+    console.log("VFSBridge: Sync completed");
+  }
+
+  private addNodesToVFS(nodes: FileNode[], parentPath: string = "") {
+    nodes.forEach((node) => {
+      const path = this.generatePath(node, parentPath);
+
+      if (node.type === "folder") {
+        this.vfsStore.addFolder(path);
+        if (node.children) {
+          this.addNodesToVFS(node.children, path);
+        }
+      } else {
+        this.vfsStore.addFile(path, node.content || "");
+      }
+    });
+  }
+
+  /**
+   * Handle file tree operations and sync to VFS
+   */
+  createFile(
+    parentId: string | null,
+    name: string,
+    content: string = ""
+  ): string {
+    const parentPath = parentId ? this.idToPathMap.get(parentId) || "" : "";
+    const rawPath = parentPath === "" ? `/${name}` : `${parentPath}/${name}`;
+    const path = this.normalizePath(rawPath);
+
+    console.log(
+      "VFSBridge: Creating file at path:",
+      path,
+      "(raw:",
+      rawPath,
+      ")"
+    );
+    this.vfsStore.addFile(path, content);
+    return path;
+  }
+
+  createFolder(parentId: string | null, name: string): string {
+    const parentPath = parentId ? this.idToPathMap.get(parentId) || "" : "";
+    const rawPath = parentPath === "" ? `/${name}` : `${parentPath}/${name}`;
+    const path = this.normalizePath(rawPath);
+
+    console.log(
+      "VFSBridge: Creating folder at path:",
+      path,
+      "(raw:",
+      rawPath,
+      ")"
+    );
+    this.vfsStore.addFolder(path);
+    return path;
+  }
+
+  updateFileContent(id: string, content: string): boolean {
+    console.log("VFSBridge: Attempting to update file with ID:", id);
+    console.log(
+      "VFSBridge: ID to Path mapping:",
+      Array.from(this.idToPathMap.entries())
+    );
+
+    const path = this.idToPathMap.get(id);
+    console.log("VFSBridge: Found path for ID:", path);
+
+    if (!path) {
+      console.error("VFSBridge: No path found for ID:", id);
+      console.log(
+        "VFSBridge: Available IDs:",
+        Array.from(this.idToPathMap.keys())
+      );
+      return false;
+    }
+
+    console.log("VFSBridge: Updating VFS file at path:", path);
+    this.vfsStore.updateFile(path, content);
+    return true;
+  }
+
+  renameNode(id: string, newName: string): boolean {
+    const oldPath = this.idToPathMap.get(id);
+    if (!oldPath) return false;
+
+    const parentPath = oldPath.substring(0, oldPath.lastIndexOf("/")) || "/";
+    const newPath =
+      parentPath === "/" ? `/${newName}` : `${parentPath}/${newName}`;
+
+    const result = this.vfsStore.renameEntry(oldPath, newPath);
+    if (result) {
+      // Update mappings for the renamed entry
+      this.idToPathMap.set(id, newPath);
+      this.pathToIdMap.delete(oldPath);
+      this.pathToIdMap.set(newPath, id);
+
+      // If it's a folder, update all child mappings recursively
+      const entry = this.vfsStore.getEntry(newPath);
+      if (entry && entry.type === "folder") {
+        this.updateChildMappingsAfterRename(oldPath, newPath);
+      }
+    }
+
+    return !!result;
+  }
+
+  private updateChildMappingsAfterRename(
+    oldParentPath: string,
+    newParentPath: string
+  ) {
+    // Get all mappings that start with the old parent path
+    const childMappings: [string, string][] = [];
+
+    for (const [id, path] of this.idToPathMap.entries()) {
+      if (path.startsWith(oldParentPath + "/")) {
+        childMappings.push([id, path]);
+      }
+    }
+
+    // Update each child mapping
+    for (const [childId, oldChildPath] of childMappings) {
+      const relativePath = oldChildPath.substring(oldParentPath.length);
+      const newChildPath = newParentPath + relativePath;
+
+      // Update mappings
+      this.idToPathMap.set(childId, newChildPath);
+      this.pathToIdMap.delete(oldChildPath);
+      this.pathToIdMap.set(newChildPath, childId);
+    }
+  }
+
+  deleteNode(id: string): boolean {
+    const path = this.idToPathMap.get(id);
+    if (!path) return false;
+
+    // Get entry to check if it's a folder
+    const entry = this.vfsStore.getEntry(path);
+
+    const result = this.vfsStore.deleteEntry(path);
+    if (result) {
+      // Clean up main mapping
+      this.idToPathMap.delete(id);
+      this.pathToIdMap.delete(path);
+
+      // If it was a folder, clean up all child mappings
+      if (entry && entry.type === "folder") {
+        this.cleanupChildMappingsAfterDelete(path);
+      }
+    }
+
+    return result;
+  }
+
+  private cleanupChildMappingsAfterDelete(deletedFolderPath: string) {
+    // Get all mappings that start with the deleted folder path
+    const childMappings: [string, string][] = [];
+
+    for (const [id, path] of this.idToPathMap.entries()) {
+      if (path.startsWith(deletedFolderPath + "/")) {
+        childMappings.push([id, path]);
+      }
+    }
+
+    // Remove each child mapping
+    for (const [childId, childPath] of childMappings) {
+      this.idToPathMap.delete(childId);
+      this.pathToIdMap.delete(childPath);
+    }
+  }
+
+  getFileContent(id: string): string | undefined {
+    const path = this.idToPathMap.get(id);
+    if (!path) return undefined;
+
+    const file = this.vfsStore.getFile(path);
+    return file?.content;
+  }
+
+  onVFSChange(listener: (fileTree: FileNode[]) => void) {
+    this.listeners.push(listener);
+    return () => {
+      const index = this.listeners.indexOf(listener);
+      if (index > -1) {
+        this.listeners.splice(index, 1);
+      }
+    };
+  }
+
+  private notifyListeners() {
+    // Convert VFS tree back to FileNode format
+    const vfsTree = this.vfsStore.getTree("/");
+    if (vfsTree) {
+      const fileTree = this.convertVFSToFileTree(vfsTree);
+      this.listeners.forEach((listener) =>
+        listener(fileTree ? [fileTree] : [])
+      );
+    }
+  }
+
+  private convertVFSToFileTree(vfsEntry: any): FileNode | null {
+    const id = this.pathToIdMap.get(vfsEntry.path) || vfsEntry.id;
+
+    if (vfsEntry.type === "folder") {
+      return {
+        id,
+        name: vfsEntry.name,
+        type: "folder",
+        children:
+          vfsEntry.children
+            ?.map((child: any) => this.convertVFSToFileTree(child))
+            .filter(Boolean) || [],
+        isExpanded: vfsEntry.isExpanded,
+      };
+    } else {
+      return {
+        id,
+        name: vfsEntry.name,
+        type: "file",
+        content: vfsEntry.content,
+      };
+    }
+  }
+
+  getVFSStore(): VFSStore {
+    return this.vfsStore;
+  }
+
+  getPathById(id: string): string | undefined {
+    return this.idToPathMap.get(id);
+  }
+
+  getIdByPath(path: string): string | undefined {
+    // Normalize the path before lookup
+    const normalizedPath = this.normalizePath(path);
+    console.log(
+      "VFSBridge: Looking up ID for path:",
+      normalizedPath,
+      "(original:",
+      path,
+      ")"
+    );
+    console.log(
+      "VFSBridge: Path to ID mapping:",
+      Array.from(this.pathToIdMap.entries())
+    );
+
+    const id = this.pathToIdMap.get(normalizedPath);
+    console.log("VFSBridge: Found ID for normalized path:", id);
+
+    if (!id) {
+      console.warn(
+        "VFSBridge: No ID found for normalized path:",
+        normalizedPath
+      );
+      console.log(
+        "VFSBridge: Available paths:",
+        Array.from(this.pathToIdMap.keys())
+      );
+
+      // Try to find a close match for debugging
+      const availablePaths = Array.from(this.pathToIdMap.keys());
+      const closeMatch = availablePaths.find((p) =>
+        p.includes(normalizedPath.split("/").pop() || "")
+      );
+      if (closeMatch) {
+        console.log("VFSBridge: Possible close match found:", closeMatch);
+      }
+    }
+
+    return id;
+  }
+}

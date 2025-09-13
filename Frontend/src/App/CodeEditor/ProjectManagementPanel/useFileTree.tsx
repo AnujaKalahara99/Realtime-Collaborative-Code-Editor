@@ -121,6 +121,8 @@ export const useFileTree = () => {
   const updateFileContent = (id: string, content: string) => {
     const newFiles = updateNode(files, id, { content });
     updateFiles(newFiles);
+    // Also update VFS directly for content changes
+    // vfsBridge.updateFileContent(id, content);
   };
 
   const moveNode = (nodeId: string, targetId: string | null) => {
@@ -166,6 +168,7 @@ export const useFileTree = () => {
     removeNode,
     updateFileContent,
     moveNode,
+    // vfsBridge, // Expose VFS bridge for advanced operations
   };
 };
 

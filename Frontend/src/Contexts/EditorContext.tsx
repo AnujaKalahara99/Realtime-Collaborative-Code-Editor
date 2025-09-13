@@ -15,6 +15,7 @@ import { type CodespaceDetails } from "../App/Dashboard/codespace.types";
 import { type Awareness } from "y-protocols/awareness";
 import { formatDateTime, getTokenFromStorage } from "../utility/utility";
 import { type Session } from "@supabase/supabase-js";
+import { VFSBridge } from "../lib/vfs/vfs-bridge";
 
 // Types
 export interface CollaborationUser {
@@ -40,6 +41,7 @@ export interface Message {
   color: string;
   avatar?: string;
   timestamp: number;
+  replyTo?: { messageId: string; user: string; text: string };
 }
 
 export type CursorPosition = {
@@ -90,8 +92,11 @@ interface EditorCollaborationContextType {
   rollbackToCommit: (commitHash: string) => Promise<boolean>;
   gitOperationLoading: boolean;
 
-  // Lifecycle
+// Lifecycle
   destroy: () => void;
+
+  // VFS Bridge
+  vfsBridge: VFSBridge;
 }
 
 const initialContext: EditorCollaborationContextType = {
@@ -118,6 +123,7 @@ const initialContext: EditorCollaborationContextType = {
   rollbackToCommit: async () => false,
   gitOperationLoading: false,
   destroy: () => {},
+  vfsBridge: new VFSBridge(),
 };
 
 const EditorCollaborationContext =
@@ -134,6 +140,7 @@ export const EditorCollaborationProvider: React.FC<{
   const { codespaceId } = useParams<{ codespaceId: string }>();
   const docRef = useRef<Y.Doc | null>(null);
   const providerRef = useRef<WebsocketProvider | null>(null);
+  const vfsBridge = useRef(new VFSBridge()).current;
   const [fileSystemMap, setFileSystemMap] = useState<Y.Map<FileNode[]> | null>(
     null
   );
@@ -231,10 +238,24 @@ export const EditorCollaborationProvider: React.FC<{
 
     fetchCodespaceDetails();
 
+    //Setup VFS
+    const unsubscribeVFS = vfsBridge.onVFSChange(
+      (updatedFileTree: FileNode[]) => {
+        if (updatedFileTree.length > 0) {
+          updateFiles(updatedFileTree);
+        }
+      }
+    );
+
     return () => {
       cleanupYJS();
+      unsubscribeVFS();
     };
   }, [codespaceId, AuthSession]);
+
+  useEffect(() => {
+    vfsBridge.syncToVFS(files);
+  }, [files, vfsBridge]);
 
   // YJS Initialization
   const initializeYJS = (roomId: string) => {
@@ -654,6 +675,7 @@ export const EditorCollaborationProvider: React.FC<{
     rollbackToCommit,
     gitOperationLoading,
     destroy,
+    vfsBridge,
   };
 
   return (
