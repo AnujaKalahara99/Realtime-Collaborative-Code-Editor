@@ -1,6 +1,7 @@
 import { useEditorCollaboration } from "../../../Contexts/EditorContext";
 import type { FileNode } from "./file.types";
 import { v4 as uuidv4 } from "uuid";
+import { VFSBridge } from "../../../lib/vfs/vfs-bridge";
 
 export const useFileTree = () => {
   const { isConnected, files, updateFiles, initializeFileContent } =
@@ -121,6 +122,8 @@ export const useFileTree = () => {
   const updateFileContent = (id: string, content: string) => {
     const newFiles = updateNode(files, id, { content });
     updateFiles(newFiles);
+    // Also update VFS directly for content changes
+    vfsBridge.updateFileContent(id, content);
   };
 
   const moveNode = (nodeId: string, targetId: string | null) => {
@@ -166,6 +169,7 @@ export const useFileTree = () => {
     removeNode,
     updateFileContent,
     moveNode,
+    vfsBridge, // Expose VFS bridge for advanced operations
   };
 };
 

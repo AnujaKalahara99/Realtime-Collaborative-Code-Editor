@@ -4,21 +4,86 @@
 // import { supabase } from "../../database/superbase";
 // import { type Awareness } from "y-protocols/awareness";
 
-// export interface CollaborationUser {
-//   name: string;
-//   color: string;
-//   avatar?: string;
-//   cursor?: {
-//     line: number;
-//     column: number;
-//     selection?: {
-//       startLine: number;
-//       startColumn: number;
-//       endLine: number;
-//       endColumn: number;
-//     };
-//   };
-// }
+export interface CollaborationUser {
+  name: string;
+  color: string;
+  avatar?: string;
+  cursor?: {
+    line: number;
+    column: number;
+    selection?: {
+      startLine: number;
+      startColumn: number;
+      endLine: number;
+      endColumn: number;
+    };
+  };
+}
+
+export interface Message {
+  id: string;
+  user: string;
+  text: string;
+  color: string;
+  avatar?: string;
+  timestamp: number;
+  replyTo?: {
+    messageId: string;
+    user: string;
+    text: string;
+  };
+}
+
+class YjsCollaborationService {
+  private readonly WS_URL = `${import.meta.env.VITE_BACKEND_WS_URL}/ws`;
+  private doc: Y.Doc | null = null;
+  private provider: WebsocketProvider | null = null;
+  private fileSystemMap: Y.Map<FileNode[]> | null = null;
+  private fileTexts = new Map<string, Y.Text>();
+  private chatArray: Y.Array<Message> | null = null;
+  private currentCodespaceId: string;
+
+  private callbacks = new Map<string, Set<(data: any) => void>>();
+  private observers = new WeakMap<Y.AbstractType<any>, () => void>();
+
+  private readonly userColors = [
+    "#30bced",
+    "#6eeb83",
+    "#ffbc42",
+    "#ecd444",
+    "#ee6352",
+    "#9ac2c9",
+    "#8acb88",
+    "#1be7ff",
+  ];
+
+  constructor(currentCodespaceId: string) {
+    this.currentCodespaceId = currentCodespaceId;
+    this.initialize();
+    // this.setupUrlChangeDetection();
+  }
+
+  // private getCodespaceId(): string {
+  //   const segments = window.location.pathname.split("/");
+  //   return segments[segments.length - 1];
+  // }
+
+  // private setupUrlChangeDetection(): void {
+  //   const checkUrl = () => {
+  //     const newId = this.getCodespaceId();
+  //     if (newId !== this.currentCodespaceId) {
+  //       this.initialize();
+  //     }
+  //   };
+
+  //   //This may incur performance costs due to binding multiple times
+  //   window.addEventListener("popstate", checkUrl);
+  //   const originalPushState = history.pushState;
+  //   history.pushState = function (...args) {
+  //     originalPushState.apply(history, args);
+  //     checkUrl();
+  //   };
+  // }
 
 // export interface Message {
 //   id: string;
@@ -264,26 +329,65 @@
 //     return this.chatArray?.toArray() || [];
 //   }
 
-//   sendChatMessage(text: string): void {
-//     if (!this.chatArray || !text.trim()) return;
+  sendChatMessage(text: string, replyToMessageId?: string): void {
+    if (!this.chatArray || !text.trim()) return;
 
-//     const user = this.provider?.awareness.getLocalState()?.user;
-//     const message: Message = {
-//       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-//       user: user?.name || "Anonymous",
-//       color: user?.color || "#aac25f",
-//       avatar: user?.avatar,
-//       text: text.trim(),
-//       timestamp: Date.now(),
-//     };
+    const user = this.provider?.awareness.getLocalState()?.user;
+    let replyTo: Message["replyTo"] | undefined;
+
+    // If replying to a message, find the original message
+    if (replyToMessageId) {
+      const messages = this.chatArray.toArray();
+      const originalMessage = messages.find(
+        (msg) => msg.id === replyToMessageId
+      );
+      if (originalMessage) {
+        replyTo = {
+          messageId: originalMessage.id,
+          user: originalMessage.user,
+          text:
+            originalMessage.text.length > 50
+              ? originalMessage.text.substring(0, 50) + "..."
+              : originalMessage.text,
+        };
+      }
+    }
+
+    const message: Message = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      user: user?.name || "Anonymous",
+      color: user?.color || "#aac25f",
+      avatar: user?.avatar,
+      text: text.trim(),
+      timestamp: Date.now(),
+      replyTo,
+    };
 
 //     this.chatArray.push([message]);
 //   }
 
-//   onChatChange(callback: (messages: Message[]) => void): () => void {
-//     callback(this.getChatMessages());
-//     return this.addCallback("chat", callback);
-//   }
+  onChatChange(callback: (messages: Message[]) => void): () => void {
+    callback(this.getChatMessages());
+    return this.addCallback("chat", callback);
+  }
+
+  deleteChatMessage(messageId: string): boolean {
+    if (!this.chatArray) return false;
+
+    const messages = this.chatArray.toArray();
+    const messageIndex = messages.findIndex((msg) => msg.id === messageId);
+
+    if (messageIndex === -1) return false;
+
+    // Check if the current user is the message owner
+    const user = this.provider?.awareness.getLocalState()?.user;
+    const message = messages[messageIndex];
+
+    if (message.user !== user?.name) return false; // Only allow deleting own messages hv to notify others that they cannot delete
+
+    this.chatArray.delete(messageIndex, 1);
+    return true;
+  }
 
 //   clearChat(): void {
 //     if (this.chatArray?.length) {
