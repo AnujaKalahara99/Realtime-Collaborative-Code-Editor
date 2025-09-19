@@ -1,9 +1,10 @@
 import { supabase } from "../database/superbase";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { useTheme } from "../ThemeProvider";
+import { useTheme } from "../Contexts/ThemeProvider";
 import { AlertCircle, Sun, Moon, Code } from "lucide-react";
 
+// Simple theme toggle button
 const ThemeToggleButton = () => {
   const { toggleTheme, isDark, theme } = useTheme();
 
@@ -31,14 +32,23 @@ function Login() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Redirect if session exists
+  useEffect(() => {
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) navigate("/dashboard");
+    };
+    checkSession();
+  }, [navigate]);
 
   const signInWithGoogle = async () => {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo:
-          "http://localhost:5173/dashboard",
+        redirectTo: `${import.meta.env.VITE_AUTH_CALLBACK_URL}`,
       },
     });
 

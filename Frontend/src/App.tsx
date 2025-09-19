@@ -1,26 +1,21 @@
 
 import "./App.css";
 import { useState, useEffect, useRef } from "react";
-import CodeEditorPage from "./CodeEditor/Page";
-import { ThemeProvider } from "./ThemeProvider";
+import CodeEditorPage from "./App/CodeEditor/Page";
+import { ThemeProvider } from "./Contexts/ThemeProvider";
 import { ProfileProvider } from "./Contexts/ProfileContext";
 import Login from "./components/login";
 import Signup from "./components/signup";
-import Dashboard from "./Dashboard/Dashboard";
-import CodespaceInvitation from "./Dashboard/AcceptInvite";
-import ProfilePage from "./Dashboard/profile";
-import SettingsPage from "./Dashboard/ProfileSetting";
-import Homepage from "./Home/Homepage";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-
+import Dashboard from "./App/Dashboard/Dashboard";
+import CodespaceInvitation from "./App/Dashboard/AcceptInvite";
+import ProfilePage from "./App/Dashboard/profile";
+import SettingsPage from "./App/Dashboard/ProfileSetting";
+import Homepage from "./App/Home/Homepage";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import { supabase } from "./database/superbase";
 import { type Session, type User } from "@supabase/supabase-js";
-
+import { CodespaceProvider } from "./Contexts/CodespaceContext";
+import { EditorCollaborationProvider } from "./Contexts/EditorContext";
 function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const lastTokenRef = useRef<string | undefined>(undefined);
@@ -28,10 +23,10 @@ function App() {
   useEffect(() => {
     console.log("App mounted");
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session ?? null);
-      if (session) upsertProfile(session.user);
-    });
+    // supabase.auth.getSession().then(({ data: { session } }) => {
+    //   setSession(session ?? null);
+    //   if (session) upsertProfile(session.user);
+    // });
 
     const {
       data: { subscription },
@@ -71,58 +66,54 @@ function App() {
   return (
     <ThemeProvider>
       <ProfileProvider>
-        <Router>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/homepage" element={<Homepage />} />
+        <CodespaceProvider session={session ?? null}>
+          <Router>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/homepage" element={<Homepage />} />
 
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  {session && <Dashboard session={session} />}
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <SettingsPage />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    {session && <Dashboard session={session} />}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <SettingsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/codeeditor/:codespaceId"
+                element={
+                  <EditorCollaborationProvider AuthSession={session ?? null}>
+                    <CodeEditorPage />
+                  </EditorCollaborationProvider>
+                }
+              />
 
-            <Route path="/codeeditor/:id" 
-            element={
-              <ProtectedRoute>
-                <CodeEditorPage /> 
-              </ProtectedRoute>}
-            /> 
-            <Route
-              path="/codespace/sharebyemail/:invitationId"
-              element={<CodespaceInvitation />}
-            />
-            <Route
-              path="/codeeditor"
-              element={
-                <ProtectedRoute>
-                  <CodeEditorPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/" element={<Homepage />} />
-          </Routes>
-        </Router>
+              <Route
+                path="/codespace/sharebyemail/:invitationId"
+                element={<CodespaceInvitation />}
+              />
+              <Route path="/" element={<Homepage />} />
+            </Routes>
+          </Router>
+        </CodespaceProvider>
       </ProfileProvider>
     </ThemeProvider>
   );

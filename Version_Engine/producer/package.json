@@ -1,0 +1,18 @@
+{
+  "name": "version_engine_producer",
+  "version": "1.0.0",
+  "description": "Producer service for handling job requests related to version control operations.",
+  "main": "producer.js",
+  "type": "module",
+  "scripts": {
+    "start": "node producer.js"
+  },
+  "dependencies": {
+    "axios": "^1.11.0",
+    "bullmq": "^5.56.1",
+    "dotenv": "^10.0.0",
+    "express": "^5.1.0"
+  },
+  "author": "Anuja Kalhara",
+  "license": "ISC"
+}

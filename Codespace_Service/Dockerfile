@@ -18,6 +18,14 @@ ENV SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 
 ENV SUPABASE_PROJECT_ID='kafnsbymonfgbjwzwngz'
 
+ENV Email_password='jrla yccu aoyo mnvu'
+
+ENV Email_user='codespace.mora@gmail.com'
+
+ENV GOOGLE_GENERATIVE_AI_API_KEY='AIzaSyAhLe2PB2sTVfAhzUTMIEmSPjhFDKr_kDs'
+
+ENV NODE_ENV="production"
+
 EXPOSE 5000
 
 CMD [ "npm", "start" ]

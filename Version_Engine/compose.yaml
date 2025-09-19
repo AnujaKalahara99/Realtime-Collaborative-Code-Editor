@@ -1,0 +1,21 @@
+services:
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+  producer:
+    build: ./producer
+    env_file:
+      - ./producer/.env
+    ports:
+      - "6000:6000"
+    depends_on:
+      - redis
+
+  worker-git:
+    build: ./worker-git
+    env_file:
+      - ./worker-git/.env
+    depends_on:
+      - redis

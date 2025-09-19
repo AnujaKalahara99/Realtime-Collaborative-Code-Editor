@@ -1,0 +1,27 @@
+export interface Codespace {
+  id: string;
+  name: string;
+  lastModified: string;
+  created_at: string;
+  owner: string;
+  role: string;
+}
+
+export type Commit = {
+  id: string;
+  message: string;
+  createdAt: string;
+  commitHash: string;
+};
+
+export interface CodespaceDetails extends Codespace {
+  sessions?: {
+    sessionId: string;
+    branchId: string;
+    name: string;
+    commits: Commit[];
+  }[];
+  gitHubRepo?: string;
+}
+
+export type ViewMode = "grid" | "list";

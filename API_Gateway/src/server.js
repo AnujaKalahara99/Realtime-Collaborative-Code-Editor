@@ -1,8 +1,8 @@
 import express from "express";
 import cors from "cors";
 import { config } from "dotenv";
-import { createServer } from "http";
 config();
+import { createServer } from "http";
 import setupProxies from "./middleware/proxy.js";
 import ROUTES from "./routes.js";
 import setupAuth from "./middleware/auth.js";
@@ -18,7 +18,6 @@ const corsConfig = {
 };
 
 app.use(cors(corsConfig));
-// app.use(express.json());
 setupLogging(app);
 setupRateLimit(app, ROUTES);
 setupAuth(app, ROUTES);
