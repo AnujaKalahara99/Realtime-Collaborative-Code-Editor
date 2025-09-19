@@ -11,4 +11,6 @@ export class Loginpage{
     enterlogin(){
         cy.get('.bg-blue-600').click()
     }
+
+   
 }

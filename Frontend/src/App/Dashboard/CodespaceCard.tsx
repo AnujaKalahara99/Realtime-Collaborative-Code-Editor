@@ -1,5 +1,6 @@
 
 import { useState, useRef, useEffect } from "react";
+import toast, { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router";
 import { FileText, Trash2, Share2, Edit, SettingsIcon, CheckCircle } from "lucide-react";
 import { useTheme } from "../../Contexts/ThemeProvider";
@@ -25,7 +26,7 @@ function CodespaceCard({ codespace, viewMode }: Props) {
   );
   const [nameInput, setNameInput] = useState(codespace.name);
   const [displayName, setDisplayName] = useState(codespace.name);
-  const [shareSuccess, setShareSuccess] = useState(false);
+  // Remove shareSuccess state, use toast instead
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -54,6 +55,7 @@ function CodespaceCard({ codespace, viewMode }: Props) {
     e.stopPropagation();
     await deleteCodespace(codespace.id);
     setShowMenu(false);
+    toast.success("Codespace deleted successfully!");
   };
 
   const handleShare = (e: React.MouseEvent) => {
@@ -75,9 +77,10 @@ function CodespaceCard({ codespace, viewMode }: Props) {
       if (success) {
         setDisplayName(nameInput.trim());
         setEditModalOpen(false);
+        toast.success("Codespace name updated!");
       }
     } else {
-      alert("Codespace name cannot be empty");
+      toast.error("Codespace name cannot be empty");
     }
   };
 
@@ -93,14 +96,13 @@ function CodespaceCard({ codespace, viewMode }: Props) {
       setEmailInput("");
       setRoleInput("Developer");
       setShareModalOpen(false);
-
-      setShareSuccess(true);
-      setTimeout(() => setShareSuccess(false), 1000);
+      toast.success("Invitation sent successfully!");
     }
-  };
+  }
 
   return (
     <>
+      <Toaster position="top-center" />
       {/* Main Codespace Card */}
       <div
         onClick={handleClick}
@@ -277,15 +279,7 @@ function CodespaceCard({ codespace, viewMode }: Props) {
         </div>
       )}
 
-      {/* ✅ Share Success Notification */}
-      {shareSuccess && (
-         <div className="fixed inset-0 z-50 flex items-center justify-center">
-    <div className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded shadow-lg animate-fadeInOut">
-      <CheckCircle size={20} />
-      <span>Invitation sent successfully!</span>
-    </div>
-  </div>
-      )}
+      {/* Success notification handled by react-hot-toast */}
     </>
   );
 }
