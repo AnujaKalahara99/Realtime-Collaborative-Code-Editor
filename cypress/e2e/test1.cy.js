@@ -9,8 +9,8 @@ it('Visits homepage and checks UI', () => {
     cy.visit('http://localhost:5173')
     cy.get('.text-4xl').should('have.text', 'Real-Time Collaborative Code Editor')
     cy.contains('Sign In').click();
-    loginPage.enterusername();
-    loginPage.enterpassword();
+    loginPage.enterusername("fernandomatheesha@gmail.com");
+    loginPage.enterpassword("kevith");
     loginPage.enterlogin();
     dashboardPage.createcodespace();
     dashboardPage.deletecodespace();

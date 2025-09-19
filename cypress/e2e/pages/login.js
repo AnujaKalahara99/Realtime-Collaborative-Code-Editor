@@ -1,10 +1,11 @@
+
 export class Loginpage{
-    enterusername(){
-        cy.get('#email').type("fernandomatheesha@gmail.com")
+    enterusername(username){
+        cy.get('#email').type(username)
     }
 
-    enterpassword(){
-        cy.get('#password').type("kevith")
+    enterpassword(password){
+        cy.get('#password').type(password)
     }
 
     enterlogin(){
