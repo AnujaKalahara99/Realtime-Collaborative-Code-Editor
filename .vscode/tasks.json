@@ -37,13 +37,23 @@
       },
       "problemMatcher": []
     },
+        {
+      "label": "Cypress",
+      "type": "shell",
+      "command": "npx cypress open",
+      "options": {
+        "cwd": "${workspaceFolder}/cypress"
+      },
+      "problemMatcher": []
+    },
     {
       "label": "Start All",
       "dependsOn": [
         "WS Server",
         "Codespace Service",
         "API Gateway",
-        "Frontend"
+        "Frontend",
+        "Cypress"
       ],
       "dependsOrder": "parallel"
     }
