@@ -8,7 +8,7 @@ const loginPage = new Loginpage();
 const codeSpaceelements = new codeSpaceElements();
 
 beforeEach(() => {
-    cy.visit('http://localhost:5173');
+    cy.visit('http://localhost:5173/');
     cy.get('.text-4xl').should('have.text', 'Real-Time Collaborative Code Editor');
     cy.contains('Sign In').click();
     loginPage.enterusername("fernandomatheesha@gmail.com");

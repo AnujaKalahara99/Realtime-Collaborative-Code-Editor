@@ -12,7 +12,10 @@ const SUPPORTED_LANGUAGES = ['javascript', 'python'];
 const app = express();
 app.use(bodyParser.json());
 
-const connection = new IORedis('redis://redis:6379', {
+
+const redisHost = process.env.REDIS_HOST || 'localhost';
+const redisPort = process.env.REDIS_PORT || 6379;
+const connection = new IORedis(`redis://${redisHost}:${redisPort}`, {
   maxRetriesPerRequest: null
 });
 

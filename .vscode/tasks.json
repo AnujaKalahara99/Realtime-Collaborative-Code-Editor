@@ -40,7 +40,7 @@
         {
       "label": "Cypress",
       "type": "shell",
-      "command": "npx cypress open",
+      "command": "npx cypress run",
       "options": {
         "cwd": "${workspaceFolder}/cypress"
       },
