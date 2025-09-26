@@ -1,3 +1,4 @@
+
 {
   "version": "2.0.0",
   "tasks": [
@@ -37,12 +38,12 @@
       },
       "problemMatcher": []
     },
-        {
+    {
       "label": "Cypress",
       "type": "shell",
-      "command": "npx cypress run",
+      "command": "npx cypress run --spec \"cypress/e2e/test1.cy.js\" --reporter mochawesome",
       "options": {
-        "cwd": "${workspaceFolder}/cypress"
+        "cwd": "${workspaceFolder}"  
       },
       "problemMatcher": []
     },

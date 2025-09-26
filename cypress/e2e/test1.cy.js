@@ -20,10 +20,31 @@ it('Visits homepage and checks UI', () => {
     // The login steps are now handled in beforeEach
 });
 
-it("dashboard and codespace", () => {
-    //dashboardPage.createcodespace();
-    // dashboardPage.deletecodespace();
+it('creates a new codespace', () => {
+    dashboardPage.createcodespace();
+});
+
+it("dashboard and codespace functionality", () => {
+   
     codeSpaceelements.openCodeSpace();
     codeSpaceelements.createfile();
 
+}
+
+
+);
+
+it ("rename codespace", () => {
+    dashboardPage.renamecodespace();});
+
+    
+it("share codespace", () => {
+    dashboardPage.sharecodespace();
 });
+
+
+it("deletecodespace",()=>{
+    dashboardPage.deletecodespace();
+});
+
+
