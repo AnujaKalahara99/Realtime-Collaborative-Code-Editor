@@ -74,69 +74,70 @@ export class YjsPersistence {
       if (files && files.length > 0) {
         const fileSystemMap = ydoc.getMap("fileSystem");
 
-        const createNestedStructure = (filesList) => {
-          const root = [];
-          const pathMap = new Map();
+        ydoc.transact(() => {
+          const createNestedStructure = (filesList) => {
+            const root = [];
+            const pathMap = new Map();
 
-          filesList.forEach((file) => {
-            const filePath = file.file_path;
-            const pathParts = filePath.split("/").filter(Boolean);
-            const fileName = pathParts.pop();
+            filesList.forEach((file) => {
+              const filePath = file.file_path;
+              const pathParts = filePath.split("/").filter(Boolean);
+              const fileName = pathParts.pop();
 
-            let currentLevel = root;
-            let currentPath = "";
+              let currentLevel = root;
+              let currentPath = "";
 
-            // Create folders as needed
-            for (const part of pathParts) {
-              currentPath += (currentPath ? "/" : "") + part;
+              for (const part of pathParts) {
+                currentPath += (currentPath ? "/" : "") + part;
 
-              // Check if folder already exists at this level
-              let folder = currentLevel.find(
-                (item) => item.type === "folder" && item.name === part
-              );
+                let folder = currentLevel.find(
+                  (item) => item.type === "folder" && item.name === part
+                );
 
-              if (!folder) {
-                // Create folder if it doesn't exist
-                const folderId = `folder-${currentPath.replace(
-                  /[\/\\]/g,
-                  "-"
-                )}`;
-                folder = {
-                  id: folderId,
-                  name: part,
-                  type: "folder",
-                  children: [],
-                };
-                currentLevel.push(folder);
-                pathMap.set(currentPath, folder);
+                if (!folder) {
+                  const folderId = `folder-${currentPath.replace(
+                    /[\/\\]/g,
+                    "-"
+                  )}`;
+                  folder = {
+                    id: folderId,
+                    name: part,
+                    type: "folder",
+                    children: [],
+                  };
+                  currentLevel.push(folder);
+                  pathMap.set(currentPath, folder);
+                }
+
+                currentLevel = folder.children;
               }
 
-              currentLevel = folder.children;
-            }
-
-            // Add file to the current level
-            currentLevel.push({
-              id: file.id,
-              name: fileName,
-              type: file.file_type || "file",
-              path: file.storage_path,
+              currentLevel.push({
+                id: file.id,
+                name: fileName,
+                type: file.file_type || "file",
+                path: file.storage_path,
+              });
             });
-          });
 
-          return root;
-        };
+            return root;
+          };
 
-        const nestedFiles = createNestedStructure(files);
-        fileSystemMap.set("files", nestedFiles);
+          const nestedFiles = createNestedStructure(files);
+          fileSystemMap.set("files", nestedFiles);
 
-        files.forEach((file) => {
-          if (file.content) {
-            const fileText = ydoc.getText(`file-${file.id}`);
-            if (fileText.length === 0) {
-              fileText.insert(0, file.content);
+          files.forEach((file) => {
+            if (file.content !== undefined) {
+              const fileText = ydoc.getText(`file-${file.id}`);
+              if (fileText.length > 0) {
+                fileText.delete(0, fileText.length);
+              }
+              if (file.content.length > 0) {
+                fileText.insert(0, file.content);
+              }
             }
-          }
-        });
+          });
+        }, "rollback-load");
       }
     } catch (error) {
       console.error(

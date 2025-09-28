@@ -1,4 +1,3 @@
-
 import "./App.css";
 import { useState, useEffect, useRef } from "react";
 import CodeEditorPage from "./App/CodeEditor/Page";
@@ -16,6 +15,7 @@ import { supabase } from "./database/superbase";
 import { type Session, type User } from "@supabase/supabase-js";
 import { CodespaceProvider } from "./Contexts/CodespaceContext";
 import { EditorCollaborationProvider } from "./Contexts/EditorContext";
+import { ToastProvider } from "./Contexts/ToastContext";
 function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const lastTokenRef = useRef<string | undefined>(undefined);
@@ -58,7 +58,7 @@ function App() {
 
   function ProtectedRoute({ children }: { children: React.ReactNode }) {
     if (session === undefined) {
-      return <div></div>; 
+      return <div></div>;
     }
     return session ? children : <Navigate to="/login" />;
   }
@@ -100,9 +100,11 @@ function App() {
               <Route
                 path="/codeeditor/:codespaceId"
                 element={
-                  <EditorCollaborationProvider AuthSession={session ?? null}>
-                    <CodeEditorPage />
-                  </EditorCollaborationProvider>
+                  <ToastProvider>
+                    <EditorCollaborationProvider AuthSession={session ?? null}>
+                      <CodeEditorPage />
+                    </EditorCollaborationProvider>
+                  </ToastProvider>
                 }
               />
 

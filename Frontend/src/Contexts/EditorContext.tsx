@@ -15,6 +15,7 @@ import { type CodespaceDetails } from "../App/Dashboard/codespace.types";
 import { type Awareness } from "y-protocols/awareness";
 import { formatDateTime, getTokenFromStorage } from "../utility/utility";
 import { type Session } from "@supabase/supabase-js";
+import { useToastHelpers } from "./ToastContext";
 
 // Types
 export interface CollaborationUser {
@@ -168,6 +169,8 @@ export const EditorCollaborationProvider: React.FC<{
   const [messages, setMessages] = useState<Message[]>([]);
   const [awareness, setAwareness] = useState<Awareness | null>(null);
 
+  const toast = useToastHelpers();
+
   const userColors = useMemo(
     () => [
       "#30bced",
@@ -291,10 +294,49 @@ export const EditorCollaborationProvider: React.FC<{
     observers.set(newFileSystemMap, fileSystemObserver);
     observers.set(newChatArray, chatObserver);
 
-    // Setup awareness
+    newProvider.ws?.addEventListener("message", (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "versioning-event") {
+          const { command, status } = data;
+
+          if (command === "ROLLBACK" && status === "SUCCESS") {
+            handleRollbackEvent();
+
+            fetchUpdatedCodespaceDetails();
+            toast.success(
+              `${command} completed!`,
+              `Files have been rolled back successfully`,
+              { duration: 4000 }
+            );
+          } else if (status === "SUCCESS") {
+            fetchUpdatedCodespaceDetails();
+            toast.success(
+              `${command} completed!`,
+              `Operation completed successfully`,
+              { duration: 4000 }
+            );
+          } else if (status === "ERROR" || status === "FAILURE") {
+            toast.error(
+              `${command} failed!`,
+              `Operation could not be completed`,
+              { duration: 6000 }
+            );
+          } else {
+            toast.info(`${command} ${status}`, `Versioning operation update`, {
+              duration: 3000,
+            });
+          }
+
+          console.log(`Versioning event: ${command} ${status}`);
+        }
+      } catch {
+        // Ignore non-JSON messages
+      }
+    });
+
     setupAwareness(newProvider);
 
-    // Set initial data
     setFiles(newFileSystemMap.get("files") || []);
     setMessages(newChatArray.toArray() || []);
   };
@@ -370,6 +412,34 @@ export const EditorCollaborationProvider: React.FC<{
     },
     [callbacks]
   );
+
+  const handleRollbackEvent = useCallback(() => {
+    console.log("Handling rollback event - clearing local state");
+
+    fileTexts.clear();
+
+    // Remove all observers to prevent memory leaks
+    [fileSystemMap, chatArray, ...fileTexts.values()].forEach((yType) => {
+      if (yType && observers.has(yType)) {
+        const cleanup = observers.get(yType);
+        if (cleanup) {
+          try {
+            yType.unobserve(cleanup);
+          } catch (e) {
+            console.warn("Failed to remove observer:", e);
+          }
+        }
+      }
+    });
+    callbacks.clear();
+
+    if (fileSystemMap) {
+      const currentFiles = fileSystemMap.get("files") || [];
+      setFiles([...currentFiles]);
+    }
+
+    window.dispatchEvent(new CustomEvent("yjs-rollback-complete"));
+  }, [fileTexts, observers, callbacks, fileSystemMap]);
 
   // Git operations
   const commitChanges = useCallback(
@@ -489,24 +559,21 @@ export const EditorCollaborationProvider: React.FC<{
     (fileId: string): Y.Text => {
       if (!docRef.current) throw new Error("YJS not initialized");
 
-      if (!fileTexts.has(fileId)) {
-        const fileText = docRef.current.getText(`file-${fileId}`);
-        fileTexts.set(fileId, fileText);
+      const fileText = docRef.current.getText(`file-${fileId}`);
+      fileTexts.set(fileId, fileText);
 
-        // Setup observer
-        if (!observers.has(fileText)) {
-          const observer = () => {
-            callbacks
-              .get(`file:${fileId}`)
-              ?.forEach((callback) => callback(fileText.toString()));
-          };
+      if (!observers.has(fileText)) {
+        const observer = () => {
+          callbacks
+            .get(`file:${fileId}`)
+            ?.forEach((callback) => callback(fileText.toString()));
+        };
 
-          fileText.observe(observer);
-          observers.set(fileText, observer);
-        }
+        fileText.observe(observer);
+        observers.set(fileText, observer);
       }
 
-      return fileTexts.get(fileId)!;
+      return fileText;
     },
     [fileTexts, observers, callbacks]
   );
@@ -696,6 +763,34 @@ export const EditorCollaborationProvider: React.FC<{
       cleanupYJS();
     }, 100);
   }, [cleanupYJS]);
+
+  const fetchUpdatedCodespaceDetails = useCallback(async () => {
+    setGitOperationLoading(true);
+
+    const response = await fetch(`${CODESPACE_API_URL}/${codespaceId}`, {
+      headers: getAuthHeader(),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch codespace details");
+    }
+
+    const data = await response.json();
+
+    const codespaceDetails: CodespaceDetails = {
+      id: data.codespace.id,
+      name: data.codespace.name,
+      lastModified: formatDateTime(data.codespace.lastModified),
+      created_at: formatDateTime(data.codespace.created_at),
+      owner: userName,
+      role: data.codespace.role,
+      sessions: data.codespace.sessions || [],
+      gitHubRepo: data.codespace.gitHubRepo || "",
+    };
+
+    setCodespace(codespaceDetails);
+    setGitOperationLoading(false);
+  }, [codespaceId, userName, getAuthHeader]);
 
   const contextValue: EditorCollaborationContextType = {
     codespace,

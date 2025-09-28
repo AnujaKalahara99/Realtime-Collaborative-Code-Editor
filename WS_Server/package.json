@@ -16,6 +16,7 @@
     "@supabase/supabase-js": "^2.53.0",
     "@y/protocols": "^1.0.6-1",
     "dotenv": "^17.2.1",
+    "express": "^5.1.0",
     "lib0": "^0.2.102"
   },
   "devDependencies": {

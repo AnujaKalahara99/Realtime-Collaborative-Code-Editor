@@ -66,12 +66,35 @@ export default function MonacoEditor({
     }
   }, [selectedFile, getUsersInFile]);
 
+  useEffect(() => {
+    const handleRollbackComplete = () => {
+      console.log("Rollback detected - rebinding editor");
+
+      if (selectedFile && selectedFile.type === "file" && selectedFile.id) {
+        setTimeout(() => {
+          bindEditorToFile(selectedFile);
+        }, 100); // Small delay to ensure server sync is complete
+      }
+    };
+
+    window.addEventListener("yjs-rollback-complete", handleRollbackComplete);
+
+    return () => {
+      window.removeEventListener(
+        "yjs-rollback-complete",
+        handleRollbackComplete
+      );
+    };
+  }, [selectedFile]);
+
   const bindEditorToFile = (file: FileNode) => {
     if (!editorRef.current) return;
 
     const editor = editorRef.current;
     const model = editor.getModel();
     if (!model) return;
+
+    console.log(`Binding editor to file: ${file.id}`);
 
     // Destroy previous binding and content subscription
     if (currentBindingRef.current) {
@@ -83,18 +106,24 @@ export default function MonacoEditor({
       contentUnsubscribeRef.current = null;
     }
 
-    if (file.content) {
-      initializeFileContent(file.id, file.content);
-    }
+    try {
+      // Initialize file content if needed
+      if (file.content) {
+        initializeFileContent(file.id, file.content);
+      }
 
-    const fileYText = getFileText(file.id);
-    if (model.getValue() !== fileYText?.toString()) {
-      model.setValue(fileYText?.toString() || "");
-    }
+      const fileYText = getFileText(file.id);
+      const yjsContent = fileYText?.toString() || "";
+      const modelContent = model.getValue();
 
-    const awareness = getAwareness();
-    if (awareness) {
-      if (fileYText) {
+      if (modelContent !== yjsContent) {
+        console.log(`Updating model content for file ${file.id}`);
+        model.setValue(yjsContent);
+      }
+
+      const awareness = getAwareness();
+      if (awareness && fileYText) {
+        // Create new Monaco binding
         currentBindingRef.current = new MonacoBinding(
           fileYText,
           model,
@@ -102,6 +131,7 @@ export default function MonacoEditor({
           awareness
         );
 
+        // Setup cursor tracking
         editor.onDidChangeCursorPosition(() => {
           const position = editor.getPosition();
           if (position) {
@@ -120,17 +150,22 @@ export default function MonacoEditor({
             });
           }
         });
+
+        console.log(`Successfully bound editor to file: ${file.id}`);
       }
+
+      // Setup content change callback
+      contentUnsubscribeRef.current = registerFileContentChange(
+        file.id,
+        (content) => {
+          onFileContentChange?.(file.id, content);
+        }
+      );
+
+      currentFileRef.current = file.id;
+    } catch (error) {
+      console.error(`Failed to bind editor to file ${file.id}:`, error);
     }
-
-    contentUnsubscribeRef.current = registerFileContentChange(
-      file.id,
-      (content) => {
-        onFileContentChange?.(file.id, content);
-      }
-    );
-
-    currentFileRef.current = file.id;
   };
 
   const handleEditorDidMount = (
