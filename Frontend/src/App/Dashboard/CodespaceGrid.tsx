@@ -1,3 +1,4 @@
+import React from "react";
 import { useCodespaceContext } from "../../Contexts/CodespaceContext";
 import { type ViewMode } from "./codespace.types";
 import CreateCodespaceCard from "./CreateCodespaceCard";

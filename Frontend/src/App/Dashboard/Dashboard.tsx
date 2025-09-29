@@ -1,4 +1,4 @@
-
+import React from "react";
 import { useState, useEffect } from "react";
 import { type Session } from "@supabase/supabase-js";
 import { useTheme } from "../../Contexts/ThemeProvider";
