@@ -12,8 +12,10 @@ createfile() {
   cy.get(':nth-child(5) > .h-full > .flex.border-gray-600 > :nth-child(2)').click()
   cy.get('.h-full > .flex.border-gray-600 > :nth-child(3)').click()
   cy.get('.inline-flex').click()
-  cy.get('.flex-shrink-0 > .flex-1').type("hii")
+  cy.get('.flex-shrink-0 > .flex-1').type("write a javascript code for bubble sort");
+  
   cy.get('.inline-flex').click()
+  cy.wait(8000);
   cy.get('[title="New File"]').click();
   cy.wait(4000);
   
@@ -21,7 +23,8 @@ createfile() {
   // cy.get('.z-50 > :nth-child(4)').click();
  
   // cy.get('input[type="text"], textarea, .z-50 input').first().clear().type('my-new-file.txt');
-  cy.get('.truncate').first().click();
+  cy.get('.bg-transparent').click();
+ // cy.get('.truncate').first().click();
   cy.get('.view-line').click().type('console.log("welcome to Rtc code editor")');
   cy.get(':nth-child(1) > .py-1 > .flex > .truncate').rightclick();
   cy.get('.text-red-400').click();

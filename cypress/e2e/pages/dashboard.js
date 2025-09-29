@@ -26,7 +26,7 @@ export class dashboardpage{
      renamecodespace(){
         cy.get('.transition-all > :nth-child(2) > .cursor-pointer').click();
         cy.get('.transition-all > :nth-child(2) > .bg-gray-800 > :nth-child(1)').click();
-        cy.get('.p-6 > .w-full').click().type("renamedcodespace");
+        cy.get('.p-6 > .w-full').clear().type("renamedcodespace");
         cy.get('.px-6').click();
         cy.wait(3000)
 
