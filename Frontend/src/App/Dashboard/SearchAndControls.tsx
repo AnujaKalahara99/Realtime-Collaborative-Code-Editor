@@ -1,3 +1,4 @@
+import React from "react";
 import { Search, Grid, Menu } from "lucide-react";
 import { useTheme } from "../../Contexts/ThemeProvider";
 import { type ViewMode } from "./codespace.types";
