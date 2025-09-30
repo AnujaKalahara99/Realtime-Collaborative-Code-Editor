@@ -1,6 +1,6 @@
 import { Sun, Moon } from "lucide-react";
 import { useTheme } from "../Contexts/ThemeProvider";
-
+import React from "react";
 type ThemeToggleButtonProps = {
   size?: "small" | "medium" | "large";
 };
