@@ -136,6 +136,7 @@ const WS_URL = `${import.meta.env.VITE_BACKEND_WS_URL}/ws`;
 const CODESPACE_API_URL = `${import.meta.env.VITE_BACKEND_URL}/codespaces`;
 const VERSIONING_API_URL = `${import.meta.env.VITE_BACKEND_URL}/versioning`;
 
+
 export const EditorCollaborationProvider: React.FC<{
   children: React.ReactNode;
   AuthSession: Session | null;

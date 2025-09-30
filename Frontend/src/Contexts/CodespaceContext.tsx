@@ -124,7 +124,7 @@ export const CodespaceProvider: React.FC<{
       setLoading(false);
       return { success: true, data };
     } catch (error) {
-      console.error(errorMessage, error);
+      //console.error(errorMessage, error);
       setError(errorMessage);
       setLoading(false);
       return { success: false };
