@@ -299,8 +299,28 @@ export class MonacoFileProvider {
         }
       }
     } else if (importPath.startsWith("/")) {
-      // Absolute import
-      return this.resolveImportPath("/", "." + importPath);
+      // Absolute import: check as-is against VFS and try common extensions/index
+      const resolved = importPath; // already normalized absolute
+      const extensions = ["", ".ts", ".tsx", ".js", ".jsx", ".json"];
+
+      // Direct file
+      for (const ext of extensions) {
+        const p = resolved + ext;
+        if (this.vfs.getFile(p)) {
+          return p;
+        }
+      }
+
+      // Directory index
+      if (this.vfs.getDirectory(resolved)) {
+        for (const ext of extensions.slice(1)) {
+          const indexPath = `${resolved}/index${ext}`;
+          if (this.vfs.getFile(indexPath)) {
+            return indexPath;
+          }
+        }
+      }
+      return null;
     }
 
     return null;
