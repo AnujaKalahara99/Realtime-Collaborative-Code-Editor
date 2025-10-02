@@ -30,8 +30,11 @@ export class YjsPersistence {
     this.docs.delete(sessionId);
   }
 
-  async loadFromDatabase(sessionId, ydoc) {
+  async loadFromDatabase(sessionId, ydoc, forceRefresh = false) {
     try {
+      // Add timestamp for cache busting when forcing refresh
+      const timestamp = forceRefresh ? `?t=${Date.now()}` : "";
+
       const { data: filesMeta, error: metaError } = await supabase
         .from("session_files")
         .select("id, file_path, storage_path")
@@ -50,10 +53,15 @@ export class YjsPersistence {
         for (const meta of filesMeta) {
           let content = "";
           if (meta.storage_path) {
+            // Add cache busting parameter when force refresh is true
+            const downloadPath = forceRefresh
+              ? `${meta.storage_path}${timestamp}`
+              : meta.storage_path;
+
             const { data: fileData, error: storageError } =
               await supabase.storage
                 .from("sessionFiles")
-                .download(meta.storage_path);
+                .download(downloadPath);
 
             if (storageError) {
               console.error(
@@ -65,7 +73,9 @@ export class YjsPersistence {
             }
           }
           console.log(
-            `Loaded file: ${meta.file_path} with content: ${content}`
+            `${forceRefresh ? "[FORCED REFRESH] " : ""}Loaded file: ${
+              meta.file_path
+            } with content: ${content}`
           );
 
           files.push({
