@@ -18,7 +18,6 @@ const BranchSelector = () => {
   // Get the current active branch
   // const activeBranch = branches.find((b) => b.isActive)?.name || "main";
   const branchSessions = codespace?.sessions || [];
-  console.log("Branch Sessions:", branchSessions);
 
   const activeBranch = branchSessions[activeSessionIndex].name || "main";
 

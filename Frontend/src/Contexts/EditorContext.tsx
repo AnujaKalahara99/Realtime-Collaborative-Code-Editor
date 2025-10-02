@@ -281,7 +281,84 @@ export const EditorCollaborationProvider: React.FC<{
 
     // Setup observers
     const fileSystemObserver = () => {
+      // console.log("File system state:", newFileSystemMap.toJSON());
+      // debuglog();
       setFiles(newFileSystemMap.get("files") || []);
+    };
+
+    const debuglog = () => {
+      // Setup observers
+      console.log("=== FILE SYSTEM OBSERVER TRIGGERED ===");
+      console.log("File system state:", newFileSystemMap.toJSON());
+
+      // Log all Yjs document values
+      if (docRef.current) {
+        console.log("=== ALL YJS DOCUMENT VALUES ===");
+
+        // Log all shared types in the document
+        const sharedTypes = docRef.current.share;
+        console.log("Shared types keys:", Object.keys(sharedTypes));
+
+        // Log fileSystem map
+        const fileSystemData = newFileSystemMap.toJSON();
+        console.log("FileSystem Map:", fileSystemData);
+
+        // Log chat array
+        const chatData = newChatArray.toArray();
+        console.log("Chat Array:", chatData);
+
+        // Log all file contents
+        console.log("=== FILE CONTENTS ===");
+        const files = newFileSystemMap.get("files") || [];
+
+        // Helper function to get all file IDs from nested structure
+        const getAllFileIds = (fileTree: FileNode[]): string[] => {
+          const ids: string[] = [];
+          const traverse = (items: FileNode[]) => {
+            for (const item of items) {
+              if (item.type === "file" && item.id) {
+                ids.push(item.id);
+              } else if (item.type === "folder" && item.children) {
+                traverse(item.children);
+              }
+            }
+          };
+          traverse(fileTree);
+          return ids;
+        };
+
+        const fileIds = getAllFileIds(files);
+        console.log("Found file IDs:", fileIds);
+
+        fileIds.forEach((fileId) => {
+          const fileText = docRef.current!.getText(`file-${fileId}`);
+          const content = fileText.toString();
+          console.log(
+            `File ${fileId} content (${content.length} chars):`,
+            content.substring(0, 200) + (content.length > 200 ? "..." : "")
+          );
+        });
+
+        // Log all text objects in the document
+        console.log("=== ALL TEXT OBJECTS ===");
+        Object.keys(sharedTypes).forEach((key) => {
+          const sharedType = sharedTypes[key];
+          if (sharedType instanceof Y.Text) {
+            const content = sharedType.toString();
+            console.log(
+              `Text[${key}] (${content.length} chars):`,
+              content.substring(0, 100) + (content.length > 100 ? "..." : "")
+            );
+          }
+        });
+
+        // Log document state as binary
+        console.log("=== DOCUMENT STATE ===");
+        const state = Y.encodeStateAsUpdate(docRef.current);
+        console.log("Document state size:", state.length, "bytes");
+
+        console.log("=== END DOCUMENT VALUES ===");
+      }
     };
 
     const chatObserver = () => {
@@ -415,22 +492,32 @@ export const EditorCollaborationProvider: React.FC<{
 
   const handleRollbackEvent = useCallback(() => {
     console.log("Handling rollback event - clearing local state");
+    // console.log(codespace);
 
+    // if (!codespace?.sessions?.[activeSessionIndex]?.sessionId) {
+    //   console.error("Cannot reinitialize: No active session available");
+    //   return;
+    // }
+
+    // const sessionId = codespace.sessions[activeSessionIndex].sessionId;
+
+    // cleanupYJS();
+    // initializeYJS(sessionId);
     fileTexts.clear();
 
-    // Remove all observers to prevent memory leaks
-    [fileSystemMap, chatArray, ...fileTexts.values()].forEach((yType) => {
-      if (yType && observers.has(yType)) {
-        const cleanup = observers.get(yType);
-        if (cleanup) {
-          try {
-            yType.unobserve(cleanup);
-          } catch (e) {
-            console.warn("Failed to remove observer:", e);
-          }
-        }
-      }
-    });
+    // // Remove all observers to prevent memory leaks
+    // [fileSystemMap, chatArray, ...fileTexts.values()].forEach((yType) => {
+    //   if (yType && observers.has(yType)) {
+    //     const cleanup = observers.get(yType);
+    //     if (cleanup) {
+    //       try {
+    //         yType.unobserve(cleanup);
+    //       } catch (e) {
+    //         console.warn("Failed to remove observer:", e);
+    //       }
+    //     }
+    //   }
+    // });
     callbacks.clear();
 
     if (fileSystemMap) {
@@ -629,21 +716,6 @@ export const EditorCollaborationProvider: React.FC<{
   );
 
   const sendChatMessage = useCallback(
-    // (text: string) => {
-    //   if (!chatArray || !text.trim()) return;
-
-    //   const user = providerRef.current?.awareness.getLocalState()?.user;
-    //   const message: Message = {
-    //     id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    //     user: user?.name || "Anonymous",
-    //     color: user?.color || "#aac25f",
-    //     avatar: user?.avatar,
-    //     text: text.trim(),
-    //     timestamp: Date.now(),
-    //   };
-
-    //   chatArray.push([message]);
-    // },
     (text: string, replyToMessageId?: string): void => {
       if (!chatArray || !text.trim()) return;
 

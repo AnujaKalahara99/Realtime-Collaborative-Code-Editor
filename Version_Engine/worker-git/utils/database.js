@@ -309,6 +309,10 @@ export async function saveSessionFiles(
 
             // Upload to storage - all files are uploaded for now
             // A more advanced solution could compare hashes to avoid uploads
+            console.log(
+              `Uploading file: ${normalizedPath} and storage path: ${storagePath} and content ${content}`
+            );
+
             const { error } = await supabase.storage
               .from("sessionFiles")
               .upload(storagePath, content, {

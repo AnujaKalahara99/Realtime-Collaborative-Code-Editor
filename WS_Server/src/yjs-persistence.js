@@ -16,11 +16,18 @@ export class YjsPersistence {
   }
 
   async bindState(sessionId, ydoc) {
-    console.log(`Binding state for session: ${sessionId}`);
     this.docs.set(sessionId, ydoc);
-
     await this.loadFromDatabase(sessionId, ydoc);
     this.setupUpdateHandler(sessionId, ydoc);
+  }
+
+  async writeState(sessionId, ydoc) {
+    if (this.saveTimeouts.has(sessionId)) {
+      clearTimeout(this.saveTimeouts.get(sessionId));
+      this.saveTimeouts.delete(sessionId);
+    }
+    await this.syncToDatabase(sessionId, ydoc);
+    this.docs.delete(sessionId);
   }
 
   async loadFromDatabase(sessionId, ydoc) {
@@ -57,6 +64,10 @@ export class YjsPersistence {
               content = new TextDecoder().decode(await fileData.arrayBuffer());
             }
           }
+          console.log(
+            `Loaded file: ${meta.file_path} with content: ${content}`
+          );
+
           files.push({
             id: meta.id,
             file_type: "file",
@@ -149,9 +160,10 @@ export class YjsPersistence {
 
   setupUpdateHandler(sessionId, ydoc) {
     ydoc.on("update", (update, origin) => {
-      if (origin !== "persistence") {
-        this.debouncedSave(sessionId, ydoc);
-      }
+      console.log(`YDoc update in session ${sessionId}, origin: ${origin}`);
+      // if (origin !== "persistence") {
+      // this.debouncedSave(sessionId, ydoc);
+      // }
     });
   }
 
@@ -328,20 +340,6 @@ export class YjsPersistence {
         error
       );
     }
-  }
-
-  async writeState(sessionId, ydoc) {
-    // Clear any pending save
-    if (this.saveTimeouts.has(sessionId)) {
-      clearTimeout(this.saveTimeouts.get(sessionId));
-      this.saveTimeouts.delete(sessionId);
-    }
-
-    // Final sync
-    await this.syncToDatabase(sessionId, ydoc);
-
-    // Cleanup
-    this.docs.delete(sessionId);
   }
 }
 

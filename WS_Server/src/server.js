@@ -4,13 +4,26 @@ import * as number from "lib0/number";
 import { setupWSConnection, setPersistence, docs } from "./utils.js";
 import { yjsPersistence } from "./yjs-persistence.js";
 
-// Set persistence provider
+const documentStates = new Map();
 setPersistence({
   bindState: async (docName, ydoc) => {
+    console.log(`Binding state for document: ${docName}`);
     await yjsPersistence.bindState(docName, ydoc);
+    documentStates.set(docName, { isLoaded: true });
+    console.log(`Document state loaded for: ${docName}`);
   },
   writeState: async (docName, ydoc) => {
+    console.log(`Writing state for document: ${docName}`);
+    const docState = documentStates.get(docName);
+    if (!docState?.isLoaded) {
+      console.log(
+        `Document state not loaded yet for: ${docName}, skipping write.`
+      );
+      return;
+    }
     await yjsPersistence.writeState(docName, ydoc);
+    documentStates.delete(docName);
+    console.log(`Document state written for: ${docName}`);
   },
   provider: yjsPersistence,
 });
@@ -28,7 +41,6 @@ async function handleVersioningNotification(sessionId, command, status) {
       try {
         console.log(`Reloading files from Supabase for rollback: ${sessionId}`);
 
-        // Get existing file IDs before clearing
         const fileSystemMap = doc.getMap("fileSystem");
         const existingFiles = fileSystemMap.get("files") || [];
 
