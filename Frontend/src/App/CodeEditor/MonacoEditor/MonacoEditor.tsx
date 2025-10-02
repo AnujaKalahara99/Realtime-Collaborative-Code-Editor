@@ -18,7 +18,25 @@ interface MonacoEditorProps {
 
 export default function MonacoEditor({
   selectedFile,
-  initialValue = "// Select a file to start editing",
+  initialValue = `
+╭─────────────────────────────────────────────╮
+│                                             │
+│         Welcome to RTC Code Editor          │
+│                                             │
+│      Select a file from the sidebar to      │
+│      start your coding journey              │
+│                                             │
+│       Features:                             │
+│      • Real-time collaboration              │
+│      • Syntax highlighting                  │
+│      • Auto-completion                      │
+│      • Multi-language support               │
+│      • Chat & AI & Much more                │
+│                                             │
+│       Happy coding! ❤️❤️                   │
+│                                             │
+╰─────────────────────────────────────────────╯
+`,
   onFileContentChange,
 }: MonacoEditorProps) {
   const { theme } = useTheme();
@@ -229,7 +247,7 @@ export default function MonacoEditor({
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className={`h-full flex flex-col ${theme.background}`}>
       <CollaborativeCursor
         editor={editorRef.current}
         selectedFile={
@@ -290,9 +308,9 @@ export default function MonacoEditor({
       <div className="flex-1">
         <Editor
           height="100%"
+          loading=""
           language={language}
           theme={theme.monacoTheme}
-          // Use key to force re-render when file changes
           key={selectedFile?.id || "no-file"}
           defaultValue={getDisplayContent()}
           onMount={handleEditorDidMount}
@@ -320,24 +338,6 @@ export default function MonacoEditor({
           }}
         />
       </div>
-
-      {/* Placeholder when no file is selected */}
-      {(!selectedFile || selectedFile.type !== "file") && (
-        <div
-          className={`absolute inset-0 flex items-center justify-center ${theme.textMuted} pointer-events-none`}
-        >
-          <div className="text-center">
-            <p className="text-lg mb-2">
-              {!selectedFile ? "No file selected" : "Folder selected"}
-            </p>
-            <p className="text-sm">
-              {!selectedFile
-                ? "Select a file from the explorer to start editing"
-                : "Select a file (not a folder) to edit its contents"}
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

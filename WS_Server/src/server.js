@@ -39,7 +39,7 @@ async function handleVersioningNotification(sessionId, command, status) {
   if (doc) {
     if (command === "ROLLBACK" && status === "SUCCESS") {
       try {
-        console.log(`Reloading files from Supabase for rollback: ${sessionId}`);
+        yjsPersistence.stopDebounceForRollback(sessionId);
 
         const fileSystemMap = doc.getMap("fileSystem");
         const existingFiles = fileSystemMap.get("files") || [];
@@ -60,9 +60,7 @@ async function handleVersioningNotification(sessionId, command, status) {
         };
 
         const existingFileIds = getAllFileIds(existingFiles);
-        console.log(`Existing file IDs:`, existingFileIds);
 
-        // Clear everything in a single transaction
         doc.transact(() => {
           fileSystemMap.clear();
 
@@ -72,10 +70,7 @@ async function handleVersioningNotification(sessionId, command, status) {
           });
         }, "rollback-clear");
 
-        // Load fresh data from database in a separate transaction
         await yjsPersistence.loadFromDatabase(sessionId, doc, true);
-
-        console.log(`Successfully reloaded files for session: ${sessionId}`);
       } catch (rollbackError) {
         console.error(
           `Failed to reload files for rollback in session ${sessionId}:`,

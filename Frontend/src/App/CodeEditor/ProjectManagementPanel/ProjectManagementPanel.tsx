@@ -245,12 +245,28 @@ const ProjectManagementPanel = ({
           onCreateFolder={() => handleCreateFolder(null)}
         />
 
-        <div
+        {/* <div
           className="flex-1 overflow-y-auto"
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleRootDrop}
         >
           {renderFileTree(files)}
+        </div> */}
+        <div
+          className="flex-1 overflow-y-auto"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleRootDrop}
+        >
+          {files.length === 0 ? (
+            <div
+              className={`flex items-center justify-center py-10 p-4 ${theme.textMuted} text-sm`}
+            >
+              Give a little time to load
+              <br /> Or create a new file or folder.
+            </div>
+          ) : (
+            renderFileTree(files)
+          )}
         </div>
       </div>
 

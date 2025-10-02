@@ -170,20 +170,35 @@ export class YjsPersistence {
 
   setupUpdateHandler(sessionId, ydoc) {
     ydoc.on("update", (update, origin) => {
-      console.log(`YDoc update in session ${sessionId}, origin: ${origin}`);
-      // if (origin !== "persistence") {
-      // this.debouncedSave(sessionId, ydoc);
-      // }
+      if (origin !== "persistence") {
+        this.debouncedSave(sessionId, ydoc);
+      }
     });
   }
 
+  stopDebounceForRollback(sessionId) {
+    if (this.saveTimeouts.has(sessionId)) {
+      clearTimeout(this.saveTimeouts.get(sessionId));
+      this.saveTimeouts.delete(sessionId);
+    }
+    if (this.saveTimeouts.has(`rollback-${sessionId}`)) {
+      clearTimeout(this.saveTimeouts.get(`rollback-${sessionId}`));
+      this.saveTimeouts.delete(`rollback-${sessionId}`);
+    }
+    const rollbackTimeoutId = setTimeout(() => {
+      this.saveTimeouts.delete(`rollback-${sessionId}`);
+    }, this.SAVE_DELAY * 2);
+
+    this.saveTimeouts.set(`rollback-${sessionId}`, rollbackTimeoutId);
+  }
+
   debouncedSave(sessionId, ydoc) {
-    // Clear existing timeout
+    if (this.saveTimeouts.has(`rollback-${sessionId}`)) {
+      return;
+    }
     if (this.saveTimeouts.has(sessionId)) {
       clearTimeout(this.saveTimeouts.get(sessionId));
     }
-
-    // Set new timeout
     const timeoutId = setTimeout(async () => {
       await this.syncToDatabase(sessionId, ydoc);
     }, this.SAVE_DELAY);
@@ -231,7 +246,6 @@ export class YjsPersistence {
       };
 
       const allFiles = getAllFiles(files);
-      console.log(`Syncing ${allFiles.length} files for session ${sessionId}`);
 
       const currentFileIds = new Set(
         allFiles.map((file) => file.id).filter(Boolean)
@@ -324,26 +338,94 @@ export class YjsPersistence {
         }
       }
 
-      for (const upload of storageUploads) {
-        const { error: storageError } = await supabase.storage
-          .from("sessionFiles")
-          .upload(upload.path, upload.content, {
-            upsert: true,
-            contentType: "text/plain",
+      if (storageUploads.length > 0) {
+        const BATCH_SIZE = 10; // Upload 10 files at once
+        const batches = [];
+
+        for (let i = 0; i < storageUploads.length; i += BATCH_SIZE) {
+          batches.push(storageUploads.slice(i, i + BATCH_SIZE));
+        }
+
+        for (const [batchIndex, batch] of batches.entries()) {
+          const uploadPromises = batch.map(async (upload) => {
+            try {
+              const { error: storageError } = await supabase.storage
+                .from("sessionFiles")
+                .upload(upload.path, upload.content, {
+                  upsert: true,
+                  contentType: "text/plain",
+                });
+
+              if (
+                storageError &&
+                storageError.message !== "The resource already exists"
+              ) {
+                console.error(
+                  `Error uploading file to storage (${upload.path}):`,
+                  storageError
+                );
+                return {
+                  success: false,
+                  path: upload.path,
+                  error: storageError,
+                };
+              }
+
+              return { success: true, path: upload.path };
+            } catch (error) {
+              console.error(
+                `Exception uploading file (${upload.path}):`,
+                error
+              );
+              return { success: false, path: upload.path, error };
+            }
           });
 
-        if (storageError) {
-          // Ignore "The resource already exists" error if upsert is true
-          if (storageError.message !== "The resource already exists") {
-            console.error(
-              `Error uploading file to storage (${upload.path}):`,
-              storageError
-            );
-          }
-        } else {
-          console.log(`✅ Uploaded file to storage: ${upload.path}`);
+          const results = await Promise.allSettled(uploadPromises);
+
+          const successful = results.filter(
+            (r) => r.status === "fulfilled" && r.value.success
+          ).length;
+          const failed = results.filter(
+            (r) =>
+              r.status === "rejected" ||
+              (r.status === "fulfilled" && !r.value.success)
+          ).length;
+
+          console.log(
+            `Batch ${
+              batchIndex + 1
+            } complete: ${successful} successful, ${failed} failed`
+          );
+
+          results.forEach((result) => {
+            if (result.status === "fulfilled" && result.value.success) {
+              console.log(`✅ Uploaded file to storage: ${result.value.path}`);
+            }
+          });
         }
       }
+
+      // for (const upload of storageUploads) {
+      //   const { error: storageError } = await supabase.storage
+      //     .from("sessionFiles")
+      //     .upload(upload.path, upload.content, {
+      //       upsert: true,
+      //       contentType: "text/plain",
+      //     });
+
+      //   if (storageError) {
+      //     // Ignore "The resource already exists" error if upsert is true
+      //     if (storageError.message !== "The resource already exists") {
+      //       console.error(
+      //         `Error uploading file to storage (${upload.path}):`,
+      //         storageError
+      //       );
+      //     }
+      //   } else {
+      //     console.log(`✅ Uploaded file to storage: ${upload.path}`);
+      //   }
+      // }
     } catch (error) {
       console.error(
         `Failed to sync to database for session ${sessionId}:`,
