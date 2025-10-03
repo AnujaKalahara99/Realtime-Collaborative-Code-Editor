@@ -4,3 +4,4 @@ cypress/screenshots/
 node_modules
 mochawesome-report
 Frontend/coverage
+cypress.env.json

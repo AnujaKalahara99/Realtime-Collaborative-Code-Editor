@@ -51,8 +51,10 @@ it ("rename codespace", () => {
  
 
 it("acceptinvite", () => {
-  const apiKey = "oLIgTnKuISq9kchV8G2fHwaL2tNBXTEV"; // replace with real key
-  const serverId = "grd0mcy3";
+  // Load Mailosaur credentials from Cypress environment variables
+  const apiKey = Cypress.env("MAILOSAUR_API_KEY");
+  const serverId = Cypress.env("MAILOSAUR_SERVER_ID");
+  // Make sure to set these in your cypress.env.json or as environment variables
 
   // 1. Get the list of messages (latest emails)
   cy.request({
