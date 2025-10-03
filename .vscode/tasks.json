@@ -41,7 +41,7 @@
     {
       "label": "Cypress",
       "type": "shell",
-      "command": "npx cypress run --spec \"cypress/e2e/test1.cy.js\" --reporter mochawesome",
+      "command": "npx cypress run --spec \"cypress/e2e/systemtest.cy.js\" --reporter mochawesome",
       "options": {
         "cwd": "${workspaceFolder}"  
       },

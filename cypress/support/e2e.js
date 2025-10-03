@@ -15,3 +15,10 @@
 
 // Import commands.js using ES2015 syntax:
 import './commands'
+import 'cypress-mailslurp';
+
+const config = {
+  MAILSLURP_API_KEY: "a7f8faf0b22f90fa7e9342100de7fd2f2e87cc459f09dfcad3d5c2b2a86e3fe4"
+};
+
+export default config;

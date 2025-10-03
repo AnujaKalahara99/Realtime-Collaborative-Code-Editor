@@ -1,4 +1,7 @@
 const { defineConfig } = require("cypress");
+const { defineConfig } = require('cypress');
+
+
 
 module.exports = defineConfig({
   e2e: {
@@ -6,4 +9,9 @@ module.exports = defineConfig({
       // implement node event listeners here
     },
   },
+//  env: {
+//     MAILSLURP_API_KEY: "a7f8faf0b22f90fa7e9342100de7fd2f2e87cc459f09dfcad3d5c2b2a86e3fe4",
+//     MAILSLURP_INBOX_ID: "ce81b44d-8602-432e-90c2-0dc6419343cd",
+//     TEST_EMAIL: "ce81b44d-8602-432e-90c2-0dc6419343cd@mailslurp.biz"
+//   }
 });
