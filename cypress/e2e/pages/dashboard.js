@@ -18,7 +18,7 @@ export class dashboardpage{
     sharecodespace(){   
         cy.get('.transition-all > :nth-child(2) > .cursor-pointer').click();
         cy.get('.transition-all > :nth-child(2) > .bg-gray-800 > :nth-child(2)').click();
-        cy.get('.w-full.mb-4').click().type("rodrigosunath@gmail.com");
+        cy.get('.w-full.mb-4').click().type("anything@grd0mcy3.mailosaur.net");
         cy.get('.px-6').click();
         cy.wait(3000);
        }
