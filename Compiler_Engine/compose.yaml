@@ -7,7 +7,7 @@ services:
   producer:
     build: ./producer
     ports:
-      - "4000:4000"
+      - "4001:4001"
     depends_on:
       - redis
 

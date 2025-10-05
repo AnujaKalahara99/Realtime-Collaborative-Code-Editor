@@ -92,6 +92,19 @@ const ROUTES = [
       },
     },
   },
+  {
+    url: "/run",
+    auth: false,
+    creditCheck: false,
+    
+    proxy: {
+      target: "http://localhost:4001/run", // or the correct backend service
+      changeOrigin: true,
+      pathRewrite: {
+        [`^/run`]: "",
+      },
+    },
+  },
 ];
 
 export default ROUTES;

@@ -109,7 +109,7 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 4001;
 
 // Supported languages
 const SUPPORTED_LANGUAGES = ['javascript', 'python'];
