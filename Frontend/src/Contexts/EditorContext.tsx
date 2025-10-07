@@ -96,6 +96,7 @@ interface EditorCollaborationContextType {
 
   commitChanges: (message: string) => Promise<boolean>;
   rollbackToCommit: (commitHash: string) => Promise<boolean>;
+  createBranchWithSession: (branchName: string) => Promise<boolean>;
   gitOperationLoading: boolean;
 
   // Lifecycle
@@ -126,6 +127,7 @@ const initialContext: EditorCollaborationContextType = {
   getFileText: () => null,
   commitChanges: async () => false,
   rollbackToCommit: async () => false,
+  createBranchWithSession: async () => false,
   gitOperationLoading: false,
   destroy: () => {},
 };
@@ -449,7 +451,7 @@ export const EditorCollaborationProvider: React.FC<{
     }
 
     window.dispatchEvent(new CustomEvent("yjs-rollback-complete"));
-  }, [fileTexts, observers, callbacks, fileSystemMap]);
+  }, [fileTexts, callbacks, fileSystemMap]);
 
   // Git operations
   const commitChanges = useCallback(
@@ -787,12 +789,123 @@ export const EditorCollaborationProvider: React.FC<{
     setGitOperationLoading(false);
   }, [codespaceId, userName, getAuthHeader]);
 
+  const switchToSession = useCallback(
+    async (sessionIndex: number): Promise<boolean> => {
+      try {
+        setGitOperationLoading(true);
+
+        const targetSession = codespace!.sessions![sessionIndex];
+        setActiveSessionIndex(sessionIndex);
+        cleanupYJS();
+        // Small delay to ensure cleanup is complete
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        initializeYJS(targetSession.sessionId);
+
+        toast.success(
+          "Session Switched",
+          `Switched to branch "${targetSession.name}" successfully`,
+          { duration: 3000 }
+        );
+
+        return true;
+      } catch (error) {
+        console.error("Error switching session:", error);
+        toast.error("Error", "Failed to switch session", { duration: 6000 });
+        return false;
+      } finally {
+        setGitOperationLoading(false);
+      }
+    },
+    [codespace, cleanupYJS, toast]
+  );
+
+  const createBranchWithSession = useCallback(
+    async (branchName: string): Promise<boolean> => {
+      if (!branchName.trim()) {
+        toast.error("Error", "Branch name cannot be empty", { duration: 4000 });
+        return false;
+      }
+
+      try {
+        setGitOperationLoading(true);
+
+        const payload = {
+          codespaceId: codespace!.id,
+          branchName: branchName.trim(),
+        };
+
+        const response = await fetch(`${CODESPACE_API_URL}/session`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeader(),
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          toast.error(
+            "Create Branch Failed",
+            errorData.message || "Failed to create branch",
+            { duration: 6000 }
+          );
+          return false;
+        }
+
+        const result = await response.json();
+
+        const newSession = {
+          sessionId: result.sessionId,
+          branchId: result.branchId,
+          name: result.name,
+          commits: result.commits || [],
+          startedAt: result.startedAt,
+        };
+
+        const updatedCodespace = {
+          id: codespace?.id ?? "",
+          name: codespace?.name ?? "",
+          lastModified: codespace?.lastModified ?? "",
+          created_at: codespace?.created_at ?? "",
+          owner: codespace?.owner ?? "",
+          role: codespace?.role ?? "",
+          sessions: [...(codespace?.sessions || []), newSession],
+          gitHubRepo: codespace?.gitHubRepo ?? "",
+        };
+
+        setCodespace(updatedCodespace);
+
+        const newSessionIndex = updatedCodespace.sessions.length - 1;
+        setActiveSessionIndex(newSessionIndex);
+
+        cleanupYJS();
+        initializeYJS(result.sessionId);
+
+        toast.success(
+          "Branch Created",
+          `Branch "${branchName}" created successfully and switched to new session`,
+          { duration: 4000 }
+        );
+
+        return true;
+      } catch (error) {
+        console.error("Error creating branch with session:", error);
+        toast.error("Error", "Failed to create branch", { duration: 6000 });
+        return false;
+      } finally {
+        setGitOperationLoading(false);
+      }
+    },
+    [codespace, getAuthHeader, toast, switchToSession]
+  );
+
   const contextValue: EditorCollaborationContextType = {
     codespace,
     loading,
     error,
     activeSessionIndex,
-    setActiveSessionIndex,
+    setActiveSessionIndex: switchToSession,
     isConnected,
     connectedUsers,
     files,
@@ -811,6 +924,7 @@ export const EditorCollaborationProvider: React.FC<{
     getFileText,
     commitChanges,
     rollbackToCommit,
+    createBranchWithSession,
     gitOperationLoading,
     destroy,
   };

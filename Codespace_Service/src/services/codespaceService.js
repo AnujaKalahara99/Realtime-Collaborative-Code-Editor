@@ -127,6 +127,48 @@ export class CodespaceService {
     return true;
   }
 
+  static async createBranchWithSession(codespaceId, branchName, userId) {
+    // await this.checkUserPermission(codespaceId, userId, ["admin", "owner", "Developer"]);
+
+    try {
+      const { data, error } = await supabase.rpc("create_branch_with_session", {
+        p_workspace_id: codespaceId,
+        p_branch_name: branchName,
+      });
+
+      if (error) {
+        throw new Error(`Failed to create branch: ${error.message}`);
+      }
+
+      return data;
+    } catch (err) {
+      console.error("Error in createBranchWithSession:", err);
+
+      if (err.message.includes("already exists")) {
+        const duplicateError = new Error(
+          `Branch "${branchName}" already exists in this workspace`
+        );
+        duplicateError.statusCode = 409;
+        duplicateError.code = "BRANCH_ALREADY_EXISTS";
+        throw duplicateError;
+      }
+
+      if (err.message.includes("Workspace not found")) {
+        const notFoundError = new Error("Workspace not found");
+        notFoundError.statusCode = 404;
+        notFoundError.code = "WORKSPACE_NOT_FOUND";
+        throw notFoundError;
+      }
+
+      const serviceError = new Error(
+        `Failed to create branch with session: ${err.message}`
+      );
+      serviceError.statusCode = err.statusCode || 500;
+      serviceError.code = err.code || "BRANCH_CREATION_FAILED";
+      throw serviceError;
+    }
+  }
+
   static async checkUserPermission(codespaceId, userId, allowedRoles = []) {
     const { data, error } = await supabase
       .from("workspace_members")

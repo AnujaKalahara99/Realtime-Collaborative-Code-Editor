@@ -441,3 +441,108 @@ export function getFileMappings(sessionId) {
 export function clearFileMappings(sessionId) {
   fileMappingsStore.delete(sessionId);
 }
+
+/**
+ * Gets branch name from branch ID
+ */
+export const getBranchById = async (branchId) => {
+  try {
+    const { data, error } = await supabase
+      .from("branches")
+      .select("name")
+      .eq("id", branchId)
+      .single();
+
+    if (error) {
+      console.error(`Error fetching branch ${branchId}:`, error);
+      throw new Error(`Failed to fetch branch: ${error.message}`);
+    }
+
+    return data?.name || null;
+  } catch (error) {
+    console.error("Error in getBranchById:", error);
+    throw error;
+  }
+};
+
+/**
+ * Creates a new branch in the database
+ */
+export const createBranch = async (name, workspaceId) => {
+  try {
+    const { data, error } = await supabase
+      .from("branches")
+      .insert({ name, workspace_id: workspaceId })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating branch:", error);
+      throw new Error(`Failed to create branch: ${error.message}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in createBranch:", error);
+    throw error;
+  }
+};
+
+/**
+ * Creates a new session for a branch
+ */
+export const createSession = async (branchId) => {
+  try {
+    const { data, error } = await supabase
+      .from("sessions")
+      .insert({ branch_id: branchId })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating session:", error);
+      throw new Error(`Failed to create session: ${error.message}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in createSession:", error);
+    throw error;
+  }
+};
+
+/**
+ * Gets session by ID with workspace info
+ */
+export const getSessionById = async (sessionId) => {
+  try {
+    const { data, error } = await supabase
+      .from("sessions")
+      .select(
+        `
+        *,
+        branches!inner(
+          id,
+          name,
+          workspace_id
+        )
+      `
+      )
+      .eq("id", sessionId)
+      .single();
+
+    if (error) {
+      console.error(`Error fetching session ${sessionId}:`, error);
+      throw new Error(`Failed to fetch session: ${error.message}`);
+    }
+
+    return {
+      ...data,
+      workspace_id: data.branches.workspace_id,
+      branch_name: data.branches.name,
+    };
+  } catch (error) {
+    console.error("Error in getSessionById:", error);
+    throw error;
+  }
+};

@@ -49,14 +49,12 @@ const ProjectManagementPanel = ({
   };
 
   const handleCreateFile = (parentId: string | null = null) => {
-    // Find the level for proper indentation
     const level = parentId ? getNodeLevel(parentId, files) + 1 : 0;
     setCreatingItem({ type: "file", parentId, level });
     setContextMenu(null);
   };
 
   const handleCreateFolder = (parentId: string | null = null) => {
-    // Find the level for proper indentation
     const level = parentId ? getNodeLevel(parentId, files) + 1 : 0;
     setCreatingItem({ type: "folder", parentId, level });
     setContextMenu(null);
@@ -169,14 +167,12 @@ const ProjectManagementPanel = ({
             initialValue=""
             onSave={handleConfirmCreate}
             onCancel={handleCancelCreate}
-            // placeholder={`New ${type} name...`}
           />
         </div>
       </div>
     );
   };
 
-  // Render file tree
   const renderFileTree = (
     nodes: FileNode[],
     level: number = 0,
@@ -184,7 +180,6 @@ const ProjectManagementPanel = ({
   ): React.ReactNode => {
     const elements: React.ReactNode[] = [];
 
-    // Add existing nodes
     nodes
       .sort((a, b) => a.id.localeCompare(b.id))
       .forEach((node) => {
@@ -222,7 +217,6 @@ const ProjectManagementPanel = ({
         }
       });
 
-    // Add create item at root level
     if (creatingItem && creatingItem.parentId === parentId) {
       elements.push(
         <CreateItemInline
@@ -244,20 +238,12 @@ const ProjectManagementPanel = ({
           onCreateFile={() => handleCreateFile(null)}
           onCreateFolder={() => handleCreateFolder(null)}
         />
-
-        {/* <div
-          className="flex-1 overflow-y-auto"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={handleRootDrop}
-        >
-          {renderFileTree(files)}
-        </div> */}
         <div
           className="flex-1 overflow-y-auto"
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleRootDrop}
         >
-          {files.length === 0 ? (
+          {files.length === 0 && !creatingItem ? (
             <div
               className={`flex items-center justify-center py-10 p-4 ${theme.textMuted} text-sm`}
             >

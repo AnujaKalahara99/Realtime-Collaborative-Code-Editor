@@ -184,4 +184,21 @@ export class CodespaceController {
       next(error);
     }
   }
+
+  static async createSession(req, res, next) {
+    try {
+      const { codespaceId, branchName } = req.body;
+      const codespace = await CodespaceService.createBranchWithSession(
+        codespaceId,
+        branchName
+      );
+
+      res.status(201).json({
+        codespace,
+        message: "Session created successfully",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

@@ -261,14 +261,14 @@ export const PanelSystem: React.FC<PanelSystemProps> = ({
 
       <div
         ref={leftResizeRef}
-        className={`w-[2px] ${theme.active} hover:bg-blue-500 cursor-ew-resize transition-colors flex-shrink-0`}
+        className={`w-[4px] ${theme.active} hover:bg-blue-500 cursor-ew-resize transition-colors flex-shrink-0`}
       ></div>
 
       <div className="flex-1 flex flex-col min-w-0">{children}</div>
 
       <div
         ref={rightResizeRef}
-        className={`w-[2px] ${theme.active} hover:bg-blue-500 cursor-ew-resize transition-colors flex-shrink-0`}
+        className={`w-[4px] ${theme.active} hover:bg-blue-500 cursor-ew-resize transition-colors flex-shrink-0`}
       ></div>
 
       <div
