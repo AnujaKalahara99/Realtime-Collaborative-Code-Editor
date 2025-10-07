@@ -139,7 +139,6 @@ const ProjectManagementPanel = ({
   // Component for creating new items inline
   const CreateItemInline = ({
     type,
-    parentId,
     level,
   }: {
     type: "file" | "folder";
