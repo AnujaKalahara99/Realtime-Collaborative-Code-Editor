@@ -65,7 +65,10 @@ export class MonacoDiagnosticsProvider {
       startLineNumber: error.line,
       startColumn: error.column,
       endLineNumber: error.line,
-      endColumn: error.column + error.importPath.length,
+      endColumn: Math.max(
+        error.column + 1,
+        error.column + error.importPath.length
+      ),
       message: error.message,
       source: "VFS Dependency Resolver",
       code: "dependency-error",
@@ -119,8 +122,28 @@ export class MonacoDiagnosticsProvider {
     // Combine all errors
     const allErrors = [...fileErrors, ...additionalErrors];
 
-    // Create markers
-    const markers = this.createMarkersFromErrors(allErrors);
+    // Create markers and adjust ranges to underline the actual import string
+    const markers = this.createMarkersFromErrors(allErrors).map((m) => {
+      const lineContent = model.getLineContent(m.startLineNumber);
+      // Try to find the quoted import path on this line to improve underline accuracy
+      const pathMatch = lineContent.match(/['"][^'"]+['"]/g);
+      if (pathMatch) {
+        const first = pathMatch.find((s) =>
+          m.message.includes(s.replace(/['"]/g, ""))
+        );
+        if (first) {
+          const startIdx = lineContent.indexOf(first);
+          if (startIdx >= 0) {
+            return {
+              ...m,
+              startColumn: startIdx + 1,
+              endColumn: startIdx + first.length + 1,
+            } as monaco.editor.IMarkerData;
+          }
+        }
+      }
+      return m;
+    });
 
     // Set markers on the model
     monaco.editor.setModelMarkers(model, "vfs-dependency-resolver", markers);
@@ -294,7 +317,6 @@ export class MonacoDiagnosticsProvider {
           );
 
           importMarkers.forEach((marker) => {
-            // Get the import path from the marker message
             const messageMatch = marker.message.match(
               /Cannot resolve module '([^']+)'/
             );
@@ -321,7 +343,17 @@ export class MonacoDiagnosticsProvider {
                             endLineNumber: marker.endLineNumber,
                             endColumn: marker.endColumn,
                           },
-                          text: suggestion,
+                          // Replace keeping quotes intact if range includes them; otherwise insert quoted
+                          text: /['"`]/.test(
+                            model.getValueInRange({
+                              startLineNumber: marker.startLineNumber,
+                              startColumn: marker.startColumn,
+                              endLineNumber: marker.endLineNumber,
+                              endColumn: marker.endColumn,
+                            })
+                          )
+                            ? suggestion
+                            : `'${suggestion}'`,
                         },
                         versionId: model.getVersionId(),
                       },
@@ -348,6 +380,74 @@ export class MonacoDiagnosticsProvider {
           return {
             actions,
             dispose: () => {},
+          };
+        },
+      }
+    );
+  }
+
+  /**
+   * Setup hover provider to show detailed info for unresolved imports
+   */
+  public setupHoverProvider(): monaco.IDisposable {
+    return monaco.languages.registerHoverProvider(
+      ["typescript", "javascript"],
+      {
+        provideHover: (model, position) => {
+          const textUntilPosition = model.getValueInRange({
+            startLineNumber: position.lineNumber,
+            startColumn: 1,
+            endLineNumber: position.lineNumber,
+            endColumn: model.getLineMaxColumn(position.lineNumber),
+          });
+
+          // Detect import path under cursor
+          const importLineMatch = textUntilPosition.match(
+            /import\s+.*?from\s+(["'`])([^"'`]+)\1|require\(\s*(["'`])([^"'`]+)\3\s*\)/
+          );
+          if (!importLineMatch) return { contents: [] };
+
+          const importPath = (importLineMatch[2] || importLineMatch[4]) ?? "";
+          if (!importPath) return { contents: [] };
+
+          const filePath = this.uriToPath(model.uri);
+          const depGraph = this.dependencyManager.getDependencyGraph();
+          const err = depGraph.errors.find(
+            (e) => e.file === filePath && e.importPath === importPath
+          );
+
+          if (!err) return { contents: [] };
+
+          const md: monaco.IMarkdownString = {
+            value:
+              `$(error) ${err.message}\n\n` +
+              (err.suggestion ? `Suggestion: \`${err.suggestion}\`\n\n` : "") +
+              `Source: VFS Dependency Resolver`,
+            isTrusted: true,
+            supportThemeIcons: true,
+          };
+
+          // Compute range roughly over the import path
+          const lineContent = model.getLineContent(position.lineNumber);
+          const quoted = lineContent.match(/(["'`])([^"'`]+)\1/);
+          let startColumn = 1;
+          let endColumn = 1;
+          if (quoted) {
+            const idx = lineContent.indexOf(quoted[0]);
+            if (idx >= 0) {
+              startColumn = idx + 1;
+              endColumn = idx + quoted[0].length + 1;
+            }
+          }
+
+          return {
+            range: new monaco.Range(
+              position.lineNumber,
+              startColumn,
+              position.lineNumber,
+              endColumn
+            ),
+            contents: [md],
           };
         },
       }
@@ -392,15 +492,14 @@ export class MonacoDiagnosticsProvider {
             endColumn: position.column,
           });
 
-          // Check if we're in an import statement
+          // Check if we're in an import or require string
           const importMatch = textUntilPosition.match(
-            /import\s+.*?from\s+['"`]([^'"`]*)$/
+            /import\s+.*?from\s+['"`]([^'"`]*)$|require\(\s*['"`]([^'"`]*)$/
           );
           if (!importMatch) return { suggestions: [] };
 
-          const currentPath = importMatch[1];
+          const currentPath = (importMatch[1] || importMatch[2] || "").trim();
           const filePath = this.uriToPath(model.uri);
-          const suggestions: monaco.languages.CompletionItem[] = [];
 
           // Get all available files for completion
           const entries = this.vfs.getAllEntries();
@@ -409,30 +508,80 @@ export class MonacoDiagnosticsProvider {
             return entry?.type === "file" && path !== filePath;
           });
 
-          // Generate relative path suggestions
-          availableFiles.forEach((targetPath) => {
-            const relativePath = this.getRelativePath(filePath, targetPath);
+          type Candidate = { display: string; target: string; score: number };
+          const candidates: Candidate[] = [];
 
-            if (relativePath.startsWith(currentPath)) {
-              const fileName = targetPath.split("/").pop() || "";
-
-              suggestions.push({
-                
-                label: relativePath,
-                kind: monaco.languages.CompletionItemKind.File,
-                insertText: relativePath,
-                detail: `Import from ${fileName}`,
-                documentation: `File: ${targetPath}`,
-                sortText: relativePath.length.toString().padStart(3, "0"),
-                range: {
-                  startLineNumber: position.lineNumber,
-                  startColumn: position.column - currentPath.length,
-                  endLineNumber: position.lineNumber,
-                  endColumn: position.column,
-                },
-              });
+          const addIfResolvable = (proposed: string, targetPath: string) => {
+            try {
+              const fromDir =
+                filePath.substring(0, filePath.lastIndexOf("/")) || "/";
+              const resolved = new URL(proposed, `file://${fromDir}/`).pathname;
+              const exists =
+                this.vfs.getFile(resolved) ||
+                this.vfs.getFile(resolved + ".ts") ||
+                this.vfs.getFile(resolved + ".tsx") ||
+                this.vfs.getFile(resolved + ".js") ||
+                this.vfs.getFile(resolved + ".jsx") ||
+                this.vfs.getFile(resolved + ".json") ||
+                this.vfs.getFile(`${resolved}/index.ts`) ||
+                this.vfs.getFile(`${resolved}/index.tsx`) ||
+                this.vfs.getFile(`${resolved}/index.js`) ||
+                this.vfs.getFile(`${resolved}/index.jsx`) ||
+                this.vfs.getFile(`${resolved}/index.json`);
+              if (exists) {
+                candidates.push({
+                  display: proposed,
+                  target: targetPath,
+                  score: proposed.length,
+                });
+              }
+            } catch {
+              // ignore invalid URLs
             }
-          });
+          };
+
+          for (const targetPath of availableFiles) {
+            const relativePath = this.getRelativePath(filePath, targetPath);
+            if (!relativePath.startsWith(currentPath)) continue;
+
+            // Primary: propose extensionless relative paths for TS/JS
+            let proposed = relativePath;
+            const lastDot = proposed.lastIndexOf(".");
+            if (lastDot > proposed.lastIndexOf("/")) {
+              const ext = proposed.substring(lastDot);
+              if ([".ts", ".tsx", ".js", ".jsx"].includes(ext)) {
+                proposed = proposed.substring(0, lastDot);
+              }
+            }
+            addIfResolvable(proposed, targetPath);
+
+            // Secondary: folder path for index.*
+            const baseName = targetPath.split("/").pop() || "";
+            if (baseName.startsWith("index.")) {
+              const folderProposed = this.getRelativePath(
+                filePath,
+                targetPath.substring(0, targetPath.lastIndexOf("/"))
+              );
+              if (folderProposed.startsWith(currentPath)) {
+                addIfResolvable(folderProposed, targetPath);
+              }
+            }
+          }
+
+          candidates.sort((a, b) => a.score - b.score);
+          const suggestions = candidates.map((c, i) => ({
+            label: c.display,
+            kind: monaco.languages.CompletionItemKind.File,
+            insertText: c.display,
+            detail: `File: ${c.target}`,
+            sortText: String(i).padStart(3, "0"),
+            range: {
+              startLineNumber: position.lineNumber,
+              startColumn: position.column - currentPath.length,
+              endLineNumber: position.lineNumber,
+              endColumn: position.column,
+            },
+          }));
 
           return { suggestions };
         },

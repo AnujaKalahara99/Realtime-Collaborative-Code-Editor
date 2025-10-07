@@ -106,6 +106,12 @@ export class VFSMonacoIntegration {
       this.disposables.push(codeActionDisposable);
     }
 
+    // Hover provider for unresolved imports
+    if (this.diagnosticsProvider) {
+      const hoverDisposable = this.diagnosticsProvider.setupHoverProvider();
+      this.disposables.push(hoverDisposable);
+    }
+
     // Setup import path validation
     this.setupImportValidation();
   }

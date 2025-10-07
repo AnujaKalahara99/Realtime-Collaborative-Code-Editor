@@ -217,6 +217,19 @@ export class DependencyManager {
       return basePath;
     }
 
+    // Case-insensitive lookup helper
+    const ciLookup = (candidate: string): string | null => {
+      const entries = this.vfs.getAllEntries();
+      const candLower = candidate.toLowerCase();
+      for (const key of entries.keys()) {
+        const entry = entries.get(key);
+        if (entry?.type === "file" && key.toLowerCase() === candLower) {
+          return key; // return actual cased path in VFS
+        }
+      }
+      return null;
+    };
+
     // Try with common extensions
     const extensions = [".ts", ".tsx", ".js", ".jsx", ".json", ".css", ".scss"];
 
@@ -225,6 +238,8 @@ export class DependencyManager {
       if (this.vfs.getFile(pathWithExt)) {
         return pathWithExt;
       }
+      const ci = ciLookup(pathWithExt);
+      if (ci) return ci;
     }
 
     // Try index files in directory
@@ -234,10 +249,19 @@ export class DependencyManager {
         if (this.vfs.getFile(indexPath)) {
           return indexPath;
         }
+        const ci = ciLookup(indexPath);
+        if (ci) return ci;
       }
     }
 
     return null;
+  }
+
+  /**
+   * Public helper for other components to validate/resolve an import path.
+   */
+  public resolvePath(fromPath: string, importPath: string): string | null {
+    return this.resolveImport(fromPath, importPath);
   }
 
   /**
@@ -373,18 +397,33 @@ export class DependencyManager {
       // Find the closest match based on path similarity
       const fromDir = fromPath.substring(0, fromPath.lastIndexOf("/")) || "/";
 
-      let bestMatch = similarFiles[0];
-      let shortestRelativePath = this.getRelativePath(fromDir, bestMatch);
+      // Rank by shortest relative path first
+      const ranked = similarFiles
+        .map((file) => ({ file, rel: this.getRelativePath(fromDir, file) }))
+        .sort((a, b) => a.rel.length - b.rel.length);
 
-      for (const file of similarFiles.slice(1)) {
-        const relativePath = this.getRelativePath(fromDir, file);
-        if (relativePath.length < shortestRelativePath.length) {
-          bestMatch = file;
-          shortestRelativePath = relativePath;
+      // Return the first candidate that actually resolves via the same resolver
+      for (const { file, rel } of ranked) {
+        // 1) Try with the computed relative (keeps extension)
+        if (this.resolveImport(fromPath, rel)) return rel;
+
+        // 2) Try extensionless variant as some users prefer './module'
+        const lastDot = rel.lastIndexOf(".");
+        if (lastDot > rel.lastIndexOf("/")) {
+          const withoutExt = rel.substring(0, lastDot);
+          if (this.resolveImport(fromPath, withoutExt)) return withoutExt;
+        }
+
+        // 3) If the matched file is an index file, try the folder path
+        const fileName = file.split("/").pop() || "";
+        if (fileName.startsWith("index.")) {
+          const folderRel = this.getRelativePath(
+            fromDir,
+            file.substring(0, file.lastIndexOf("/"))
+          );
+          if (this.resolveImport(fromPath, folderRel)) return folderRel;
         }
       }
-
-      return shortestRelativePath;
     }
 
     return undefined;
