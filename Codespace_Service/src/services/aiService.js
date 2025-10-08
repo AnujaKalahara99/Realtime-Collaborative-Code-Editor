@@ -7,7 +7,8 @@ export async function AIChatResponse(messages) {
   }
 
   const result = streamText({
-    model: google("gemini-1.5-pro"),
+    model: google("gemini-2.5-flash"),
+
     messages: convertToModelMessages(messages),
     system: `
         You are an expert AI coding assistant integrated into a collaborative code editor.
