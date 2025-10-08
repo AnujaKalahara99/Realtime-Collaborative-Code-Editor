@@ -18,12 +18,29 @@ interface MonacoEditorProps {
   onFileContentChange?: (fileId: string, content: string) => void;
 }
 
-// Ensure the React wrapper uses the same Monaco instance we import via ESM
 loader.config({ monaco });
 
 export default function MonacoEditor({
   selectedFile,
-  initialValue = "// Select a file to start editing",
+  initialValue = `
+╭─────────────────────────────────────────────╮
+│                                             │
+│         Welcome to RTC Code Editor          │
+│                                             │
+│      Select a file from the sidebar to      │
+│      start your coding journey              │
+│                                             │
+│       Features:                             │
+│      • Real-time collaboration              │
+│      • Syntax highlighting                  │
+│      • Auto-completion                      │
+│      • Multi-language support               │
+│      • Chat & AI & Much more                │
+│                                             │
+│       Happy coding! ❤️❤️                   │
+│                                             │
+╰─────────────────────────────────────────────╯
+`,
   onFileContentChange,
 }: MonacoEditorProps) {
   const { theme } = useTheme();
@@ -53,6 +70,54 @@ export default function MonacoEditor({
   } = useEditorCollaboration();
 
   useEffect(() => {
+    if (!editorReady) return;
+
+    setFileUsers([]);
+
+    if (selectedFile && selectedFile.type === "file" && editorRef.current) {
+      setLanguage(getLanguageFromFileName(selectedFile.name));
+
+      if (currentFileRef.current !== selectedFile.id) {
+        bindEditorToFile(selectedFile);
+      }
+
+      const users = getUsersInFile(selectedFile.id);
+      setFileUsers(users);
+    } else if (!selectedFile) {
+      if (currentBindingRef.current) {
+        currentBindingRef.current.destroy();
+        currentBindingRef.current = null;
+      }
+      if (contentUnsubscribeRef.current) {
+        contentUnsubscribeRef.current();
+        contentUnsubscribeRef.current = null;
+      }
+      currentFileRef.current = null;
+    }
+  }, [editorReady, selectedFile, getUsersInFile]);
+
+  useEffect(() => {
+    const handleRollbackComplete = () => {
+      console.log("Rollback detected - rebinding editor");
+
+      if (selectedFile && selectedFile.type === "file" && selectedFile.id) {
+        setTimeout(() => {
+          bindEditorToFile(selectedFile);
+        }, 100); // Small delay to ensure server sync is complete
+      }
+    };
+
+    window.addEventListener("yjs-rollback-complete", handleRollbackComplete);
+
+    return () => {
+      window.removeEventListener(
+        "yjs-rollback-complete",
+        handleRollbackComplete
+      );
+    };
+  }, [selectedFile]);
+
+  useEffect(() => {
     if (!vfsBridgeRef.current) {
       vfsBridgeRef.current = new VFSBridge();
     }
@@ -65,35 +130,27 @@ export default function MonacoEditor({
     };
   }, []);
 
-  // Keep VFS in sync with the collaborative file tree so diagnostics stay up to date
   useEffect(() => {
     if (vfsBridgeRef.current) {
       vfsBridgeRef.current.syncToVFS(files);
-      // Re-run diagnostics after tree changes
       integrationRef.current?.updateDiagnostics?.();
     }
   }, [files]);
-
-  // Removed early selectedFile effect to avoid binding on disposed editors
 
   const bindEditorToFile = (file: FileNode) => {
     if (!editorRef.current || editorDisposedRef.current) return;
 
     const editor = editorRef.current;
-    // Ensure Monaco model is created with a stable file:// URI so markers attach correctly
     let vfsPath = vfsBridgeRef.current?.getPathById(file.id);
     if (!vfsPath) {
-      // Attempt to sync then retry path resolution if not yet available
       vfsBridgeRef.current?.syncToVFS(files);
       vfsPath = vfsBridgeRef.current?.getPathById(file.id);
       if (!vfsPath) return;
     }
-    // Ensure integration is initialized
     if (!integrationRef.current) return;
     const model =
       integrationRef.current.ensureMonacoModel(vfsPath) || editor.getModel();
     if (!model) return;
-    // Switch editor to the proper model if needed
     if (
       !editorDisposedRef.current &&
       editor.getModel()?.uri.toString() !== model.uri.toString()
@@ -101,7 +158,6 @@ export default function MonacoEditor({
       editor.setModel(model);
     }
 
-    // Destroy previous binding and content subscription
     if (currentBindingRef.current) {
       currentBindingRef.current.destroy();
       currentBindingRef.current = null;
@@ -122,7 +178,6 @@ export default function MonacoEditor({
       // Defer binding to the next tick to ensure the editor view is fully attached
       setTimeout(() => {
         if (editorDisposedRef.current) return;
-        // Create Yjs binding
         currentBindingRef.current = new MonacoBinding(
           fileYText,
           model,
@@ -130,7 +185,6 @@ export default function MonacoEditor({
           awareness
         );
 
-        // Dispose previous cursor listener if any
         cursorListenerDisposeRef.current?.dispose?.();
         cursorListenerDisposeRef.current = editor.onDidChangeCursorPosition(
           () => {
@@ -176,7 +230,6 @@ export default function MonacoEditor({
     setEditorReady(true);
     editorDisposedRef.current = false;
 
-    // When editor is disposed (e.g., key changes), clear refs to prevent setModel on disposed instance
     try {
       (
         editorInstance as unknown as { onDidDispose?: (cb: () => void) => void }
@@ -189,7 +242,6 @@ export default function MonacoEditor({
       // no-op
     }
 
-    // Initialize Monaco integration after editor mounts to avoid worker loader issues
     if (!integrationRef.current && vfsBridgeRef.current) {
       integrationRef.current = new VFSMonacoIntegration(
         vfsBridgeRef.current.getVFSStore(),
@@ -211,34 +263,6 @@ export default function MonacoEditor({
       }
     }
   };
-
-  // Rebind when selection changes, but only after editor is ready
-  useEffect(() => {
-    if (!editorReady) return;
-
-    setFileUsers([]);
-
-    if (selectedFile && selectedFile.type === "file" && editorRef.current) {
-      setLanguage(getLanguageFromFileName(selectedFile.name));
-
-      if (currentFileRef.current !== selectedFile.id) {
-        bindEditorToFile(selectedFile);
-      }
-
-      const users = getUsersInFile(selectedFile.id);
-      setFileUsers(users);
-    } else if (!selectedFile) {
-      if (currentBindingRef.current) {
-        currentBindingRef.current.destroy();
-        currentBindingRef.current = null;
-      }
-      if (contentUnsubscribeRef.current) {
-        contentUnsubscribeRef.current();
-        contentUnsubscribeRef.current = null;
-      }
-      currentFileRef.current = null;
-    }
-  }, [editorReady, selectedFile, getUsersInFile]);
 
   const getLanguageFromFileName = (fileName: string): string => {
     const extension = fileName.split(".").pop()?.toLowerCase();
@@ -278,14 +302,13 @@ export default function MonacoEditor({
 
   const getDisplayContent = () => {
     if (selectedFile?.type === "file") {
-      // For files, let the binding handle the content
       return "";
     }
     return initialValue;
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className={`h-full flex flex-col ${theme.background}`}>
       <CollaborativeCursor
         editor={editorRef.current}
         selectedFile={
@@ -374,24 +397,6 @@ export default function MonacoEditor({
           }}
         />
       </div>
-
-      {/* Placeholder when no file is selected */}
-      {(!selectedFile || selectedFile.type !== "file") && (
-        <div
-          className={`absolute inset-0 flex items-center justify-center ${theme.textMuted} pointer-events-none`}
-        >
-          <div className="text-center">
-            <p className="text-lg mb-2">
-              {!selectedFile ? "No file selected" : "Folder selected"}
-            </p>
-            <p className="text-sm">
-              {!selectedFile
-                ? "Select a file from the explorer to start editing"
-                : "Select a file (not a folder) to edit its contents"}
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

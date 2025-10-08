@@ -233,7 +233,8 @@ const CodeEditorHomepage: React.FC = () => {
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
-                  onClick={handleSignupRedirect}
+                  // onClick={handleSignupRedirect}
+                  onClick={handleLoginRedirect}
                   className={`flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors`}
                 >
                   Start Coding Now
