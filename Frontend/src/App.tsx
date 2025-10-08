@@ -10,6 +10,7 @@ import CodespaceInvitation from "./App/Dashboard/AcceptInvite";
 import ProfilePage from "./App/Dashboard/profile";
 import SettingsPage from "./App/Dashboard/ProfileSetting";
 import Homepage from "./App/Home/Homepage";
+import Docs from "./App/Docs/Docs";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import { supabase } from "./database/superbase";
 import { type Session, type User } from "@supabase/supabase-js";
@@ -72,6 +73,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/homepage" element={<Homepage />} />
+              <Route path="/docs/*" element={<Docs />} />
 
               <Route
                 path="/dashboard"

@@ -1,5 +1,5 @@
 import { supabase } from "../../database/superbase";
-import { LogOut } from "lucide-react";
+import { Code2, LogOut } from "lucide-react";
 import { useTheme } from "../../Contexts/ThemeProvider";
 import { useNavigate } from "react-router";
 import { type Session } from "@supabase/supabase-js";
@@ -30,6 +30,13 @@ const TitleBar = ({ Session }: { Session: Session }) => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
+          <a href="/" className="flex items-center">
+            <Code2 className="w-6 h-6 text-blue-500 mr-2" />
+            <span className={`text-xl font-semibold ${theme.text}`}>
+              RTC-Editor
+            </span>
+          </a>
+
           <div className="flex items-center space-x-4">
             <h1 className={`text-2xl font-medium ${theme.text}`}>Codespaces</h1>
           </div>
