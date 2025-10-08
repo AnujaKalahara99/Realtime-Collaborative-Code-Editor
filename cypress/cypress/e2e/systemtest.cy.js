@@ -24,32 +24,30 @@ it('Visits homepage and checks UI', () => {
 });
 
 
-   
-it("share codespace", () => {
-    dashboardPage.sharecodespace();
-});
-
 
 
 it('creates a new codespace', () => {
     dashboardPage.createcodespace();
 });
 
+
+
 it("dashboard and codespace functionality", () => {
    
     codeSpaceelements.openCodeSpace();
-    codeSpaceelements.createfile();
-
-}
+    codeSpaceelements.createfile();});
 
 
-);
+
+it("share codespace", () => {
+    dashboardPage.sharecodespace();
+});
+
 
 it ("rename codespace", () => {
     dashboardPage.renamecodespace();});
 
  
-
 it("acceptinvite", () => {
   // Load Mailosaur credentials from Cypress environment variables
   const apiKey = Cypress.env("MAILOSAUR_API_KEY");

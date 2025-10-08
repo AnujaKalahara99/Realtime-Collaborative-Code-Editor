@@ -4,6 +4,7 @@ export class dashboardpage{
     cy.get('.grid > .bg-gray-800').click()
     cy.get('#workspace-name').type("testcodespace")
     cy.get('.px-6').click()
+    cy.wait(3000);
     }
 
     deletecodespace(){
