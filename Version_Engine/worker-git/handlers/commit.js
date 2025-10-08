@@ -6,7 +6,7 @@ import {
   checkGitFolderExists,
   saveGitFolderToStorage,
   saveCommitToDatabase,
-  getLatestCommit,
+  getBranchById,
   loadSessionFiles,
 } from "../utils/database.js";
 import os from "os";
@@ -38,6 +38,7 @@ const handleCommit = async (sessionId, message, branchId) => {
       );
 
       await execPromise("git init", { cwd: gitRepoPath });
+      await execPromise("git branch -m master main", { cwd: gitRepoPath });
       await execPromise(
         'git config --local user.email "system@codespace.com"',
         { cwd: gitRepoPath }
@@ -49,6 +50,20 @@ const handleCommit = async (sessionId, message, branchId) => {
       await getGitFolderFromStorage(sessionId, gitRepoPath);
     }
 
+    if (branchId) {
+      const branchName = await getBranchById(branchId);
+      // Check if branch exists
+      try {
+        await execPromise(`git rev-parse --verify ${branchName}`, {
+          cwd: gitRepoPath,
+        });
+        await execPromise(`git checkout ${branchName}`, { cwd: gitRepoPath });
+      } catch {
+        await execPromise(`git checkout -b ${branchName}`, {
+          cwd: gitRepoPath,
+        });
+      }
+    }
     await execPromise("git add .", { cwd: gitRepoPath });
 
     const commitMessage = message || "Automated commit";

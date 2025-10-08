@@ -26,7 +26,7 @@ const handleRollback = async (sessionId, commitHash) => {
     await loadSessionFiles(sessionId, gitRepoPath);
     await getGitFolderFromStorage(sessionId, gitRepoPath);
 
-    await execPromise(`git reset --hard ${commitHash}`, { cwd: gitRepoPath });
+    await execPromise(`git reset --hard ${commitHash}`, { cwd: gitRepoPath }); 
 
     // await saveGitFolderToStorage(sessionId, gitRepoPath);1
 

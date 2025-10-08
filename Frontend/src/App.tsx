@@ -1,4 +1,3 @@
-
 import "./App.css";
 import { useState, useEffect, useRef } from "react";
 import CodeEditorPage from "./App/CodeEditor/Page";
@@ -11,11 +10,13 @@ import CodespaceInvitation from "./App/Dashboard/AcceptInvite";
 import ProfilePage from "./App/Dashboard/profile";
 import SettingsPage from "./App/Dashboard/ProfileSetting";
 import Homepage from "./App/Home/Homepage";
+import Docs from "./App/Docs/Docs";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import { supabase } from "./database/superbase";
 import { type Session, type User } from "@supabase/supabase-js";
 import { CodespaceProvider } from "./Contexts/CodespaceContext";
 import { EditorCollaborationProvider } from "./Contexts/EditorContext";
+import { ToastProvider } from "./Contexts/ToastContext";
 function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const lastTokenRef = useRef<string | undefined>(undefined);
@@ -58,7 +59,7 @@ function App() {
 
   function ProtectedRoute({ children }: { children: React.ReactNode }) {
     if (session === undefined) {
-      return <div></div>; 
+      return <div></div>;
     }
     return session ? children : <Navigate to="/login" />;
   }
@@ -72,6 +73,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/homepage" element={<Homepage />} />
+              <Route path="/docs/*" element={<Docs />} />
 
               <Route
                 path="/dashboard"
@@ -100,9 +102,11 @@ function App() {
               <Route
                 path="/codeeditor/:codespaceId"
                 element={
-                  <EditorCollaborationProvider AuthSession={session ?? null}>
-                    <CodeEditorPage />
-                  </EditorCollaborationProvider>
+                  <ToastProvider>
+                    <EditorCollaborationProvider AuthSession={session ?? null}>
+                      <CodeEditorPage />
+                    </EditorCollaborationProvider>
+                  </ToastProvider>
                 }
               />
 

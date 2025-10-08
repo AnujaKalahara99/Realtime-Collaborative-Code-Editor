@@ -1,156 +1,111 @@
 # Real-Time Collaborative Code Editor
 
-> **Collaborative Coding, Google Docs Style:**  
-> Experience seamless, real-time code editing and teamwork—just like collaborating in Google Docs, but purpose-built for developers.
+**Collaborative Coding, Google Docs Style:**  
+Experience seamless, real-time code editing and teamwork—just like collaborating in Google Docs, but purpose-built for developers.
 
-A comprehensive web-based platform for real-time collaborative coding with integrated testing, version control, live chat, dependecy management, and user role management capabilities. Designed for educational institutions, development teams, and organizations requiring seamless collaborative development environments.
+> **Try it Live:**  
+> The Real-Time Collaborative Code Editor is cloud hosted and ready to use at [https://rtc-editor.netlify.app/](https://rtc-editor.netlify.app/)
 
-## Architecture At Large
+![Hero Image](docs/readme_data/hero-image.png)
+
+![Dashboard](docs/readme_data/brave_screenshot_localhost.png)
+
+## Overview
+
+### Purpose and Scope
+
+This document provides a high-level introduction to the Realtime Collaborative Code Editor system, covering its purpose, architecture, key components, and technology stack. For detailed information about specific subsystems, refer to:
+
+- **System architecture and microservices design**: System Architecture
+- **Frontend application structure and features**: Frontend Application
+- **Real-time collaboration mechanisms**: Real-Time Collaboration System
+- **Version control implementation**: Version Engine
+- **Database schema and storage**: Data Layer
+
+**Sources**: README.md (Lines 1-183)
+
+### System Purpose
+
+The Realtime Collaborative Code Editor is a web-based platform enabling simultaneous multi-user code editing with integrated version control, testing capabilities, and role-based access management. The system uses Conflict-free Replicated Data Types (CRDTs) via Yjs to provide Google Docs-style collaboration for software development environments.
+
+**Primary use cases include**:
+
+- Educational institutions conducting interactive coding sessions
+- Development teams performing pair programming and code reviews
+- Organizations running coding bootcamps and training programs
+- Remote teams collaborating across distributed locations
+
+## Key Features
+
+| Feature Category        | Capabilities                                                                                    |
+| ----------------------- | ----------------------------------------------------------------------------------------------- |
+| Real-Time Collaboration | Simultaneous editing with CRDTs, live cursor tracking, auto-synchronization, integrated chat    |
+| Code Editing            | Monaco Editor integration, multi-language support, syntax highlighting, VS Code-like experience |
+| Version Control         | Git-like commit/rollback operations, branch management, diff visualization, change tracking     |
+| Execution Environment   | Containerized code execution, integrated testing, secure sandboxing, timeout/memory limits      |
+| Access Control          | Role-based permissions (Admin/Developer/Learner), workspace management, invitation system       |
+| Security                | JWT authentication, isolated Docker containers, rate limiting, request throttling               |
+
+## Architecture Overview
+
+The system implements a microservices architecture with independent, scalable services communicating through HTTP REST APIs, WebSocket connections, and asynchronous message queues.
+
+### Component Architecture Diagram
 
 ![System Architecture](docs/readme_data/RTC_Editor.drawio.png)
 
-Our platform follows a **microservices architecture** designed for scalability, maintainability, and real-time collaboration. The system consists of several independent services working together to provide a seamless collaborative coding experience.
+## Technology Stack
 
-### Architecture Components
+| Layer            | Technologies                                                |
+| ---------------- | ----------------------------------------------------------- |
+| Frontend         | React 18, TypeScript, Vite, Monaco Editor, Yjs, y-websocket |
+| API Gateway      | Express.js, http-proxy-middleware, JWT authentication       |
+| Backend Services | Node.js, Express.js, Supabase SDK, Nodemailer               |
+| Real-Time Sync   | Yjs (CRDT), WebSocket, y-protocols, lib0                    |
+| Version Control  | isomorphic-git, BullMQ (Redis queue), temporary file system |
+| Database         | Supabase (PostgreSQL), Redis                                |
+| Storage          | Supabase Storage (session files, Git folders)               |
+| Authentication   | Supabase Auth, JWT tokens                                   |
+| Containerization | Docker, Docker Compose                                      |
+| Build Tools      | Vite, Babel, esbuild-wasm                                   |
 
-- **Frontend**: React-based client application with real-time collaboration capabilities
-- **API Gateway**: Central routing and authentication hub for all services
-- **Codespace Service**: Manages development environments and project workspaces
-- **Compiler Service**: Handles code execution with containerized environments
-- **WebSocket Server**: Enables real-time collaboration and communication
-- **Database**: Supabase PostgreSQL for persistent data storage
-- **Authentication**: Role-based access control (RBAC) system implemented in Supabase Auth Service
+## Self-Hosting
 
-## Features
+> Want to host your own instance? We provide comprehensive documentation for self-hosting the Real-Time Collaborative Code Editor.
+> <br/>
+> **[Complete Self-Hosting Guide](SELF_HOSTING.md)**
 
-### Real-Time Collaboration
+The guide covers:
 
-- **Simultaneous editing** with conflict-free replicated data types (CRDTs) via Yjs
-- **Live cursors and selections** showing collaborator activity
-- **Auto-synchronization** without manual saving
-- **Real-time chat** with integrated communication tools
+- Environment configuration for all services
+- Local development setup
+- Docker deployment
+- Production deployment checklist
+- Security best practices
+- Variable reference tables
 
-### Development Environment
+### Quick Start
 
-- **Multi-language support** with syntax highlighting and autocompletion
-- **Monaco Editor** integration for VS Code-like editing experience
-- **Customizable environments** using Docker containers
-- **Integrated testing** capabilities for supported languages
-- **Code execution** with secure sandboxed environments
+```bash
+# 1. Clone the repository
+git clone https://github.com/AnujaKalahara99/Realtime-Collaborative-Code-Editor.git
 
-### Version Control
+# 2. Install dependencies
+cd Frontend && npm install
+cd ../API_Gateway && npm install
+cd ../Codespace_Service && npm install
+cd ../WS_Server && npm install
 
-- **Git-like functionality** with commit, history, and rollback capabilities
-- **Branch management** and diff visualization
-- **Version tracking** with detailed change logs
+# 3. Configure environment variables (see SELF_HOSTING.md)
+# Create .env files in each service directory
 
-### User Management & Access Control
+# 4. Start all services
+npm run dev  # In each service directory
 
-- **Role-based access control** (Admins/Tutors, Developers/Employees, Students/Learners)
-- **Workspace management** for organizations and teams
-- **Project assignment** and access control
-- **Activity monitoring** and user behavior tracking
-- **Secure authentication** via Supabase Auth
-
-### Security & Compliance
-
-- **Isolated execution environments** using Docker containers
-- **Secure authentication** and session management
-- **Rate limiting** and request throttling
-- **Malicious code protection** with execution timeouts and memory limits
-- **Data encryption** and secure communication protocols
-
-## Getting Started
-
-### Environment Configuration
-
-Each service requires environment configuration. Create `.env` files in each service directory:
-
-#### Frontend (.env)
-
-```env
-VITE_SUPABASE_PROJECT_ID=projectID
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+## or you can Ctrl + Shift + P in VSCode and StartAll Servers
 ```
 
-#### API Gateway (.env)
-
-```env
-PORT=4000
-SUPABASE_JWT_SECRET=your_jwt_secret
-```
-
-#### Codespace Service (.env)
-
-```env
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
-SUPABASE_PROJECT_ID=
-Email_password='Provide app password'
-Email_user=
-PORT=5000
-GOOGLE_GENERATIVE_AI_API_KEY=
-```
-
-### Local Development Setup
-
-1. **Prerequisites Installation**
-
-   ```bash
-   # Install Node.js dependencies
-   cd Frontend && npm install
-   cd API_Gateway && npm install
-   cd Codespace_Service && npm install
-
-   # Follow platform-specific installation guides
-   ```
-
-2. **Database Setup**
-
-   ```bash
-   # Set up Supabase project
-   # Configure database schema
-   # Set up authentication providers
-   ```
-
-3. **Service Development**
-
-   ```bash
-   # Frontend development
-   cd Frontend && npm run dev
-
-   # Backend services development
-   cd API_Gateway && npm run dev
-   cd Codespace_Service && npm run dev
-   cd WS_Server && npm run dev
-   ```
-
-## Use Cases
-
-### Educational Institutions
-
-- **Interactive coding sessions** with real-time instructor supervision
-- **Assignment management** with submission tracking and grading
-- **Student collaboration** on group projects and peer learning
-- **Progress monitoring** with detailed analytics and reporting
-- **Classroom management** with organized codespaces per course
-
-### Development Teams
-
-- **Pair programming** and collaborative code reviews
-- **Cross-team collaboration** on shared projects
-- **Code execution and testing** in standardized environments
-- **Version control workflows** with team-based Git operations
-- **Knowledge sharing** through integrated chat and documentation
-
-### Organizations & Enterprises
-
-- **Corporate training programs** and coding bootcamps
-- **Hackathons and coding competitions** with real-time judging
-- **Remote development** collaboration across global teams
-- **Custom environment configurations** for specific tech stacks
-- **Onboarding programs** for new developers
+For detailed configuration instructions, troubleshooting, and production deployment, see [SELF_HOSTING.md](SELF_HOSTING.md).
 
 ## Team
 
@@ -161,23 +116,6 @@ GOOGLE_GENERATIVE_AI_API_KEY=
 - **Navodi S.Y.A.C.** - 220419N
 
 **Mentor**: Mr. Oshada Amila
-
-## Roadmap
-
-### Phase 1 (Current)
-
-- ✅ Core real-time collaboration
-- ✅ Basic code execution
-- ✅ User authentication
-- ✅ Workspace management
-
-### Phase 2 (Upcoming)
-
-- 🔄 Advanced Git integration
-- 🔄 AI-powered code suggestions
-- 🔄 Enhanced testing frameworks
-
----
 
 **Built with ❤️ for collaborative development and education**
 

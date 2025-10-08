@@ -5,6 +5,8 @@ import FileTreeNode from "./FileTreeNode";
 import ExplorerHeader from "./ExplorerHeader";
 import ContextMenu from "./ContextMenu";
 import { useTheme } from "../../../Contexts/ThemeProvider";
+import InlineEditor from "./InlineEditor";
+import FileIcon from "./FileIcon";
 
 const ProjectManagementPanel = ({
   onFileSelect,
@@ -27,6 +29,11 @@ const ProjectManagementPanel = ({
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuData | null>(null);
   const [editingNode, setEditingNode] = useState<string | null>(null);
+  const [creatingItem, setCreatingItem] = useState<{
+    type: "file" | "folder";
+    parentId: string | null;
+    level: number;
+  } | null>(null);
 
   // Event handlers
   const handleFileSelect = (node: FileNode) => {
@@ -42,15 +49,34 @@ const ProjectManagementPanel = ({
   };
 
   const handleCreateFile = (parentId: string | null = null) => {
-    const newFile = createFile(parentId);
-    setEditingNode(newFile.id);
+    const level = parentId ? getNodeLevel(parentId, files) + 1 : 0;
+    setCreatingItem({ type: "file", parentId, level });
     setContextMenu(null);
   };
 
   const handleCreateFolder = (parentId: string | null = null) => {
-    const newFolder = createFolder(parentId);
-    setEditingNode(newFolder.id);
+    const level = parentId ? getNodeLevel(parentId, files) + 1 : 0;
+    setCreatingItem({ type: "folder", parentId, level });
     setContextMenu(null);
+  };
+
+  const handleConfirmCreate = (name: string) => {
+    if (creatingItem && name.trim()) {
+      if (creatingItem.type === "file") {
+        console.log("Creating file:", name.trim());
+
+        createFile(creatingItem.parentId, name.trim());
+      } else {
+        console.log("Creating folder:", name.trim());
+
+        createFolder(creatingItem.parentId, name.trim());
+      }
+    }
+    setCreatingItem(null);
+  };
+
+  const handleCancelCreate = () => {
+    setCreatingItem(null);
   };
 
   const handleRename = (nodeId: string) => {
@@ -92,28 +118,116 @@ const ProjectManagementPanel = ({
     }
   };
 
-  // Render file tree
+  // Helper function to find node level
+  const getNodeLevel = (
+    nodeId: string,
+    nodes: FileNode[],
+    currentLevel: number = 0
+  ): number => {
+    for (const node of nodes) {
+      if (node.id === nodeId) {
+        return currentLevel;
+      }
+      if (node.children) {
+        const found = getNodeLevel(nodeId, node.children, currentLevel + 1);
+        if (found !== -1) return found;
+      }
+    }
+    return -1;
+  };
+
+  // Component for creating new items inline
+  const CreateItemInline = ({
+    type,
+    level,
+  }: {
+    type: "file" | "folder";
+    parentId: string | null;
+    level: number;
+  }) => {
+    const tempNode: FileNode = {
+      id: "temp-create",
+      name: "",
+      type,
+      isExpanded: false,
+      children: type === "folder" ? [] : undefined,
+    };
+
+    return (
+      <div
+        className={`flex items-center py-1 px-2 text-sm select-none ${theme.hover}`}
+        style={{ paddingLeft: `${level * 12 + 8}px` }}
+      >
+        <div className="flex items-center flex-1 min-w-0">
+          <span className={`mr-2 flex-shrink-0 ${theme.textMuted}`}>
+            <FileIcon node={tempNode} />
+          </span>
+          <InlineEditor
+            initialValue=""
+            onSave={handleConfirmCreate}
+            onCancel={handleCancelCreate}
+          />
+        </div>
+      </div>
+    );
+  };
+
   const renderFileTree = (
     nodes: FileNode[],
-    level: number = 0
+    level: number = 0,
+    parentId: string | null = null
   ): React.ReactNode => {
-    return nodes
+    const elements: React.ReactNode[] = [];
+
+    nodes
       .sort((a, b) => a.id.localeCompare(b.id))
-      .map((node) => (
-        <FileTreeNode
-          key={node.id}
-          node={node}
+      .forEach((node) => {
+        elements.push(
+          <FileTreeNode
+            key={node.id}
+            node={node}
+            level={level}
+            isSelected={selectedFile === node.id}
+            isEditing={editingNode === node.id}
+            onSelect={handleFileSelect}
+            onToggleExpand={toggleExpanded}
+            onContextMenu={handleContextMenu}
+            onRename={handleNodeRename}
+            onCancelEdit={handleCancelEdit}
+            onMoveNode={handleMoveNode}
+          />
+        );
+
+        // Add create item inline if it belongs to this expanded folder
+        if (
+          node.type === "folder" &&
+          node.isExpanded &&
+          creatingItem &&
+          creatingItem.parentId === node.id
+        ) {
+          elements.push(
+            <CreateItemInline
+              key="creating-item"
+              type={creatingItem.type}
+              parentId={creatingItem.parentId}
+              level={level + 1}
+            />
+          );
+        }
+      });
+
+    if (creatingItem && creatingItem.parentId === parentId) {
+      elements.push(
+        <CreateItemInline
+          key="creating-item"
+          type={creatingItem.type}
+          parentId={creatingItem.parentId}
           level={level}
-          isSelected={selectedFile === node.id}
-          isEditing={editingNode === node.id}
-          onSelect={handleFileSelect}
-          onToggleExpand={toggleExpanded}
-          onContextMenu={handleContextMenu}
-          onRename={handleNodeRename}
-          onCancelEdit={handleCancelEdit}
-          onMoveNode={handleMoveNode}
         />
-      ));
+      );
+    }
+
+    return elements;
   };
 
   return (
@@ -123,13 +237,21 @@ const ProjectManagementPanel = ({
           onCreateFile={() => handleCreateFile(null)}
           onCreateFolder={() => handleCreateFolder(null)}
         />
-
         <div
           className="flex-1 overflow-y-auto"
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleRootDrop}
         >
-          {renderFileTree(files)}
+          {files.length === 0 && !creatingItem ? (
+            <div
+              className={`flex items-center justify-center py-10 p-4 ${theme.textMuted} text-sm`}
+            >
+              Give a little time to load
+              <br /> Or create a new file or folder.
+            </div>
+          ) : (
+            renderFileTree(files)
+          )}
         </div>
       </div>
 

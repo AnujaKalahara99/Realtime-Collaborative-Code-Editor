@@ -178,6 +178,12 @@ const CodeEditorHomepage: React.FC = () => {
                 >
                   Pricing
                 </a>
+                <button
+                  onClick={() => navigate("/docs")}
+                  className={`${secondaryTextClass} hover:${textClass} transition-colors`}
+                >
+                  Docs
+                </button>
               </div>
             </div>
 
@@ -233,7 +239,8 @@ const CodeEditorHomepage: React.FC = () => {
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
-                  onClick={handleSignupRedirect}
+                  // onClick={handleSignupRedirect}
+                  onClick={handleLoginRedirect}
                   className={`flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors`}
                 >
                   Start Coding Now
@@ -522,9 +529,10 @@ const CodeEditorHomepage: React.FC = () => {
             </button>
 
             <button
+              onClick={() => navigate("/docs")}
               className={`px-6 py-3 border ${borderClass} ${textClass} rounded-md font-medium hover:${secondarySurfaceClass} transition-colors`}
             >
-              Schedule Demo
+              Read Documentation
             </button>
           </div>
         </div>
@@ -590,12 +598,12 @@ const CodeEditorHomepage: React.FC = () => {
               <h3 className={`${textClass} font-semibold mb-3`}>Resources</h3>
               <ul className={`space-y-2 ${mutedTextClass}`}>
                 <li>
-                  <a
-                    href="#"
-                    className={`hover:${textClass} transition-colors`}
+                  <button
+                    onClick={() => navigate("/docs")}
+                    className={`hover:${textClass} transition-colors text-left`}
                   >
                     Documentation
-                  </a>
+                  </button>
                 </li>
                 <li>
                   <a

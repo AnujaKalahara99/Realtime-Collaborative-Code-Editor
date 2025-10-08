@@ -16,15 +16,25 @@ export class YjsPersistence {
   }
 
   async bindState(sessionId, ydoc) {
-    console.log(`Binding state for session: ${sessionId}`);
     this.docs.set(sessionId, ydoc);
-
     await this.loadFromDatabase(sessionId, ydoc);
     this.setupUpdateHandler(sessionId, ydoc);
   }
 
-  async loadFromDatabase(sessionId, ydoc) {
+  async writeState(sessionId, ydoc) {
+    if (this.saveTimeouts.has(sessionId)) {
+      clearTimeout(this.saveTimeouts.get(sessionId));
+      this.saveTimeouts.delete(sessionId);
+    }
+    await this.syncToDatabase(sessionId, ydoc);
+    this.docs.delete(sessionId);
+  }
+
+  async loadFromDatabase(sessionId, ydoc, forceRefresh = false) {
     try {
+      // Add timestamp for cache busting when forcing refresh
+      const timestamp = forceRefresh ? `?t=${Date.now()}` : "";
+
       const { data: filesMeta, error: metaError } = await supabase
         .from("session_files")
         .select("id, file_path, storage_path")
@@ -43,10 +53,15 @@ export class YjsPersistence {
         for (const meta of filesMeta) {
           let content = "";
           if (meta.storage_path) {
+            // Add cache busting parameter when force refresh is true
+            const downloadPath = forceRefresh
+              ? `${meta.storage_path}${timestamp}`
+              : meta.storage_path;
+
             const { data: fileData, error: storageError } =
               await supabase.storage
                 .from("sessionFiles")
-                .download(meta.storage_path);
+                .download(downloadPath);
 
             if (storageError) {
               console.error(
@@ -57,6 +72,12 @@ export class YjsPersistence {
               content = new TextDecoder().decode(await fileData.arrayBuffer());
             }
           }
+          console.log(
+            `${forceRefresh ? "[FORCED REFRESH] " : ""}Loaded file: ${
+              meta.file_path
+            } with content: ${content}`
+          );
+
           files.push({
             id: meta.id,
             file_type: "file",
@@ -74,69 +95,70 @@ export class YjsPersistence {
       if (files && files.length > 0) {
         const fileSystemMap = ydoc.getMap("fileSystem");
 
-        const createNestedStructure = (filesList) => {
-          const root = [];
-          const pathMap = new Map();
+        ydoc.transact(() => {
+          const createNestedStructure = (filesList) => {
+            const root = [];
+            const pathMap = new Map();
 
-          filesList.forEach((file) => {
-            const filePath = file.file_path;
-            const pathParts = filePath.split("/").filter(Boolean);
-            const fileName = pathParts.pop();
+            filesList.forEach((file) => {
+              const filePath = file.file_path;
+              const pathParts = filePath.split("/").filter(Boolean);
+              const fileName = pathParts.pop();
 
-            let currentLevel = root;
-            let currentPath = "";
+              let currentLevel = root;
+              let currentPath = "";
 
-            // Create folders as needed
-            for (const part of pathParts) {
-              currentPath += (currentPath ? "/" : "") + part;
+              for (const part of pathParts) {
+                currentPath += (currentPath ? "/" : "") + part;
 
-              // Check if folder already exists at this level
-              let folder = currentLevel.find(
-                (item) => item.type === "folder" && item.name === part
-              );
+                let folder = currentLevel.find(
+                  (item) => item.type === "folder" && item.name === part
+                );
 
-              if (!folder) {
-                // Create folder if it doesn't exist
-                const folderId = `folder-${currentPath.replace(
-                  /[\/\\]/g,
-                  "-"
-                )}`;
-                folder = {
-                  id: folderId,
-                  name: part,
-                  type: "folder",
-                  children: [],
-                };
-                currentLevel.push(folder);
-                pathMap.set(currentPath, folder);
+                if (!folder) {
+                  const folderId = `folder-${currentPath.replace(
+                    /[\/\\]/g,
+                    "-"
+                  )}`;
+                  folder = {
+                    id: folderId,
+                    name: part,
+                    type: "folder",
+                    children: [],
+                  };
+                  currentLevel.push(folder);
+                  pathMap.set(currentPath, folder);
+                }
+
+                currentLevel = folder.children;
               }
 
-              currentLevel = folder.children;
-            }
-
-            // Add file to the current level
-            currentLevel.push({
-              id: file.id,
-              name: fileName,
-              type: file.file_type || "file",
-              path: file.storage_path,
+              currentLevel.push({
+                id: file.id,
+                name: fileName,
+                type: file.file_type || "file",
+                path: file.storage_path,
+              });
             });
-          });
 
-          return root;
-        };
+            return root;
+          };
 
-        const nestedFiles = createNestedStructure(files);
-        fileSystemMap.set("files", nestedFiles);
+          const nestedFiles = createNestedStructure(files);
+          fileSystemMap.set("files", nestedFiles);
 
-        files.forEach((file) => {
-          if (file.content) {
-            const fileText = ydoc.getText(`file-${file.id}`);
-            if (fileText.length === 0) {
-              fileText.insert(0, file.content);
+          files.forEach((file) => {
+            if (file.content !== undefined) {
+              const fileText = ydoc.getText(`file-${file.id}`);
+              if (fileText.length > 0) {
+                fileText.delete(0, fileText.length);
+              }
+              if (file.content.length > 0) {
+                fileText.insert(0, file.content);
+              }
             }
-          }
-        });
+          });
+        }, "rollback-load");
       }
     } catch (error) {
       console.error(
@@ -154,13 +176,29 @@ export class YjsPersistence {
     });
   }
 
+  stopDebounceForRollback(sessionId) {
+    if (this.saveTimeouts.has(sessionId)) {
+      clearTimeout(this.saveTimeouts.get(sessionId));
+      this.saveTimeouts.delete(sessionId);
+    }
+    if (this.saveTimeouts.has(`rollback-${sessionId}`)) {
+      clearTimeout(this.saveTimeouts.get(`rollback-${sessionId}`));
+      this.saveTimeouts.delete(`rollback-${sessionId}`);
+    }
+    const rollbackTimeoutId = setTimeout(() => {
+      this.saveTimeouts.delete(`rollback-${sessionId}`);
+    }, this.SAVE_DELAY * 2);
+
+    this.saveTimeouts.set(`rollback-${sessionId}`, rollbackTimeoutId);
+  }
+
   debouncedSave(sessionId, ydoc) {
-    // Clear existing timeout
+    if (this.saveTimeouts.has(`rollback-${sessionId}`)) {
+      return;
+    }
     if (this.saveTimeouts.has(sessionId)) {
       clearTimeout(this.saveTimeouts.get(sessionId));
     }
-
-    // Set new timeout
     const timeoutId = setTimeout(async () => {
       await this.syncToDatabase(sessionId, ydoc);
     }, this.SAVE_DELAY);
@@ -208,7 +246,6 @@ export class YjsPersistence {
       };
 
       const allFiles = getAllFiles(files);
-      console.log(`Syncing ${allFiles.length} files for session ${sessionId}`);
 
       const currentFileIds = new Set(
         allFiles.map((file) => file.id).filter(Boolean)
@@ -301,46 +338,100 @@ export class YjsPersistence {
         }
       }
 
-      for (const upload of storageUploads) {
-        const { error: storageError } = await supabase.storage
-          .from("sessionFiles")
-          .upload(upload.path, upload.content, {
-            upsert: true,
-            contentType: "text/plain",
+      if (storageUploads.length > 0) {
+        const BATCH_SIZE = 10; // Upload 10 files at once
+        const batches = [];
+
+        for (let i = 0; i < storageUploads.length; i += BATCH_SIZE) {
+          batches.push(storageUploads.slice(i, i + BATCH_SIZE));
+        }
+
+        for (const [batchIndex, batch] of batches.entries()) {
+          const uploadPromises = batch.map(async (upload) => {
+            try {
+              const { error: storageError } = await supabase.storage
+                .from("sessionFiles")
+                .upload(upload.path, upload.content, {
+                  upsert: true,
+                  contentType: "text/plain",
+                });
+
+              if (
+                storageError &&
+                storageError.message !== "The resource already exists"
+              ) {
+                console.error(
+                  `Error uploading file to storage (${upload.path}):`,
+                  storageError
+                );
+                return {
+                  success: false,
+                  path: upload.path,
+                  error: storageError,
+                };
+              }
+
+              return { success: true, path: upload.path };
+            } catch (error) {
+              console.error(
+                `Exception uploading file (${upload.path}):`,
+                error
+              );
+              return { success: false, path: upload.path, error };
+            }
           });
 
-        if (storageError) {
-          // Ignore "The resource already exists" error if upsert is true
-          if (storageError.message !== "The resource already exists") {
-            console.error(
-              `Error uploading file to storage (${upload.path}):`,
-              storageError
-            );
-          }
-        } else {
-          console.log(`✅ Uploaded file to storage: ${upload.path}`);
+          const results = await Promise.allSettled(uploadPromises);
+
+          const successful = results.filter(
+            (r) => r.status === "fulfilled" && r.value.success
+          ).length;
+          const failed = results.filter(
+            (r) =>
+              r.status === "rejected" ||
+              (r.status === "fulfilled" && !r.value.success)
+          ).length;
+
+          console.log(
+            `Batch ${
+              batchIndex + 1
+            } complete: ${successful} successful, ${failed} failed`
+          );
+
+          results.forEach((result) => {
+            if (result.status === "fulfilled" && result.value.success) {
+              console.log(`✅ Uploaded file to storage: ${result.value.path}`);
+            }
+          });
         }
       }
+
+      // for (const upload of storageUploads) {
+      //   const { error: storageError } = await supabase.storage
+      //     .from("sessionFiles")
+      //     .upload(upload.path, upload.content, {
+      //       upsert: true,
+      //       contentType: "text/plain",
+      //     });
+
+      //   if (storageError) {
+      //     // Ignore "The resource already exists" error if upsert is true
+      //     if (storageError.message !== "The resource already exists") {
+      //       console.error(
+      //         `Error uploading file to storage (${upload.path}):`,
+      //         storageError
+      //       );
+      //     }
+      //   } else {
+      //     console.log(`✅ Uploaded file to storage: ${upload.path}`);
+      //   }
+      // }
     } catch (error) {
       console.error(
         `Failed to sync to database for session ${sessionId}:`,
         error
       );
     }
-  }
-
-  async writeState(sessionId, ydoc) {
-    // Clear any pending save
-    if (this.saveTimeouts.has(sessionId)) {
-      clearTimeout(this.saveTimeouts.get(sessionId));
-      this.saveTimeouts.delete(sessionId);
-    }
-
-    // Final sync
-    await this.syncToDatabase(sessionId, ydoc);
-
-    // Cleanup
-    this.docs.delete(sessionId);
   }
 }
 

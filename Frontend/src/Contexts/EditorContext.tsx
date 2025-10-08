@@ -15,6 +15,7 @@ import { type CodespaceDetails } from "../App/Dashboard/codespace.types";
 import { type Awareness } from "y-protocols/awareness";
 import { formatDateTime, getTokenFromStorage } from "../utility/utility";
 import { type Session } from "@supabase/supabase-js";
+import { useToastHelpers } from "./ToastContext";
 
 // Types
 export interface CollaborationUser {
@@ -95,6 +96,7 @@ interface EditorCollaborationContextType {
 
   commitChanges: (message: string) => Promise<boolean>;
   rollbackToCommit: (commitHash: string) => Promise<boolean>;
+  createBranchWithSession: (branchName: string) => Promise<boolean>;
   gitOperationLoading: boolean;
 
   // Lifecycle
@@ -125,6 +127,7 @@ const initialContext: EditorCollaborationContextType = {
   getFileText: () => null,
   commitChanges: async () => false,
   rollbackToCommit: async () => false,
+  createBranchWithSession: async () => false,
   gitOperationLoading: false,
   destroy: () => {},
 };
@@ -167,6 +170,8 @@ export const EditorCollaborationProvider: React.FC<{
   const [files, setFiles] = useState<FileNode[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [awareness, setAwareness] = useState<Awareness | null>(null);
+
+  const toast = useToastHelpers();
 
   const userColors = useMemo(
     () => [
@@ -291,10 +296,49 @@ export const EditorCollaborationProvider: React.FC<{
     observers.set(newFileSystemMap, fileSystemObserver);
     observers.set(newChatArray, chatObserver);
 
-    // Setup awareness
+    newProvider.ws?.addEventListener("message", (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "versioning-event") {
+          const { command, status } = data;
+
+          if (command === "ROLLBACK" && status === "SUCCESS") {
+            handleRollbackEvent();
+
+            fetchUpdatedCodespaceDetails();
+            toast.success(
+              `${command} completed!`,
+              `Files have been rolled back successfully`,
+              { duration: 4000 }
+            );
+          } else if (status === "SUCCESS") {
+            fetchUpdatedCodespaceDetails();
+            toast.success(
+              `${command} completed!`,
+              `Operation completed successfully`,
+              { duration: 4000 }
+            );
+          } else if (status === "ERROR" || status === "FAILURE") {
+            toast.error(
+              `${command} failed!`,
+              `Operation could not be completed`,
+              { duration: 6000 }
+            );
+          } else {
+            toast.info(`${command} ${status}`, `Versioning operation update`, {
+              duration: 3000,
+            });
+          }
+
+          console.log(`Versioning event: ${command} ${status}`);
+        }
+      } catch {
+        // Ignore non-JSON messages
+      }
+    });
+
     setupAwareness(newProvider);
 
-    // Set initial data
     setFiles(newFileSystemMap.get("files") || []);
     setMessages(newChatArray.toArray() || []);
   };
@@ -370,6 +414,44 @@ export const EditorCollaborationProvider: React.FC<{
     },
     [callbacks]
   );
+
+  const handleRollbackEvent = useCallback(() => {
+    console.log("Handling rollback event - clearing local state");
+    // console.log(codespace);
+
+    // if (!codespace?.sessions?.[activeSessionIndex]?.sessionId) {
+    //   console.error("Cannot reinitialize: No active session available");
+    //   return;
+    // }
+
+    // const sessionId = codespace.sessions[activeSessionIndex].sessionId;
+
+    // cleanupYJS();
+    // initializeYJS(sessionId);
+    fileTexts.clear();
+
+    // // Remove all observers to prevent memory leaks
+    // [fileSystemMap, chatArray, ...fileTexts.values()].forEach((yType) => {
+    //   if (yType && observers.has(yType)) {
+    //     const cleanup = observers.get(yType);
+    //     if (cleanup) {
+    //       try {
+    //         yType.unobserve(cleanup);
+    //       } catch (e) {
+    //         console.warn("Failed to remove observer:", e);
+    //       }
+    //     }
+    //   }
+    // });
+    callbacks.clear();
+
+    if (fileSystemMap) {
+      const currentFiles = fileSystemMap.get("files") || [];
+      setFiles([...currentFiles]);
+    }
+
+    window.dispatchEvent(new CustomEvent("yjs-rollback-complete"));
+  }, [fileTexts, callbacks, fileSystemMap]);
 
   // Git operations
   const commitChanges = useCallback(
@@ -489,24 +571,21 @@ export const EditorCollaborationProvider: React.FC<{
     (fileId: string): Y.Text => {
       if (!docRef.current) throw new Error("YJS not initialized");
 
-      if (!fileTexts.has(fileId)) {
-        const fileText = docRef.current.getText(`file-${fileId}`);
-        fileTexts.set(fileId, fileText);
+      const fileText = docRef.current.getText(`file-${fileId}`);
+      fileTexts.set(fileId, fileText);
 
-        // Setup observer
-        if (!observers.has(fileText)) {
-          const observer = () => {
-            callbacks
-              .get(`file:${fileId}`)
-              ?.forEach((callback) => callback(fileText.toString()));
-          };
+      if (!observers.has(fileText)) {
+        const observer = () => {
+          callbacks
+            .get(`file:${fileId}`)
+            ?.forEach((callback) => callback(fileText.toString()));
+        };
 
-          fileText.observe(observer);
-          observers.set(fileText, observer);
-        }
+        fileText.observe(observer);
+        observers.set(fileText, observer);
       }
 
-      return fileTexts.get(fileId)!;
+      return fileText;
     },
     [fileTexts, observers, callbacks]
   );
@@ -562,21 +641,6 @@ export const EditorCollaborationProvider: React.FC<{
   );
 
   const sendChatMessage = useCallback(
-    // (text: string) => {
-    //   if (!chatArray || !text.trim()) return;
-
-    //   const user = providerRef.current?.awareness.getLocalState()?.user;
-    //   const message: Message = {
-    //     id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    //     user: user?.name || "Anonymous",
-    //     color: user?.color || "#aac25f",
-    //     avatar: user?.avatar,
-    //     text: text.trim(),
-    //     timestamp: Date.now(),
-    //   };
-
-    //   chatArray.push([message]);
-    // },
     (text: string, replyToMessageId?: string): void => {
       if (!chatArray || !text.trim()) return;
 
@@ -697,12 +761,151 @@ export const EditorCollaborationProvider: React.FC<{
     }, 100);
   }, [cleanupYJS]);
 
+  const fetchUpdatedCodespaceDetails = useCallback(async () => {
+    setGitOperationLoading(true);
+
+    const response = await fetch(`${CODESPACE_API_URL}/${codespaceId}`, {
+      headers: getAuthHeader(),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch codespace details");
+    }
+
+    const data = await response.json();
+
+    const codespaceDetails: CodespaceDetails = {
+      id: data.codespace.id,
+      name: data.codespace.name,
+      lastModified: formatDateTime(data.codespace.lastModified),
+      created_at: formatDateTime(data.codespace.created_at),
+      owner: userName,
+      role: data.codespace.role,
+      sessions: data.codespace.sessions || [],
+      gitHubRepo: data.codespace.gitHubRepo || "",
+    };
+
+    setCodespace(codespaceDetails);
+    setGitOperationLoading(false);
+  }, [codespaceId, userName, getAuthHeader]);
+
+  const switchToSession = useCallback(
+    async (sessionIndex: number): Promise<boolean> => {
+      try {
+        setGitOperationLoading(true);
+
+        const targetSession = codespace!.sessions![sessionIndex];
+        setActiveSessionIndex(sessionIndex);
+        cleanupYJS();
+        // Small delay to ensure cleanup is complete
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        initializeYJS(targetSession.sessionId);
+
+        toast.success(
+          "Session Switched",
+          `Switched to branch "${targetSession.name}" successfully`,
+          { duration: 3000 }
+        );
+
+        return true;
+      } catch (error) {
+        console.error("Error switching session:", error);
+        toast.error("Error", "Failed to switch session", { duration: 6000 });
+        return false;
+      } finally {
+        setGitOperationLoading(false);
+      }
+    },
+    [codespace, cleanupYJS, toast]
+  );
+
+  const createBranchWithSession = useCallback(
+    async (branchName: string): Promise<boolean> => {
+      if (!branchName.trim()) {
+        toast.error("Error", "Branch name cannot be empty", { duration: 4000 });
+        return false;
+      }
+
+      try {
+        setGitOperationLoading(true);
+
+        const payload = {
+          codespaceId: codespace!.id,
+          branchName: branchName.trim(),
+        };
+
+        const response = await fetch(`${CODESPACE_API_URL}/session`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeader(),
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          toast.error(
+            "Create Branch Failed",
+            errorData.message || "Failed to create branch",
+            { duration: 6000 }
+          );
+          return false;
+        }
+
+        const result = await response.json();
+
+        const newSession = {
+          sessionId: result.sessionId,
+          branchId: result.branchId,
+          name: result.name,
+          commits: result.commits || [],
+          startedAt: result.startedAt,
+        };
+
+        const updatedCodespace = {
+          id: codespace?.id ?? "",
+          name: codespace?.name ?? "",
+          lastModified: codespace?.lastModified ?? "",
+          created_at: codespace?.created_at ?? "",
+          owner: codespace?.owner ?? "",
+          role: codespace?.role ?? "",
+          sessions: [...(codespace?.sessions || []), newSession],
+          gitHubRepo: codespace?.gitHubRepo ?? "",
+        };
+
+        setCodespace(updatedCodespace);
+
+        const newSessionIndex = updatedCodespace.sessions.length - 1;
+        setActiveSessionIndex(newSessionIndex);
+
+        cleanupYJS();
+        initializeYJS(result.sessionId);
+
+        toast.success(
+          "Branch Created",
+          `Branch "${branchName}" created successfully and switched to new session`,
+          { duration: 4000 }
+        );
+
+        return true;
+      } catch (error) {
+        console.error("Error creating branch with session:", error);
+        toast.error("Error", "Failed to create branch", { duration: 6000 });
+        return false;
+      } finally {
+        setGitOperationLoading(false);
+      }
+    },
+    [codespace, getAuthHeader, toast, switchToSession]
+  );
+
   const contextValue: EditorCollaborationContextType = {
     codespace,
     loading,
     error,
     activeSessionIndex,
-    setActiveSessionIndex,
+    setActiveSessionIndex: switchToSession,
     isConnected,
     connectedUsers,
     files,
@@ -721,6 +924,7 @@ export const EditorCollaborationProvider: React.FC<{
     getFileText,
     commitChanges,
     rollbackToCommit,
+    createBranchWithSession,
     gitOperationLoading,
     destroy,
   };
