@@ -74,6 +74,25 @@ const ROUTES = [
     },
   },
   {
+    url: "/notify",
+    auth: false,
+    creditCheck: false,
+    rateLimit: {
+      windowMs: 60 * 1000,
+      limit: 1000,
+    },
+    proxy: {
+      target:
+        process.env.NODE_ENV === "production"
+          ? "http://ws-server:4455/notify"
+          : "http://localhost:4455/notify",
+      changeOrigin: true,
+      pathRewrite: {
+        [`^/notify`]: "",
+      },
+    },
+  },
+  {
     url: "/versioning",
     auth: true,
     creditCheck: false,
@@ -96,7 +115,7 @@ const ROUTES = [
     url: "/run",
     auth: false,
     creditCheck: false,
-    
+
     proxy: {
       target: "http://localhost:4001/run", // or the correct backend service
       changeOrigin: true,
