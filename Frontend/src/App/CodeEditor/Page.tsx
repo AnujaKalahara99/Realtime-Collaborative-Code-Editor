@@ -46,7 +46,7 @@ const CodeEditorPage = () => {
       case "chat":
         return <LiveChatPanel />;
       case "compiler":
-        return <CompilerPanel />;
+        return <CompilerPanel selectedFile={selectedFile} />;
       case "ai":
         return <AskAIPanel />;
       default:

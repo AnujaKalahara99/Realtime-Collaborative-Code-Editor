@@ -1,10 +1,11 @@
-
+import React from "react";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { FileText, Trash2, Share2, Edit, SettingsIcon, CheckCircle } from "lucide-react";
+import { FileText, Trash2, Share2, Edit, SettingsIcon } from "lucide-react";
 import { useTheme } from "../../Contexts/ThemeProvider";
 import { useCodespaceContext } from "../../Contexts/CodespaceContext";
 import { type Codespace, type ViewMode } from "./codespace.types";
+import { useToastHelpers } from "../../Contexts/ToastContext";
 
 interface Props {
   codespace: Codespace;
@@ -15,6 +16,7 @@ function CodespaceCard({ codespace, viewMode }: Props) {
   const { theme } = useTheme();
   const { deleteCodespace, shareCodespaceByEmail, editCodespace } =
     useCodespaceContext();
+  const toast = useToastHelpers();
 
   const [showMenu, setShowMenu] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -25,7 +27,7 @@ function CodespaceCard({ codespace, viewMode }: Props) {
   );
   const [nameInput, setNameInput] = useState(codespace.name);
   const [displayName, setDisplayName] = useState(codespace.name);
-  const [shareSuccess, setShareSuccess] = useState(false);
+  // Remove shareSuccess state, use toast instead
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -54,6 +56,7 @@ function CodespaceCard({ codespace, viewMode }: Props) {
     e.stopPropagation();
     await deleteCodespace(codespace.id);
     setShowMenu(false);
+    toast.success("Codespace deleted successfully!");
   };
 
   const handleShare = (e: React.MouseEvent) => {
@@ -75,9 +78,10 @@ function CodespaceCard({ codespace, viewMode }: Props) {
       if (success) {
         setDisplayName(nameInput.trim());
         setEditModalOpen(false);
+        toast.success("Codespace name updated!");
       }
     } else {
-      alert("Codespace name cannot be empty");
+      toast.error("Codespace name cannot be empty");
     }
   };
 
@@ -93,15 +97,12 @@ function CodespaceCard({ codespace, viewMode }: Props) {
       setEmailInput("");
       setRoleInput("Developer");
       setShareModalOpen(false);
-
-      setShareSuccess(true);
-      setTimeout(() => setShareSuccess(false), 1000);
+      toast.success("Invitation sent successfully!");
     }
   };
 
   return (
     <>
-      {/* Main Codespace Card */}
       <div
         onClick={handleClick}
         className={`${theme.surface} rounded-lg ${theme.border} border ${
@@ -118,7 +119,9 @@ function CodespaceCard({ codespace, viewMode }: Props) {
           }`}
         >
           <div
-            className={`relative rounded-lg p-3 ${viewMode === "list" ? "!p-2" : ""}`}
+            className={`relative rounded-lg p-3 ${
+              viewMode === "list" ? "!p-2" : ""
+            }`}
           >
             <FileText
               size={viewMode === "grid" ? 32 : 20}
@@ -129,7 +132,9 @@ function CodespaceCard({ codespace, viewMode }: Props) {
 
           <div className={`${viewMode === "grid" ? "mt-4" : ""}`}>
             <h3
-              className={`font-semibold ${theme.text} transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400 ${
+              className={`font-semibold ${
+                theme.text
+              } transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400 ${
                 viewMode === "grid" ? "text-lg mb-3" : "text-base"
               }`}
             >
@@ -210,8 +215,12 @@ function CodespaceCard({ codespace, viewMode }: Props) {
       {/* Share Modal */}
       {shareModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className={`${theme.surface} p-6 rounded-lg shadow-lg w-full max-w-sm`}>
-            <h2 className={`text-lg font-semibold mb-4 ${theme.text}`}>Share Codespace</h2>
+          <div
+            className={`${theme.surface} p-6 rounded-lg shadow-lg w-full max-w-sm`}
+          >
+            <h2 className={`text-lg font-semibold mb-4 ${theme.text}`}>
+              Share Codespace
+            </h2>
             <input
               type="email"
               className={`w-full px-3 py-2 border ${theme.border} rounded-md ${theme.surface} ${theme.text} mb-4`}
@@ -250,8 +259,12 @@ function CodespaceCard({ codespace, viewMode }: Props) {
       {/* Edit Modal */}
       {editModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className={`${theme.surface} p-6 rounded-lg shadow-lg w-full max-w-sm`}>
-            <h2 className={`text-lg font-semibold mb-4 ${theme.text}`}>Edit Codespace Name</h2>
+          <div
+            className={`${theme.surface} p-6 rounded-lg shadow-lg w-full max-w-sm`}
+          >
+            <h2 className={`text-lg font-semibold mb-4 ${theme.text}`}>
+              Edit Codespace Name
+            </h2>
             <input
               type="text"
               className={`w-full px-3 py-2 border ${theme.border} rounded-md ${theme.surface} ${theme.text}`}
@@ -275,16 +288,6 @@ function CodespaceCard({ codespace, viewMode }: Props) {
             </div>
           </div>
         </div>
-      )}
-
-      {/* ✅ Share Success Notification */}
-      {shareSuccess && (
-         <div className="fixed inset-0 z-50 flex items-center justify-center">
-    <div className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded shadow-lg animate-fadeInOut">
-      <CheckCircle size={20} />
-      <span>Invitation sent successfully!</span>
-    </div>
-  </div>
       )}
     </>
   );

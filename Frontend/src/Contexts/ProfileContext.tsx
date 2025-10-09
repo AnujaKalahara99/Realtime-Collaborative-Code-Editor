@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { supabase } from "../database/superbase";
-
 export interface ProfileData {
   id?: string;
   firstName: string;
@@ -73,7 +72,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (error) {
-        console.error("Error loading profile:", error);
+        //console.error("Error loading profile:", error);
         setError("Failed to load profile data");
         return;
       }
@@ -97,7 +96,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         setProfileData(mappedProfile);
       }
     } catch (err) {
-      console.error("Error in loadProfile:", err);
+      //console.error("Error in loadProfile:", err);
       setError("Failed to load profile data");
     } finally {
       setLoading(false);
@@ -143,7 +142,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         .eq("id", user.id);
 
       if (error) {
-        console.error("Error updating profile:", error);
+        //console.error("Error updating profile:", error);
         setError("Failed to update profile");
         return false;
       }

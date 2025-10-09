@@ -38,12 +38,22 @@
       "problemMatcher": []
     },
     {
+      "label": "Cypress",
+      "type": "shell",
+      "command": "npx cypress run --config-file cypress.config.js --spec \"cypress/e2e/systemtest.cy.js\" --reporter mochawesome",
+      "options": {
+        "cwd": "${workspaceFolder}/cypress"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Start All",
       "dependsOn": [
         "WS Server",
         "Codespace Service",
         "API Gateway",
-        "Frontend"
+        "Frontend",
+        "Cypress"
       ],
       "dependsOrder": "parallel"
     }

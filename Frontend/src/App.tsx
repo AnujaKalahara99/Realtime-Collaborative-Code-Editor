@@ -67,57 +67,57 @@ function App() {
   return (
     <ThemeProvider>
       <ProfileProvider>
-        <CodespaceProvider session={session ?? null}>
-          <Router>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/homepage" element={<Homepage />} />
-              <Route path="/docs/*" element={<Docs />} />
+        <ToastProvider>
+          <CodespaceProvider session={session ?? null}>
+            <Router>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/homepage" element={<Homepage />} />
+                <Route path="/docs/*" element={<Docs />} />
 
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    {session && <Dashboard session={session} />}
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <ProfilePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <SettingsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/codeeditor/:codespaceId"
-                element={
-                  <ToastProvider>
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      {session && <Dashboard session={session} />}
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <SettingsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/codeeditor/:codespaceId"
+                  element={
                     <EditorCollaborationProvider AuthSession={session ?? null}>
                       <CodeEditorPage />
                     </EditorCollaborationProvider>
-                  </ToastProvider>
-                }
-              />
+                  }
+                />
 
-              <Route
-                path="/codespace/sharebyemail/:invitationId"
-                element={<CodespaceInvitation />}
-              />
-              <Route path="/" element={<Homepage />} />
-            </Routes>
-          </Router>
-        </CodespaceProvider>
+                <Route
+                  path="/codespace/sharebyemail/:invitationId"
+                  element={<CodespaceInvitation />}
+                />
+                <Route path="/" element={<Homepage />} />
+              </Routes>
+            </Router>
+          </CodespaceProvider>
+        </ToastProvider>
       </ProfileProvider>
     </ThemeProvider>
   );

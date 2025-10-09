@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useTheme } from "../Contexts/ThemeProvider";
 import { AlertCircle, Sun, Moon, Code } from "lucide-react";
-
+import React from "react";
 // Simple theme toggle button
 const ThemeToggleButton = () => {
   const { toggleTheme, isDark, theme } = useTheme();
@@ -48,7 +48,7 @@ function Login() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${import.meta.env.VITE_AUTH_CALLBACK_URL}`,
+        redirectTo: "http://localhost:5173/dashboard",
       },
     });
 

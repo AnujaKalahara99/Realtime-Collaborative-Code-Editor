@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { type Session } from "@supabase/supabase-js";
 import { useTheme } from "../../Contexts/ThemeProvider";
@@ -23,8 +22,8 @@ const Dashboard = ({ session }: Props) => {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
-    const invitationId = localStorage.getItem("invitationId");
-  
+  const invitationId = localStorage.getItem("invitationId");
+
   // Display error message if context has an error
   useEffect(() => {
     if (error) {
