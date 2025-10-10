@@ -2,6 +2,7 @@ import { useCodespaceContext } from "../../Contexts/CodespaceContext";
 import { type ViewMode } from "./codespace.types";
 import CreateCodespaceCard from "./CreateCodespaceCard";
 import CodespaceCard from "./CodespaceCard";
+import { useTheme } from "../../Contexts/ThemeProvider";
 
 interface Props {
   searchQuery: string;
@@ -11,6 +12,7 @@ interface Props {
 
 function CodespaceGrid({ searchQuery, viewMode, onOpenCreateModal }: Props) {
   const { codespaces, loading } = useCodespaceContext();
+  const { theme } = useTheme();
 
   // Filter codespaces based on search query with null check
   const filteredCodespaces = codespaces.filter((codespace) =>
@@ -22,7 +24,7 @@ function CodespaceGrid({ searchQuery, viewMode, onOpenCreateModal }: Props) {
       <div className="flex justify-center items-center py-12">
         <div
           role="status"
-          className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"
+          className={`${theme.text} animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary`}
         ></div>
       </div>
     );
