@@ -22,8 +22,6 @@ This document provides a high-level introduction to the Realtime Collaborative C
 - **Version control implementation**: Version Engine
 - **Database schema and storage**: Data Layer
 
-**Sources**: README.md (Lines 1-183)
-
 ### System Purpose
 
 The Realtime Collaborative Code Editor is a web-based platform enabling simultaneous multi-user code editing with integrated version control, testing capabilities, and role-based access management. The system uses Conflict-free Replicated Data Types (CRDTs) via Yjs to provide Google Docs-style collaboration for software development environments.
