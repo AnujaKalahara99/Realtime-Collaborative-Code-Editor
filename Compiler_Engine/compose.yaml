@@ -2,7 +2,8 @@ services:
   redis:
     image: redis:latest
     ports:
-      - "6377:6379"
+      - "6377:6377"
+    command: redis-server --port 6377
 
   producer:
     build: ./producer

@@ -1,100 +1,94 @@
-// import { Worker } from 'bullmq';
-// import IORedis from 'ioredis';
-// import fs from 'fs';
-// import { spawnSync } from 'child_process';
-// import { randomUUID } from 'crypto';
+import dotenv from "dotenv";
+dotenv.config();
+import { Worker } from "bullmq";
+import IORedis from "ioredis";
+import os from "os";
+import fs from "fs/promises";
+import { exec } from "child_process";
+import { promisify } from "util";
+import { loadSessionFiles } from "./utils/database.js";
 
-// const LANGUAGE = 'python';
-// const QUEUE_NAME = 'code-execution';
+const execPromise = promisify(exec);
 
-// const connection = new IORedis('redis://redis:6379', {
-//   maxRetriesPerRequest: null,
-// });
+const LANGUAGE = "python";
+const QUEUE_NAME = "py-code-execution";
 
-// new Worker(
-//   QUEUE_NAME,
-//   {
-//     "runpy":async job => {
-//       const { language, code, input } = job.data;
-//       console.log(`Processing job ${job.id} for language: ${language}`);
-
-//       if (language === LANGUAGE) {
-//         return runPython(code, input);
-//       }
-//     }
-//   },
-//   { connection }
-// );
-
-// export function runPython(code, input) {
-//   const filename = `temp_${randomUUID()}.py`;
-
-//   try {
-//     fs.writeFileSync(filename, code);
-//   } catch (err) {
-//     return { success: false, output: 'File write error: ' + err.message };
-//   }
-
-//   const result = spawnSync('python3', [filename], {
-//     input: input || '',
-//     encoding: 'utf-8',
-//     timeout: 10000 // 10 seconds timeout
-//   });
-
-//   fs.unlinkSync(filename); // Cleanup
-
-//   if (result.error) {
-//     return { success: false, output: result.error.message };
-//   }
-
-//   if (result.status !== 0) {
-//     return { success: false, output: result.stderr.trim() || 'Non-zero exit code' };
-//   }
-
-//   return { success: true, output: result.stdout.trim() };
-// }
-
-import { Worker } from 'bullmq';
-import IORedis from 'ioredis';
-import fs from 'fs';
-import { spawnSync } from 'child_process';
-import { randomUUID } from 'crypto';
-
-const QUEUE_NAME = 'code-execution';
-
-const connection = new IORedis('redis://redis:6379', {
+const REDIS_PORT = process.env.REDIS_PORT || 6379;
+const connection = new IORedis(`redis://redis:${REDIS_PORT}`, {
   maxRetriesPerRequest: null,
 });
 
-function runPython(code, input) {
-  const filename = `temp_${randomUUID()}.py`;
-
-  try {
-    fs.writeFileSync(filename, code);
-  } catch (err) {
-    return { success: false, output: 'File write error: ' + err.message };
-  }
-
-  const result = spawnSync('python3', [filename], {
-    input: input || '',
-    encoding: 'utf-8',
-    timeout: 10000
-  });
-
-  fs.unlinkSync(filename);
-
-  if (result.error) return { success: false, output: result.error.message };
-  if (result.status !== 0) return { success: false, output: result.stderr.trim() || 'Non-zero exit code' };
-
-  return { success: true, output: result.stdout.trim() };
-}
-
-new Worker(
+const worker = new Worker(
   QUEUE_NAME,
-  async job => {
-    const { code, input } = job.data;
-    console.log(`Processing Python job ${job.id}`);
-    return runPython(code, input);
+  async (job) => {
+    console.log(`Processing job ${job.id} for language: ${job.data.language}`);
+
+    let execPath;
+
+    try {
+      const { sessionId, language, code, input, mainFile } = job.data;
+
+      if (language !== LANGUAGE) {
+        return {
+          success: false,
+          error: `Unsupported language: ${language}`,
+        };
+      }
+
+      execPath = os.homedir() + `/app/${sessionId}`;
+      await fs.mkdir(execPath, { recursive: true });
+
+      if (code) {
+        const fileName = mainFile || "main.py";
+        await fs.writeFile(`${execPath}/${fileName}`, code, "utf8");
+        if (input) {
+          await fs.writeFile(`${execPath}/input.txt`, input, "utf8");
+        }
+      } else {
+        await loadSessionFiles(sessionId, execPath);
+      }
+
+      const { stdout, stderr } = await execPromise(
+        `python ${mainFile || "main.py"}`,
+        {
+          cwd: execPath,
+          timeout: 10000,
+        }
+      );
+
+      // Cleanup
+      await fs.rm(execPath, { recursive: true, force: true });
+
+      return {
+        success: true,
+        output: stdout || stderr,
+      };
+    } catch (err) {
+      // Cleanup on error
+      if (execPath) {
+        try {
+          await fs.rm(execPath, { recursive: true, force: true });
+        } catch (cleanupErr) {
+          console.error("Cleanup error:", cleanupErr.message);
+        }
+      }
+
+      return {
+        success: false,
+        error: err.message,
+        stderr: err.stderr,
+      };
+    }
   },
   { connection }
 );
+
+worker.on("completed", (job) => {
+  console.log(`Job ${job.id} completed successfully`);
+});
+
+worker.on("failed", (job, err) => {
+  console.error(`Job ${job?.id} failed:`, err.message);
+});
+
+console.log(`Python worker listening on queue: ${QUEUE_NAME}`);
