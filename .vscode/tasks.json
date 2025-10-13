@@ -56,6 +56,16 @@
         "Cypress"
       ],
       "dependsOrder": "parallel"
+    },
+    {
+      "label": "Start All Services",
+      "dependsOn": [
+        "WS Server",
+        "Codespace Service",
+        "API Gateway",
+        "Frontend"
+      ],
+      "dependsOrder": "parallel"
     }
   ]
 }

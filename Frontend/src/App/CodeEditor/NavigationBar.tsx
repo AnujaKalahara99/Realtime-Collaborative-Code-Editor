@@ -1,4 +1,4 @@
-import { Sun, Moon, ArrowLeft } from "lucide-react";
+import { Sun, Moon, ArrowLeft, Share2 } from "lucide-react";
 import { useTheme } from "../../Contexts/ThemeProvider";
 import Avatar from "../../components/Avatar";
 import { useNavigate } from "react-router";
@@ -7,16 +7,26 @@ import { useEditorCollaboration } from "../../Contexts/EditorContext";
 const NavigationBar = () => {
   const { theme, toggleTheme, isDark } = useTheme();
   const navigate = useNavigate();
-  const { isConnected, connectedUsers } = useEditorCollaboration();
+  const { isConnected, connectedUsers, codespace, activeSessionIndex } =
+    useEditorCollaboration();
+
+  const currentBranch =
+    codespace?.sessions?.[activeSessionIndex]?.name || "main";
+  const codespaceName = codespace?.name || "Untitled";
 
   const handleBackToDashboard = () => {
     navigate("/dashboard");
   };
 
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+  };
+
   return (
     <div
-      className={`h-10 ${theme.background} ${theme.border} border-b flex items-center px-4 justify-between`}
+      className={`h-10 ${theme.background} ${theme.border} border-b flex items-center px-4`}
     >
+      {/* Left section */}
       <div className="flex items-center gap-3">
         <button
           onClick={handleBackToDashboard}
@@ -27,7 +37,22 @@ const NavigationBar = () => {
           Dashboard
         </button>
       </div>
-      <div className="flex items-center gap-2">
+
+      {/* Center section - Codespace and Branch Info */}
+      <div className="flex items-center gap-2 flex-1 justify-center">
+        <div className={`text-sm font-medium ${theme.text}`}>
+          {codespaceName}
+        </div>
+        <div className={`text-xs ${theme.textMuted}`}>•</div>
+        <div
+          className={`text-xs ${theme.textSecondary} px-2 py-1 rounded border ${theme.border} ${theme.surface}`}
+        >
+          {currentBranch}
+        </div>
+      </div>
+
+      {/* Right section */}
+      <div className="flex items-center gap-3">
         {/* Connection status */}
         <div
           className={`w-2 h-2 rounded-full ${
@@ -63,14 +88,25 @@ const NavigationBar = () => {
             </span>
           </div>
         )}
+
+        {/* Share button */}
+        <button
+          onClick={handleShare}
+          className={`px-5 rounded ${theme.textSecondary}`}
+          title="Share codespace"
+        >
+          <Share2 size={16} />
+        </button>
+
+        {/* Theme toggle */}
+        <button
+          onClick={toggleTheme}
+          className={`pr-5 rounded ${theme.textSecondary}`}
+          title={`Switch to ${isDark ? "light" : "dark"} theme`}
+        >
+          {isDark ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
       </div>
-      <button
-        onClick={toggleTheme}
-        className={`p-1 rounded ${theme.hover} ${theme.textSecondary} transition-colors`}
-        title={`Switch to ${isDark ? "light" : "dark"} theme`}
-      >
-        {isDark ? <Sun size={14} /> : <Moon size={14} />}
-      </button>
     </div>
   );
 };
