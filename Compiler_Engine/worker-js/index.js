@@ -20,8 +20,10 @@ const worker = new Worker(
   async (job) => {
     console.log(`Processing job ${job.id} for language: ${job.data.language}`);
 
+    let execPath;
+
     try {
-      const { sessionId, language, code, input, mainFile } = job.data; // Get mainFile
+      const { sessionId, language, code, input, mainFile } = job.data;
 
       if (language !== LANGUAGE) {
         return {
@@ -30,11 +32,18 @@ const worker = new Worker(
         };
       }
 
-      const execPath = os.homedir() + `/app/${sessionId}`;
-
+      execPath = os.homedir() + `/app/${sessionId}`;
       await fs.mkdir(execPath, { recursive: true });
 
-      await loadSessionFiles(sessionId, execPath);
+      if (code) {
+        const fileName = mainFile || "index.js";
+        await fs.writeFile(`${execPath}/${fileName}`, code, "utf8");
+        if (input) {
+          await fs.writeFile(`${execPath}/input.txt`, input, "utf8");
+        }
+      } else {
+        await loadSessionFiles(sessionId, execPath);
+      }
 
       const { stdout, stderr } = await execPromise(
         `node ${mainFile || "index.js"}`,
@@ -44,6 +53,7 @@ const worker = new Worker(
         }
       );
 
+      // Cleanup
       await fs.rm(execPath, { recursive: true, force: true });
 
       return {
@@ -51,10 +61,13 @@ const worker = new Worker(
         output: stdout || stderr,
       };
     } catch (err) {
-      try {
-        await fs.rm(execPath, { recursive: true, force: true });
-      } catch (cleanupErr) {
-        console.error("Cleanup error:", cleanupErr.message);
+      // Cleanup on error
+      if (execPath) {
+        try {
+          await fs.rm(execPath, { recursive: true, force: true });
+        } catch (cleanupErr) {
+          console.error("Cleanup error:", cleanupErr.message);
+        }
       }
 
       return {

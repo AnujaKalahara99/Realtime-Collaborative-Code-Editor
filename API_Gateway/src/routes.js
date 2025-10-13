@@ -113,11 +113,17 @@ const ROUTES = [
   },
   {
     url: "/run",
-    auth: false,
+    auth: true,
     creditCheck: false,
-
+    rateLimit: {
+      windowMs: 60 * 1000,
+      limit: 1000,
+    },
     proxy: {
-      target: "http://localhost:4001/run", // or the correct backend service
+      target:
+        process.env.NODE_ENV === "production"
+          ? "http://192.168.56.82:4455/run"
+          : "http://192.168.56.82:4455/run",
       changeOrigin: true,
       pathRewrite: {
         [`^/run`]: "",

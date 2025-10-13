@@ -99,6 +99,17 @@ interface EditorCollaborationContextType {
   createBranchWithSession: (branchName: string) => Promise<boolean>;
   gitOperationLoading: boolean;
 
+  // Compiler functionality
+  compilerLoading: boolean;
+  compilerResult: { output: string; success: boolean } | null;
+  runCode: (params: {
+    compilationMode: "single" | "project";
+    mainFile?: string;
+    input?: string;
+    selectedFile?: FileNode | null;
+  }) => Promise<void>;
+  clearCompilerResult: () => void;
+
   // Lifecycle
   destroy: () => void;
 }
@@ -129,6 +140,10 @@ const initialContext: EditorCollaborationContextType = {
   rollbackToCommit: async () => false,
   createBranchWithSession: async () => false,
   gitOperationLoading: false,
+  compilerLoading: false,
+  compilerResult: null,
+  runCode: async () => {},
+  clearCompilerResult: () => {},
   destroy: () => {},
 };
 
@@ -138,7 +153,7 @@ const EditorCollaborationContext =
 const WS_URL = `${import.meta.env.VITE_BACKEND_WS_URL}/ws`;
 const CODESPACE_API_URL = `${import.meta.env.VITE_BACKEND_URL}/codespaces`;
 const VERSIONING_API_URL = `${import.meta.env.VITE_BACKEND_URL}/versioning`;
-
+const RUN_API_URL = `${import.meta.env.VITE_BACKEND_URL}/run`;
 
 export const EditorCollaborationProvider: React.FC<{
   children: React.ReactNode;
@@ -171,6 +186,13 @@ export const EditorCollaborationProvider: React.FC<{
   const [files, setFiles] = useState<FileNode[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [awareness, setAwareness] = useState<Awareness | null>(null);
+
+  // Compiler state - simplified to just 2 variables
+  const [compilerLoading, setCompilerLoading] = useState(false);
+  const [compilerResult, setCompilerResult] = useState<{
+    output: string;
+    success: boolean;
+  } | null>(null);
 
   const toast = useToastHelpers();
 
@@ -332,6 +354,13 @@ export const EditorCollaborationProvider: React.FC<{
           }
 
           console.log(`Versioning event: ${command} ${status}`);
+        } else if (data.type === "compiler-event") {
+          const { command, status } = data;
+          console.log(`Compiler event: ${command} ${status}`);
+          setCompilerResult({
+            output: data.output,
+            success: data.success !== false,
+          });
         }
       } catch {
         // Ignore non-JSON messages
@@ -901,6 +930,87 @@ export const EditorCollaborationProvider: React.FC<{
     [codespace, getAuthHeader, toast, switchToSession]
   );
 
+  // Compiler functionality
+  const runCode = useCallback(
+    async (params: {
+      compilationMode: "single" | "project";
+      mainFile?: string;
+      input?: string;
+      selectedFile?: FileNode | null;
+    }) => {
+      const { compilationMode, mainFile, input, selectedFile } = params;
+
+      setCompilerLoading(true);
+      setCompilerResult(null);
+
+      try {
+        const code = selectedFile?.id ? getFileContent(selectedFile.id) : "";
+        const extension = selectedFile?.name?.split(".").pop()?.toLowerCase();
+        const languageMap: Record<string, string> = {
+          js: "javascript",
+          jsx: "javascript",
+          py: "python",
+          java: "java",
+        };
+        const language = languageMap[extension || ""] || "";
+
+        const requestData = {
+          sessionId:
+            compilationMode === "project"
+              ? codespace?.sessions?.[activeSessionIndex]?.sessionId
+              : undefined,
+          language,
+          code: compilationMode === "single" ? code : undefined,
+          input: input || "",
+          mainFile: mainFile || selectedFile?.name || "",
+          compilationMode,
+        };
+
+        const response = await fetch(`${RUN_API_URL}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeader(),
+          },
+          body: JSON.stringify(requestData),
+        });
+
+        const data = await response.json();
+
+        let output = "";
+        let success = false;
+
+        if (data?.result?.output !== undefined) {
+          output = data.result.output;
+          success = data.result.success !== false;
+        } else if (data.output !== undefined) {
+          output = data.output;
+          success = data.success !== false;
+        } else {
+          output = JSON.stringify(data, null, 2);
+        }
+
+        setCompilerResult({ output, success });
+      } catch (err: unknown) {
+        let errorMessage = "Unknown error";
+        if (err instanceof Error) {
+          errorMessage = err.message;
+        }
+        setCompilerResult({
+          output: errorMessage,
+          success: false,
+        });
+      } finally {
+        setCompilerLoading(false);
+      }
+    },
+    [activeSessionIndex, codespace?.sessions, getAuthHeader, getFileContent]
+  );
+
+  const clearCompilerResult = useCallback(() => {
+    setCompilerResult(null);
+  }, []);
+
   const contextValue: EditorCollaborationContextType = {
     codespace,
     loading,
@@ -927,6 +1037,10 @@ export const EditorCollaborationProvider: React.FC<{
     rollbackToCommit,
     createBranchWithSession,
     gitOperationLoading,
+    compilerLoading,
+    compilerResult,
+    runCode,
+    clearCompilerResult,
     destroy,
   };
 

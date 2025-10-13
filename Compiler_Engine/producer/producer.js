@@ -2,6 +2,7 @@ import express from "express";
 import { Queue, QueueEvents } from "bullmq";
 import IORedis from "ioredis";
 import dotenv from "dotenv";
+import axios from "axios";
 dotenv.config();
 
 const app = express();
@@ -48,7 +49,7 @@ app.post("/run", async (req, res) => {
       mainFile,
     });
     const result = await job.waitUntilFinished(queueEvents, 10000); // 10 sec timeout
-
+    await notifyWSServer(sessionId, "run", JSON.stringify(result));
     res.send(result);
   } catch (err) {
     res.status(500).json({
@@ -61,3 +62,19 @@ app.post("/run", async (req, res) => {
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Producer running on port ${PORT}`);
 });
+
+async function notifyWSServer(sessionId, command, status) {
+  try {
+    console.log(`Notifying WS server: ${sessionId} ${command} ${status}`);
+    console.log(process.env.WS_SERVER_URL + "/notify");
+
+    const response = await axios.post(process.env.WS_SERVER_URL + "/notify", {
+      sessionId,
+      command,
+      status,
+    });
+    console.log("WS server response:", response.data);
+  } catch (error) {
+    console.error("Failed to notify WS server:", error.message);
+  }
+}

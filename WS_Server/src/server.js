@@ -97,6 +97,29 @@ async function handleVersioningNotification(sessionId, command, status) {
   }
 }
 
+async function handleCompilerNotification(sessionId, command, status) {
+  console.log(
+    `Received compiler notification for ${sessionId}`,
+    command,
+    status
+  );
+  const doc = docs.get(sessionId);
+  if (!doc) return;
+
+  doc.conns.forEach((_, ws) => {
+    if (ws.readyState === 1) {
+      ws.send(
+        JSON.stringify({
+          type: "compiler-event",
+          sessionId,
+          status,
+          command,
+        })
+      );
+    }
+  });
+}
+
 const server = http.createServer((request, response) => {
   if (request.method === "POST" && request.url === "/notify") {
     let body = "";
@@ -106,7 +129,11 @@ const server = http.createServer((request, response) => {
     request.on("end", async () => {
       try {
         const { sessionId, command, status } = JSON.parse(body);
-        await handleVersioningNotification(sessionId, command, status);
+        if (command === "COMPILE") {
+          await handleCompilerNotification(sessionId, command, status);
+        } else {
+          await handleVersioningNotification(sessionId, command, status);
+        }
 
         response.writeHead(200, { "Content-Type": "text/plain" });
         response.end("OK");
