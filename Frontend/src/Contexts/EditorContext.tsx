@@ -322,6 +322,8 @@ export const EditorCollaborationProvider: React.FC<{
     newProvider.ws?.addEventListener("message", (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
+        console.log(data);
+
         if (data.type === "versioning-event") {
           const { command, status } = data;
 
@@ -355,11 +357,12 @@ export const EditorCollaborationProvider: React.FC<{
 
           console.log(`Versioning event: ${command} ${status}`);
         } else if (data.type === "compiler-event") {
-          const { command, status } = data;
-          console.log(`Compiler event: ${command} ${status}`);
+          const { status } = data;
+          const statusData = JSON.parse(status);
+          console.log("Compiler event data:", statusData.output);
           setCompilerResult({
-            output: data.output,
-            success: data.success !== false,
+            output: statusData.output,
+            success: statusData.success !== false,
           });
         }
       } catch {

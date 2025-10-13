@@ -53,6 +53,27 @@ jobs:
           push: true
           tags: anujakalahara99/version-engine-worker:latest
 
+      - name: Build & Push Version Engine Producer
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Compiler_Engine/producer
+          push: true
+          tags: anujakalahara99/compiler-engine-producer:latest
+
+      - name: Build & Push Version Engine Worker (JavaScript)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Compiler_Engine/worker-js
+          push: true
+          tags: anujakalahara99/compiler-engine-worker-js:latest
+
+      - name: Build & Push Version Engine Worker (Python)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Compiler_Engine/worker-py
+          push: true
+          tags: anujakalahara99/compiler-engine-worker-py:latest
+
   deploy:
     runs-on: ubuntu-latest
     needs: build
@@ -88,5 +109,27 @@ jobs:
           key: ${{ secrets.VERSION_ENGINE_SSH_KEY }}
           script: |
             cd /home/${{ secrets.VERSION_ENGINE_USER }}/app
+            sudo docker compose pull
+            sudo docker compose up -d --remove-orphans
+
+  deploy-compiler-engine:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code for compose file
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            compiler_engine/compose.yaml
+
+      - name: Start Compiler Engine services
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VERSION_ENGINE_HOST }}
+          username: ${{ secrets.VERSION_ENGINE_USER }}
+          key: ${{ secrets.VERSION_ENGINE_SSH_KEY }}
+          script: |
+            cd /home/${{ secrets.VERSION_ENGINE_USER }}/compiler_engine
             sudo docker compose pull
             sudo docker compose up -d --remove-orphans

@@ -8,8 +8,10 @@ RUN npm install
 
 COPY . .
 
-ENV PORT=4455
+ENV PORT=5005
 
-EXPOSE 4455
+ENV WS_SERVER_URL='http://10.0.2.2:4455'
+
+EXPOSE 5005
 
 CMD [ "npm", "start" ]

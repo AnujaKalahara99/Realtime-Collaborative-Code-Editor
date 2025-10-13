@@ -49,7 +49,7 @@ app.post("/run", async (req, res) => {
       mainFile,
     });
     const result = await job.waitUntilFinished(queueEvents, 10000); // 10 sec timeout
-    await notifyWSServer(sessionId, "run", JSON.stringify(result));
+    await notifyWSServer(sessionId, "COMPILE", JSON.stringify(result));
     res.send(result);
   } catch (err) {
     res.status(500).json({

@@ -33,7 +33,6 @@ const host = process.env.HOST || "0.0.0.0";
 const port = number.parseInt(process.env.PORT || "4455");
 
 async function handleVersioningNotification(sessionId, command, status) {
-  console.log(`Received notification: ${sessionId} ${command} ${status}`);
   const doc = docs.get(sessionId);
 
   if (doc) {

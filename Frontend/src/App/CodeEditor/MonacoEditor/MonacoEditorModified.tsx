@@ -153,6 +153,12 @@ export default function MonacoEditor({
     cursorListenerDisposeRef.current?.dispose?.();
     cursorListenerDisposeRef.current = null;
 
+    // Remove previous YJS observer if any
+    if ((bindEditorToFile as any)._yjsDisposer) {
+      (bindEditorToFile as any)._yjsDisposer();
+      (bindEditorToFile as any)._yjsDisposer = null;
+    }
+
     let vfsPath = vfsBridgeRef.current?.getPathById(file.id);
     if (!vfsPath) {
       vfsBridgeRef.current?.syncToVFS(files);
@@ -173,13 +179,10 @@ export default function MonacoEditor({
     const vfsModel = integrationRef.current.ensureMonacoModel(vfsPath);
     if (!vfsModel) return;
 
+    // Sync Monaco model with YJS content only if different
     const yjsContent = fileYText.toString();
     if (vfsModel.getValue() !== yjsContent) {
-      vfsModel.pushEditOperations(
-        [],
-        [{ range: vfsModel.getFullModelRange(), text: yjsContent }],
-        () => null
-      );
+      vfsModel.setValue(yjsContent);
     }
 
     if (editor.getModel()?.uri.toString() !== vfsModel.uri.toString()) {
@@ -220,14 +223,21 @@ export default function MonacoEditor({
       let isUpdatingFromYJS = false;
 
       const yjsObserver = () => {
-        isUpdatingFromYJS = true;
         const content = fileYText.toString();
-        vfsBridgeRef.current?.updateFileContent(file.id, content);
-        integrationRef.current?.updateDiagnostics?.();
-        isUpdatingFromYJS = false;
+        // Only update VFS if content changed
+        if (vfsModel.getValue() !== content) {
+          isUpdatingFromYJS = true;
+          vfsModel.setValue(content);
+          vfsBridgeRef.current?.updateFileContent(file.id, content);
+          integrationRef.current?.updateDiagnostics?.();
+          isUpdatingFromYJS = false;
+        }
       };
 
       fileYText.observe(yjsObserver);
+      // Store disposer for next bind
+      (bindEditorToFile as any)._yjsDisposer = () =>
+        fileYText.unobserve(yjsObserver);
 
       contentUnsubscribeRef.current = registerFileContentChange(
         file.id,

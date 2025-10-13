@@ -122,8 +122,8 @@ const ROUTES = [
     proxy: {
       target:
         process.env.NODE_ENV === "production"
-          ? "http://192.168.56.82:4455/run"
-          : "http://192.168.56.82:4455/run",
+          ? "http://144.24.150.8:5005/run"
+          : "http://192.168.56.82:5005/run",
       changeOrigin: true,
       pathRewrite: {
         [`^/run`]: "",
