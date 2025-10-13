@@ -141,22 +141,6 @@ export default function MonacoEditor({
     if (!editorRef.current || editorDisposedRef.current) return;
 
     const editor = editorRef.current;
-    let vfsPath = vfsBridgeRef.current?.getPathById(file.id);
-    if (!vfsPath) {
-      vfsBridgeRef.current?.syncToVFS(files);
-      vfsPath = vfsBridgeRef.current?.getPathById(file.id);
-      if (!vfsPath) return;
-    }
-    if (!integrationRef.current) return;
-    const model =
-      integrationRef.current.ensureMonacoModel(vfsPath) || editor.getModel();
-    if (!model) return;
-    if (
-      !editorDisposedRef.current &&
-      editor.getModel()?.uri.toString() !== model.uri.toString()
-    ) {
-      editor.setModel(model);
-    }
 
     if (currentBindingRef.current) {
       currentBindingRef.current.destroy();
@@ -166,59 +150,94 @@ export default function MonacoEditor({
       contentUnsubscribeRef.current();
       contentUnsubscribeRef.current = null;
     }
+    cursorListenerDisposeRef.current?.dispose?.();
+    cursorListenerDisposeRef.current = null;
 
-    if (file.content) {
+    let vfsPath = vfsBridgeRef.current?.getPathById(file.id);
+    if (!vfsPath) {
+      vfsBridgeRef.current?.syncToVFS(files);
+      vfsPath = vfsBridgeRef.current?.getPathById(file.id);
+      if (!vfsPath) return;
+    }
+    if (!integrationRef.current) return;
+
+    if (file.content !== undefined) {
       initializeFileContent(file.id, file.content);
     }
 
     const fileYText = getFileText(file.id);
-
     const awareness = getAwareness();
-    if (awareness && fileYText) {
-      // Defer binding to the next tick to ensure the editor view is fully attached
-      setTimeout(() => {
-        if (editorDisposedRef.current) return;
-        currentBindingRef.current = new MonacoBinding(
-          fileYText,
-          model,
-          new Set([editor]),
-          awareness
-        );
 
-        cursorListenerDisposeRef.current?.dispose?.();
-        cursorListenerDisposeRef.current = editor.onDidChangeCursorPosition(
-          () => {
-            const position = editor.getPosition();
-            if (position) {
-              const selection = editor.getSelection();
-              updateCursorPosition(file.id, {
-                line: position.lineNumber,
-                column: position.column,
-                selection: selection
-                  ? {
-                      startLine: selection.startLineNumber,
-                      startColumn: selection.startColumn,
-                      endLine: selection.endLineNumber,
-                      endColumn: selection.endColumn,
-                    }
-                  : undefined,
-              });
-            }
-          }
-        );
-      }, 0);
+    if (!awareness || !fileYText) return;
+
+    const vfsModel = integrationRef.current.ensureMonacoModel(vfsPath);
+    if (!vfsModel) return;
+
+    const yjsContent = fileYText.toString();
+    if (vfsModel.getValue() !== yjsContent) {
+      vfsModel.pushEditOperations(
+        [],
+        [{ range: vfsModel.getFullModelRange(), text: yjsContent }],
+        () => null
+      );
     }
 
-    contentUnsubscribeRef.current = registerFileContentChange(
-      file.id,
-      (content) => {
-        onFileContentChange?.(file.id, content);
-        // Reflect content changes into VFS so dependency/diagnostic engine can react
+    if (editor.getModel()?.uri.toString() !== vfsModel.uri.toString()) {
+      editor.setModel(vfsModel);
+    }
+
+    setTimeout(() => {
+      if (editorDisposedRef.current) return;
+
+      currentBindingRef.current = new MonacoBinding(
+        fileYText,
+        vfsModel,
+        new Set([editor]),
+        awareness
+      );
+
+      cursorListenerDisposeRef.current = editor.onDidChangeCursorPosition(
+        () => {
+          const position = editor.getPosition();
+          if (position) {
+            const selection = editor.getSelection();
+            updateCursorPosition(file.id, {
+              line: position.lineNumber,
+              column: position.column,
+              selection: selection
+                ? {
+                    startLine: selection.startLineNumber,
+                    startColumn: selection.startColumn,
+                    endLine: selection.endLineNumber,
+                    endColumn: selection.endColumn,
+                  }
+                : undefined,
+            });
+          }
+        }
+      );
+
+      let isUpdatingFromYJS = false;
+
+      const yjsObserver = () => {
+        isUpdatingFromYJS = true;
+        const content = fileYText.toString();
         vfsBridgeRef.current?.updateFileContent(file.id, content);
-        // Nudge diagnostics for the current file
         integrationRef.current?.updateDiagnostics?.();
-      }
-    );
+        isUpdatingFromYJS = false;
+      };
+
+      fileYText.observe(yjsObserver);
+
+      contentUnsubscribeRef.current = registerFileContentChange(
+        file.id,
+        (content) => {
+          if (!isUpdatingFromYJS) {
+            onFileContentChange?.(file.id, content);
+          }
+        }
+      );
+    }, 0);
 
     currentFileRef.current = file.id;
   };
