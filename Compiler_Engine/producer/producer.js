@@ -13,7 +13,8 @@ const PORT = process.env.PORT || 4455;
 // Supported languages
 const SUPPORTED_LANGUAGES = ["javascript", "python"];
 
-const connection = new IORedis("redis://redis:6379", {
+const REDIS_PORT = process.env.REDIS_PORT || 6379;
+const connection = new IORedis(`redis://redis:${REDIS_PORT}`, {
   maxRetriesPerRequest: null,
 });
 

@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config();
 import { Worker } from "bullmq";
 import IORedis from "ioredis";
 import os from "os";
@@ -11,7 +13,8 @@ const execPromise = promisify(exec);
 const LANGUAGE = "javascript";
 const QUEUE_NAME = "js-code-execution";
 
-const connection = new IORedis("redis://redis:6379", {
+const REDIS_PORT = process.env.REDIS_PORT || 6379;
+const connection = new IORedis(`redis://redis:${REDIS_PORT}`, {
   maxRetriesPerRequest: null,
 });
 
