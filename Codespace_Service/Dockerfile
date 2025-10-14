@@ -22,7 +22,7 @@ ENV Email_password='jrla yccu aoyo mnvu'
 
 ENV Email_user='codespace.mora@gmail.com'
 
-ENV GOOGLE_GENERATIVE_AI_API_KEY='AIzaSyAhLe2PB2sTVfAhzUTMIEmSPjhFDKr_kDs'
+ENV GOOGLE_GENERATIVE_AI_API_KEY='AIzaSyB6mgusMu6rVXooU-j99zTSLv_9AYjR6Kc'
 
 ENV NODE_ENV="production"
 
