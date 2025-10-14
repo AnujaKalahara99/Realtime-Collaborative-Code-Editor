@@ -33,6 +33,8 @@ router.post(
   validateCodespaceId,
   CodespaceController.shareCodespaceByEmail
 );
+
+router.get("/:id/inviteusers", validateCodespaceId, CodespaceController.getallinvitedusers);
 router.delete("/:id", validateCodespaceId, CodespaceController.deleteCodespace);
 router.put(
   "/accept-invitation/:invitationId",

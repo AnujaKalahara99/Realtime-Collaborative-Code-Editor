@@ -15,6 +15,19 @@ export class CodespaceController {
     }
   }
 
+static async getallinvitedusers(req, res, next) {
+    try {
+      const { id } = req.params;
+      const invitedUsers = await CodespaceService.getAllInvitedUsers(id);
+      res.json({
+        invitedUsers,
+        count: invitedUsers.length,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async createCodespace(req, res, next) {
     try {
       const { name } = req.body;

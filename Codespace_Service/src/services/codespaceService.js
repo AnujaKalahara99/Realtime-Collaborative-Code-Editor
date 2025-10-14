@@ -56,6 +56,41 @@ export class CodespaceService {
     };
   }
 
+
+  static async getAllInvitedUsers(codespaceId) {
+    const { data, error } = await supabase
+      .from("invitations")
+      .select("email,role,accepted_at")
+      .eq("workspace_id", codespaceId);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) return [];
+
+    const emails = data.map((item) => item.email);
+
+    const { data: profiles, error: profileError } = await supabase
+      .from("profiles")
+      .select("email,avatar_url")
+      .in("email", emails);
+
+    if (profileError) throw profileError;
+
+    const emailToAvatar = {};
+    (profiles || []).forEach((profile) => {
+      emailToAvatar[profile.email] = profile.avatar_url;
+    });
+
+    const result = data.map((item) => ({
+      email: item.email,
+      role: item.role,
+      accepted_at: item.accepted_at,
+      avatar_url: emailToAvatar[item.email] || null,
+    }));
+
+    return result;
+  }
+
   static async createCodespace(name, userId) {
     const { data, error } = await supabase.rpc("create_codespace", {
       p_workspace_name: name,
