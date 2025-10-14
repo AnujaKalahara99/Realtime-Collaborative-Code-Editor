@@ -1,13 +1,18 @@
+
 import { Sun, Moon, ArrowLeft, Share2 } from "lucide-react";
 import { useTheme } from "../../Contexts/ThemeProvider";
 import Avatar from "../../components/Avatar";
 import { useNavigate } from "react-router";
 import { useEditorCollaboration } from "../../Contexts/EditorContext";
-
-
-
 import React, { useState } from "react";
 import axios from "axios";
+
+const getToken = () => {
+  const storageKey = `sb-${import.meta.env.VITE_SUPABASE_PROJECT_ID}-auth-token`;
+  const sessionDataString = localStorage.getItem(storageKey);
+  const sessionData = JSON.parse(sessionDataString || "null");
+  return sessionData?.access_token || "";
+};
 
 type InvitedUser = {
   email: string;
@@ -27,6 +32,19 @@ const NavigationBar = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Invite form state
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("Developer");
+
+  const handleInviteUser = async () => {
+    if (!inviteEmail) return;
+    // TODO: Implement invite user API call here
+    // Example: await axios.post(...)
+    alert(`Invite sent to ${inviteEmail} as ${inviteRole}`);
+    setInviteEmail("");
+    setInviteRole("Developer");
+  };
+
   const currentBranch = codespace?.sessions?.[activeSessionIndex]?.name || "main";
   const codespaceName = codespace?.name || "Untitled";
 
@@ -44,7 +62,23 @@ const NavigationBar = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get("http://localhost:4000/codespaces/c476bf03-1608-4483-8d54-3db0d9433a7e/inviteusers");
+      const match = window.location.pathname.match(/codeeditor\/(.*?)(\/|$)/);
+      const codespaceId = match ? match[1] : null;
+      if (!codespaceId) {
+        setError("Could not determine codespace ID from URL");
+        setLoading(false);
+        return;
+      }
+      const apiUrl = `http://localhost:4000/codespaces/${codespaceId}/inviteusers`;
+      const res = await axios.get(
+        apiUrl,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: getToken(),
+          },
+        }
+      );
       const users: InvitedUser[] = res.data.invitedUsers || [];
       setInvitedUsers(users.filter((u) => u.accepted_at === null));
       setAcceptedUsers(users.filter((u) => u.accepted_at !== null));
@@ -147,51 +181,119 @@ const NavigationBar = () => {
 
       {/* Share Modal */}
       {showShareModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className={`bg-white dark:bg-gray-900 rounded-lg shadow-lg p-6 min-w-[320px] max-w-[90vw]`}>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Invited Users</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)'}}>
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-0 min-w-[380px] max-w-[95vw] w-full max-w-md" style={{boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.18)', filter: 'brightness(1.04)'}}>
+            {/* Header */}
+            <div className="flex justify-between items-center border-b px-6 py-4">
+              <h2 className="text-lg font-semibold">Share Codespace</h2>
               <button onClick={closeModal} className="text-gray-500 hover:text-gray-800 dark:hover:text-white">✕</button>
             </div>
-            {loading ? (
-              <div>Loading...</div>
-            ) : error ? (
-              <div className="text-red-500">{error}</div>
-            ) : (
-              <>
-                {invitedUsers.length > 0 && (
-                  <div className="mb-4">
-                    <div className="font-medium mb-1">Invited (not accepted)</div>
-                    <ul>
-                      {invitedUsers.map((user, idx) => (
-                        <li key={user.email + idx} className="flex items-center gap-2 mb-2">
-                          <Avatar name={user.email} src={user.avatar_url} size="small" />
-                          <span>{user.email}</span>
-                          <span className="text-xs text-gray-500">({user.role})</span>
-                        </li>
-                      ))}
-                    </ul>
+            {/* Email and role form */}
+            <div className="px-6 pt-4 pb-2">
+              <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end mt-4">
+                <input
+                  type="email"
+                  placeholder="Enter email address"
+                  className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-800 text-white placeholder-gray-400 border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400 dark:border-gray-700"
+                  value={inviteEmail}
+                  onChange={e => setInviteEmail(e.target.value)}
+                />
+                <select
+                  className="border rounded px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-800 text-white border-gray-700 dark:bg-gray-800 dark:text-white dark:border-gray-700"
+                  value={inviteRole}
+                  onChange={e => setInviteRole(e.target.value)}
+                >
+                  <option value="Developer">Developer</option>
+                  <option value="Admin">Admin</option>
+                </select>
+                <button
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium text-sm shadow"
+                  onClick={async () => {
+                    const match = window.location.pathname.match(/codeeditor\/(.*?)(\/|$)/);
+                    const codespaceId = match ? match[1] : null;
+                    if (!codespaceId) {
+                      setError("Could not determine codespace ID from URL");
+                      return;
+                    }
+                    if (!inviteEmail) {
+                      setError("Please enter an email address");
+                      return;
+                    }
+                    setError(null);
+                    setLoading(true);
+                    try {
+                      const CODESPACE_API_URL = `${import.meta.env.VITE_BACKEND_URL}/codespaces`;
+                      const token = getToken();
+                      const response = await fetch(
+                        `${CODESPACE_API_URL}/${codespaceId}/sharebyemail`,
+                        {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                            Authorization: token,
+                          },
+                          body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole.trim() }),
+                        }
+                      );
+                      if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        setError(`Server error: ${errorData.message || response.status}`);
+                      } else {
+                        setInviteEmail("");
+                        setInviteRole("Developer");
+                        fetchInvitedUsers();
+                      }
+                    } catch (err) {
+                      setError("Failed to share codespace");
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  type="button"
+                >
+                  <Share2 size={16} /> Share
+                </button>
+              </div>
+            </div>
+            {/* People with access */}
+            <div className="px-6 pb-2">
+              <div className="text-sm font-medium mb-2 mt-2">People with access</div>
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="flex items-center justify-center mb-2">
+                    <svg className="animate-spin h-10 w-10 text-blue-500 mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    <span className="text-2xl font-semibold text-blue-500">Loading...</span>
                   </div>
-                )}
-                {acceptedUsers.length > 0 && (
-                  <div>
-                    <div className="font-medium mb-1">Accepted</div>
-                    <ul>
-                      {acceptedUsers.map((user, idx) => (
-                        <li key={user.email + idx} className="flex items-center gap-2 mb-2">
-                          <Avatar name={user.email} src={user.avatar_url} size="small" />
-                          <span>{user.email}</span>
-                          <span className="text-xs text-gray-500">({user.role})</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {invitedUsers.length === 0 && acceptedUsers.length === 0 && (
-                  <div>No invited users found.</div>
-                )}
-              </>
-            )}
+                </div>
+              ) : error ? (
+                <div className="text-red-500">{error}</div>
+              ) : (
+                <ul>
+                  {[...acceptedUsers, ...invitedUsers].map((user, idx) => (
+                    <li key={user.email + idx} className="flex items-center gap-3 py-2 border-b last:border-b-0">
+                      <Avatar name={user.email} src={user.avatar_url} size="small" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">{user.email}</div>
+                        <div className="text-xs text-gray-500 truncate">{user.role === 'Owner' ? 'Owner' : user.role}</div>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {user.accepted_at ? (
+                          <span>{user.role === 'Owner' ? 'Owner' : user.role}</span>
+                        ) : (
+                          <span className="italic text-yellow-600">Invited</span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                  {acceptedUsers.length === 0 && invitedUsers.length === 0 && (
+                    <li className="text-gray-500 text-sm py-2">No invited users found.</li>
+                  )}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
       )}
