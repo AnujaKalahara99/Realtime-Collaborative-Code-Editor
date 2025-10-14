@@ -182,11 +182,18 @@ const NavigationBar = () => {
       {/* Share Modal */}
       {showShareModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)'}}>
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-0 min-w-[380px] max-w-[95vw] w-full max-w-md" style={{boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.18)', filter: 'brightness(1.04)'}}>
+          <div
+            className={`rounded-lg shadow-lg p-0 min-w-[380px] max-w-[95vw] w-full max-w-md border-2 ${theme.surface} ${theme.border} ${theme.text}`}
+            style={{
+              boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.18)',
+              filter: 'brightness(1.04)',
+              fontSize: '1.75rem',
+            }}
+          >
             {/* Header */}
-            <div className="flex justify-between items-center border-b px-6 py-4">
-              <h2 className="text-lg font-semibold">Share Codespace</h2>
-              <button onClick={closeModal} className="text-gray-500 hover:text-gray-800 dark:hover:text-white">✕</button>
+            <div className={`flex justify-between items-center border-b px-6 py-4 ${theme.border}`}>
+              <h2 className="text-xl font-bold">Share Codespace</h2>
+              <button onClick={closeModal} className={`text-2xl ${theme.textSecondary} hover:${theme.text}`}>✕</button>
             </div>
             {/* Email and role form */}
             <div className="px-6 pt-4 pb-2">
@@ -194,12 +201,12 @@ const NavigationBar = () => {
                 <input
                   type="email"
                   placeholder="Enter email address"
-                  className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-800 text-white placeholder-gray-400 border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400 dark:border-gray-700"
+                  className={`flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme.surface} ${theme.text} placeholder-gray-400 ${theme.border}`}
                   value={inviteEmail}
                   onChange={e => setInviteEmail(e.target.value)}
                 />
                 <select
-                  className="border rounded px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-800 text-white border-gray-700 dark:bg-gray-800 dark:text-white dark:border-gray-700"
+                  className={`border rounded px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme.surface} ${theme.text} ${theme.border}`}
                   value={inviteRole}
                   onChange={e => setInviteRole(e.target.value)}
                 >
@@ -290,7 +297,7 @@ const NavigationBar = () => {
                         {/* Remove button, not shown for Owner */}
                         {user.role !== 'Owner' && (
                           <button
-                            className="ml-2 px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded"
+                            className={`ml-2 px-2 py-1 text-xs ${theme.surfaceSecondary} ${theme.text} rounded ${theme.hover}`}
                             title="Remove user"
                             onClick={async () => {
                               setLoading(true);
