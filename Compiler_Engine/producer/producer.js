@@ -28,6 +28,7 @@ await pyQueueEvents.waitUntilReady();
 
 app.post("/run", async (req, res) => {
   const { language, code, input, sessionId, mainFile } = req.body;
+  console.log("Recieved Job ", language, sessionId);
 
   if (!SUPPORTED_LANGUAGES.includes(language)) {
     return res.status(400).json({

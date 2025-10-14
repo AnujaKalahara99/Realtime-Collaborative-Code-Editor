@@ -233,7 +233,7 @@ export const EditorCollaborationProvider: React.FC<{
       try {
         setLoading(true);
         setGitOperationLoading(true);
-
+        
         const response = await fetch(`${CODESPACE_API_URL}/${codespaceId}`, {
           headers: getAuthHeader(),
         });
