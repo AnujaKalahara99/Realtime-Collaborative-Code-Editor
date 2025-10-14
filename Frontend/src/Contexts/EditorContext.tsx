@@ -233,7 +233,7 @@ export const EditorCollaborationProvider: React.FC<{
       try {
         setLoading(true);
         setGitOperationLoading(true);
-        
+
         const response = await fetch(`${CODESPACE_API_URL}/${codespaceId}`, {
           headers: getAuthHeader(),
         });
@@ -889,11 +889,11 @@ export const EditorCollaborationProvider: React.FC<{
         const result = await response.json();
 
         const newSession = {
-          sessionId: result.sessionId,
-          branchId: result.branchId,
-          name: result.name,
-          commits: result.commits || [],
-          startedAt: result.startedAt,
+          sessionId: result.session.sessionId,
+          branchId: result.session.branchId,
+          name: result.session.name,
+          commits: result.session.commits || [],
+          startedAt: result.session.startedAt,
         };
 
         const updatedCodespace = {

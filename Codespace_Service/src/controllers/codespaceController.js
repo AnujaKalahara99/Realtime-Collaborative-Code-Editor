@@ -188,13 +188,13 @@ export class CodespaceController {
   static async createSession(req, res, next) {
     try {
       const { codespaceId, branchName } = req.body;
-      const codespace = await CodespaceService.createBranchWithSession(
+      const session = await CodespaceService.createBranchWithSession(
         codespaceId,
         branchName
       );
 
       res.status(201).json({
-        codespace,
+        session,
         message: "Session created successfully",
       });
     } catch (error) {

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { Users, AlertCircle, ArrowRight, Info } from "lucide-react";
 import ThemeToggleButton from "../../components/ThemeToggleBtn";
 import { useTheme } from "../../Contexts/ThemeProvider";
+import { useCodespaceContext } from "../../Contexts/CodespaceContext";
 
 const getToken = () => {
   const storageKey = `sb-${
@@ -20,6 +21,7 @@ const CollaboratePage: React.FC = () => {
   const navigate = useNavigate();
   const { invitationId } = useParams<{ invitationId: string }>();
   const { theme } = useTheme();
+  const { refreshCodespaces } = useCodespaceContext();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showContent, setShowContent] = useState(false);
@@ -54,7 +56,6 @@ const CollaboratePage: React.FC = () => {
         localStorage.setItem("invitationId", invitationId);
         console.warn("Unauthorized! Redirecting to login.");
         navigate("/login", { state: { invitationId } });
-
         return;
       }
 
@@ -65,6 +66,8 @@ const CollaboratePage: React.FC = () => {
 
       const data = await response.json();
       console.log("API response22:", data.invitation.workspace_id);
+
+      await refreshCodespaces();
 
       navigate(
         data.invitation.workspace_id

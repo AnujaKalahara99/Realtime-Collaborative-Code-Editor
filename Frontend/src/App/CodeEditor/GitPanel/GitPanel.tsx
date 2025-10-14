@@ -29,30 +29,10 @@ const GitPanel = () => {
     initGitState();
   }, []);
 
-  // Handle branch selection
-  // const handleBranchSelect = async (branchName: string) => {
-  //   try {
-  //     setIsLoading(true);
-  //     setError(null);
-
-  //     // Switch branch and get updated state
-  //     const updatedState = await switchBranch(branchName);
-  //     setGitState(updatedState);
-  //   } catch (err) {
-  //     setError(`Failed to switch to branch: ${branchName}`);
-  //     console.error(err);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
   return (
     <div className={`h-full flex flex-col ${theme.surface} ${theme.text}`}>
       <div className={`p-4 ${theme.border} border-b`}>
-        <BranchSelector
-        // branches={gitState.branches}
-        // onBranchSelect={handleBranchSelect}
-        />
+        <BranchSelector />
       </div>
 
       <div className="flex-grow overflow-auto p-4 Simple-Scrollbar">
@@ -95,10 +75,7 @@ const GitPanel = () => {
 
         {!isLoading && (
           <>
-            <CommitHistory
-            // commits={gitState.commits}
-            // onRollback={handleRollback}
-            />
+            <CommitHistory />
           </>
         )}
       </div>
