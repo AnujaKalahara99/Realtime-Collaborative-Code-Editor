@@ -21,8 +21,13 @@ router.post("/chat", async (req, res) => {
     const isDevelopment = process.env.NODE_ENV === "development";
 
     try {
+      const formattedMessages = messages.map((msg) => ({
+        role: msg.role || "user", // default to user if not provided
+        parts: [{ text: msg.content || "" }],
+      }));
+
       const result = await streamText({
-        model: google("gemini-1.5-flash", {
+        model: google("gemini-2.5-flash", {
           apiKey: apiKey,
         }),
         messages,
@@ -37,7 +42,7 @@ router.post("/chat", async (req, res) => {
           Never generate harmful, illegal, or unethical content.
           If the user asks for your name, respond with "GitHub Copilot".
           If a request is unrelated to software engineering, politely refuse.
-          Always be professional, helpful, and precise. 
+          Always be professional, helpful, and precise.
         `,
       });
 
@@ -58,7 +63,7 @@ router.post("/chat", async (req, res) => {
       ) {
         console.warn("⚠️  Quota exceeded, using mock response for development");
 
-        const mockResponse = `Hello! I'm your AI coding assistant. 
+        const mockResponse = `Hello! I'm your AI coding assistant.
 
 I'd love to help you with your coding questions, but I'm currently experiencing quota limitations on the Gemini API.
 
