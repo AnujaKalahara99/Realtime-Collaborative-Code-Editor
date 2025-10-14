@@ -28,6 +28,27 @@ static async getallinvitedusers(req, res, next) {
     }
   }
 
+
+static async removeMember(req, res, next) {
+    try {
+      const { codespaceId, email } = req.params;
+      await CodespaceService.removeMember(codespaceId, email);
+
+      res.json({
+        message: "Member removed successfully",
+      });
+    } catch (error) {
+      if (error.statusCode) {
+        return res.status(error.statusCode).json({    
+          error: error.message,
+          code: error.code,
+        });
+      }
+      next(error);
+    }
+  }
+
+
   static async createCodespace(req, res, next) {
     try {
       const { name } = req.body;

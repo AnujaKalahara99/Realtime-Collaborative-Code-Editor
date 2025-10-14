@@ -40,4 +40,9 @@ router.put(
   "/accept-invitation/:invitationId",
   CodespaceController.acceptInvitation
 );
+
+router.delete(
+  "/:codespaceId/remove-member/:email",
+  CodespaceController.removeMember
+);
 export default router;

@@ -279,11 +279,58 @@ const NavigationBar = () => {
                         <div className="font-medium text-sm truncate">{user.email}</div>
                         <div className="text-xs text-gray-500 truncate">{user.role === 'Owner' ? 'Owner' : user.role}</div>
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {user.accepted_at ? (
-                          <span>{user.role === 'Owner' ? 'Owner' : user.role}</span>
-                        ) : (
-                          <span className="italic text-yellow-600">Invited</span>
+                      <div className="flex items-center gap-2">
+                        <div className="text-xs text-gray-500">
+                          {user.accepted_at ? (
+                            <span>{user.role === 'Owner' ? 'Owner' : user.role}</span>
+                          ) : (
+                            <span className="italic text-yellow-600">Invited</span>
+                          )}
+                        </div>
+                        {/* Remove button, not shown for Owner */}
+                        {user.role !== 'Owner' && (
+                          <button
+                            className="ml-2 px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded"
+                            title="Remove user"
+                            onClick={async () => {
+                              setLoading(true);
+                              setError(null);
+                              try {
+                                // Extract codespaceId from the current URL (pattern: /codeeditor/:codespaceId)
+                                const match = window.location.pathname.match(/codeeditor\/(.*?)(\/|$)/);
+                                const codespaceId = match ? match[1] : null;
+                                if (!codespaceId) {
+                                  setError("Could not determine codespace ID from URL");
+                                  setLoading(false);
+                                  return;
+                                }
+                                const CODESPACE_API_URL = `${import.meta.env.VITE_BACKEND_URL}/codespaces`;
+                                const token = getToken();
+                                const response = await fetch(
+                                  `${CODESPACE_API_URL}/${codespaceId}/remove-member/${encodeURIComponent(user.email)}`,
+                                  {
+                                    method: "DELETE",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      Authorization: token,
+                                    },
+                                  }
+                                );
+                                if (!response.ok) {
+                                  const errorData = await response.json().catch(() => ({}));
+                                  setError(`Remove failed: ${errorData.message || response.status}`);
+                                } else {
+                                  fetchInvitedUsers();
+                                }
+                              } catch (err) {
+                                setError("Failed to remove user");
+                              } finally {
+                                setLoading(false);
+                              }
+                            }}
+                          >
+                            Remove
+                          </button>
                         )}
                       </div>
                     </li>
