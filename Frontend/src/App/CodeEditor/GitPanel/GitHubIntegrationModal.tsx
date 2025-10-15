@@ -46,51 +46,39 @@ const GitHubIntegrationModal: React.FC<GitHubIntegrationModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop */}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{
+        backdropFilter: "blur(4px)",
+        WebkitBackdropFilter: "blur(4px)",
+      }}
+    >
       <div
-        className="fixed inset-0 bg-black bg-opacity-50"
-        onClick={onClose}
-      ></div>
-
-      {/* Modal Container */}
-      <div className="flex items-center justify-center min-h-screen p-4">
+        className={`rounded-lg shadow-lg p-0 min-w-[380px] max-w-[95vw] w-full max-w-md border-2 ${theme.surface} ${theme.border} ${theme.text}`}
+        style={{
+          boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.18)",
+          filter: "brightness(1.04)",
+        }}
+      >
+        {/* Header */}
         <div
-          className={`relative w-full max-w-md p-6 ${theme.surface} ${theme.border} border rounded-md shadow-lg`}
-          style={{ maxWidth: "500px" }}
-          onClick={(e) => e.stopPropagation()}
+          className={`flex justify-between items-center border-b px-6 py-4 ${theme.border}`}
         >
-          {/* Modal Header */}
-          <div className="mb-4 flex justify-between items-center">
-            <h2 className={`text-lg font-medium ${theme.text}`}>
-              GitHub Repository Integration
-            </h2>
-            <button
-              onClick={onClose}
-              className={`${theme.textMuted} hover:${theme.text}`}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-          </div>
+          <h2 className="text-xl font-bold">GitHub Repository Integration</h2>
+          <button
+            onClick={onClose}
+            className={`text-2xl ${theme.textSecondary} hover:${theme.text}`}
+          >
+            ✕
+          </button>
+        </div>
 
+        {/* Form Content */}
+        <div className="px-6 pt-4 pb-2">
           <p className={`mb-4 text-sm ${theme.textMuted}`}>
             Only the owner and admins of this project can update GitHub details.
           </p>
 
-          {/* Modal Content */}
           <form onSubmit={handleGitHubIntegration}>
             <div className="mb-4">
               <label className={`block text-sm font-medium mb-1 ${theme.text}`}>
@@ -102,7 +90,7 @@ const GitHubIntegrationModal: React.FC<GitHubIntegrationModalProps> = ({
                 value={githubRepo}
                 onChange={(e) => setGithubRepo(e.target.value)}
                 placeholder="Github Repo Link"
-                className={`w-full px-3 py-2 rounded-md outline-none ${theme.text} border-2 ${theme.border}`}
+                className={`w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme.surface} ${theme.text} placeholder-gray-400 ${theme.border}`}
                 required
               />
               <p className={`text-xs mt-1 ${theme.textMuted}`}>
@@ -120,7 +108,7 @@ const GitHubIntegrationModal: React.FC<GitHubIntegrationModalProps> = ({
                 value={githubToken}
                 onChange={(e) => setGithubToken(e.target.value)}
                 placeholder="github_pat_xxxxxx"
-                className={`w-full px-3 py-2 rounded-md outline-none ${theme.text} border-2 ${theme.border}`}
+                className={`w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme.surface} ${theme.text} placeholder-gray-400 ${theme.border}`}
                 required
               />
               <p className={`text-xs mt-1 ${theme.textMuted}`}>
@@ -129,11 +117,11 @@ const GitHubIntegrationModal: React.FC<GitHubIntegrationModalProps> = ({
             </div>
 
             {/* Modal Footer */}
-            <div className="flex justify-end space-x-3">
+            <div className="flex justify-end space-x-3 pb-4">
               <button
                 type="button"
                 onClick={onClose}
-                className={`px-4 py-2 rounded-md ${theme.active}`}
+                className={`px-4 py-2 rounded-md text-sm ${theme.surfaceSecondary} ${theme.text} ${theme.hover}`}
                 disabled={isSubmitting}
               >
                 Cancel
@@ -143,7 +131,7 @@ const GitHubIntegrationModal: React.FC<GitHubIntegrationModalProps> = ({
                 disabled={
                   isSubmitting || !githubRepo.trim() || !githubToken.trim()
                 }
-                className={`px-4 py-2 rounded-md ${theme.statusBar} ${
+                className={`flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium text-sm shadow ${
                   isSubmitting || !githubRepo.trim() || !githubToken.trim()
                     ? "opacity-70 cursor-not-allowed"
                     : ""
