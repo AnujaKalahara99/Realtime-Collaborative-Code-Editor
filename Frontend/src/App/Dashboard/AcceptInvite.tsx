@@ -121,6 +121,12 @@ const CollaboratePage: React.FC = () => {
 
   const loginEmail = getLoginMail();
   const handleLoginRedirect = () => {
+    // Remove previous auth session from local storage
+    const storageKey = `sb-${
+      import.meta.env.VITE_SUPABASE_PROJECT_ID
+    }-auth-token`;
+    localStorage.removeItem(storageKey);
+
     localStorage.setItem("invitationId", invitationId || "");
     navigate("/login", { state: { invitationId } });
   };

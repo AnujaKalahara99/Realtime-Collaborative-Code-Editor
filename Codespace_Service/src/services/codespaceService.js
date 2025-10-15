@@ -328,6 +328,8 @@ export class CodespaceService {
         throw new Error(`Failed to insert invitation: ${insertError.message}`);
       }
 
+      console.log("Waitinggggggg tooooo Shareeeee Maiiiiill");
+
       // Configure SMTP transport
       const transporter = nodemailer.createTransport({
         service: "Gmail",
@@ -383,9 +385,16 @@ export class CodespaceService {
   </html>
       
       `,
+        headers: {
+          "X-Priority": "1",
+          Importance: "high",
+        },
+        // Add a text alternative for better spam scores
+        text: `You've been invited to collaborate on a codespace as a ${role}. Join at: ${shareLink}`,
       };
 
-      await transporter.sendMail(mailOptions);
+      const info = await transporter.sendMail(mailOptions);
+      console.log("Maillllllllllllllllll", info);
 
       return { invitation };
     } catch (err) {
