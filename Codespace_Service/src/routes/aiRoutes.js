@@ -122,6 +122,7 @@ router.post("/suggest", async (req, res) => {
       typeof rawPrefix !== "string" ||
       rawPrefix.trim().length < 3
     ) {
+      console.log("Prefix too short, returning empty suggestion");
       return res.json({ suggestion: "" });
     }
 
@@ -139,9 +140,27 @@ router.post("/suggest", async (req, res) => {
       process.env.NVIDIA_STARCODER_MODEL || "gemini"
     ).toLowerCase();
 
-    const prompt = `You are a code autocomplete engine. Given a code prefix, return ONLY the next likely code continuation without repeating the prefix or explanations or prompts. Maintain indentation.\n\nLanguage: ${
-      language || "auto"
-    }\n\n<code_prefix>\n${prefix}\n</code_prefix>\n\n<continuation>`;
+    const lastLine = prefix.split(/\r?\n/).pop() || "";
+
+    let prompt = prefix;
+
+    if (provider !== "gemini" && lastLine.trim().length < 60) {
+      prompt = prefix;
+    } else if (provider === "gemini") {
+      // Gemini-specific prompt with clear instructions
+      prompt = `Complete this code snippet with a short, focused continuation. Only provide the next logical part of the code, without additional explanations, comments, or console.log statements:
+
+${prefix}`;
+    }
+
+    const nvConfig =
+      provider !== "gemini"
+        ? {
+            // Starcoder specific settings
+            stop: ["\n\n", "*/", "*/\n"], // Stop at double newlines or comment ends
+            suffix: "", // No suffix needed
+          }
+        : {};
 
     const maxNew = Math.max(1, Math.min(256, Number(max_tokens) || 32));
     const temp = Math.max(0, Math.min(1, Number(temperature) || 0.2));
@@ -154,7 +173,7 @@ router.post("/suggest", async (req, res) => {
       overallTimeoutMs
     );
 
-    if (provider === "nvidia" || provider === "starcoder") {
+    if (provider !== "gemini") {
       const nvKey = process.env.NVIDIA_API_KEY;
       const baseUrl =
         process.env.NVIDIA_STARCODER_URL ||
@@ -166,9 +185,9 @@ router.post("/suggest", async (req, res) => {
         return res.status(500).json({ error: "NVIDIA API key not configured" });
       }
 
-      // Use OpenAI-compatible Completions endpoint on NVIDIA Integrate API
       try {
         const controller = overallController; // reuse overall timeout
+
         const nvRes = await fetch(`${baseUrl.replace(/\/$/, "")}/completions`, {
           method: "POST",
           headers: {
@@ -181,6 +200,8 @@ router.post("/suggest", async (req, res) => {
             max_tokens: maxNew,
             temperature: temp,
             stream: false,
+            // Add the stop sequences from nvConfig
+            stop: nvConfig.stop,
           }),
           signal: controller.signal,
         });
@@ -201,13 +222,20 @@ router.post("/suggest", async (req, res) => {
           (data && Array.isArray(data.choices) && data.choices[0]?.text) || "";
 
         let suggestion = String(generated || "").trim();
-        // If suggestion starts with original prefix (hopefully wiill not happen), drop it
-        if (suggestion.startsWith(prefix)) {
-          suggestion = suggestion.slice(prefix.length);
-        }
-        // Try to strip any echo of our continuation tg
-        suggestion = suggestion.replace(/<\/continuation>.*/s, "").trim();
 
+        const firstSemicolon = suggestion.indexOf(";");
+        const firstNewline = suggestion.indexOf("\n");
+        if (firstSemicolon > 0) {
+          suggestion = suggestion.substring(0, firstSemicolon + 1);
+        } else if (firstNewline > 0) {
+          suggestion = suggestion.substring(0, firstNewline);
+        }
+
+        // Remove any comments
+        suggestion = suggestion.replace(/\/\/.*$/gm, "");
+        suggestion = suggestion.replace(/\/\*[\s\S]*?\*\//g, "");
+
+        console.log("Processed suggestion:", suggestion);
         return res.json({ suggestion });
       } catch (e) {
         clearTimeout(overallTimer);
@@ -239,7 +267,12 @@ router.post("/suggest", async (req, res) => {
         ]);
 
         clearTimeout(overallTimer);
-        const suggestion = (text || "").trim();
+
+        // Enhanced post-processing
+        let suggestion = (text || "").trim();
+        suggestion = suggestion.replace(/```[\w]*\n?|```/g, "");
+        suggestion = suggestion.replace(/^\s*=\s*/, "");
+
         return res.json({ suggestion });
       } catch (e) {
         clearTimeout(overallTimer);
