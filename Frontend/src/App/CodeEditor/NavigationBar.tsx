@@ -72,7 +72,9 @@ const NavigationBar = () => {
         setLoading(false);
         return;
       }
-      const apiUrl = `http://localhost:4000/codespaces/${codespaceId}/inviteusers`;
+      const apiUrl = `${
+        import.meta.env.VITE_BACKEND_URL
+      }/codespaces/${codespaceId}/inviteusers`;
       const res = await axios.get(apiUrl, {
         headers: {
           "Content-Type": "application/json",
