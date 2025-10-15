@@ -34,11 +34,43 @@ export class CodespaceService {
     }));
   }
 
+  static async removeMember(codespaceId, email) {
+    // Remove invitation for this email and codespace
+    const { error: invitationError } = await supabase
+      .from("invitations")
+      .delete()
+      .eq("workspace_id", codespaceId)
+      .eq("email", email);
+    if (invitationError) throw invitationError;
+
+    // Find user profile by email
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .single();
+    if (profileError && profileError.code !== 'PGRST116') throw profileError; // PGRST116: No rows found
+
+    // If profile exists, remove from workspace_members
+    if (profile && profile.id) {
+      const { error: memberError } = await supabase
+        .from("workspace_members")
+        .delete()
+        .eq("workspace_id", codespaceId)
+        .eq("user_id", profile.id);
+      if (memberError) throw memberError;
+    }
+
+    return { success: true };
+  }
+
+
   static async getCodespaceDetails(userId, codespaceId) {
     const { data, error } = await supabase.rpc("get_codespace_details", {
       p_user_id: userId,
       p_workspace_id: codespaceId,
     });
+    
 
     if (error) throw error;
 
@@ -54,6 +86,41 @@ export class CodespaceService {
       gitHubRepo: row.githubrepo,
       sessions: row.sessions,
     };
+  }
+
+
+  static async getAllInvitedUsers(codespaceId) {
+    const { data, error } = await supabase
+      .from("invitations")
+      .select("email,role,accepted_at")
+      .eq("workspace_id", codespaceId);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) return [];
+
+    const emails = data.map((item) => item.email);
+
+    const { data: profiles, error: profileError } = await supabase
+      .from("profiles")
+      .select("email,avatar_url")
+      .in("email", emails);
+
+    if (profileError) throw profileError;
+
+    const emailToAvatar = {};
+    (profiles || []).forEach((profile) => {
+      emailToAvatar[profile.email] = profile.avatar_url;
+    });
+
+    const result = data.map((item) => ({
+      email: item.email,
+      role: item.role,
+      accepted_at: item.accepted_at,
+      avatar_url: emailToAvatar[item.email] || null,
+    }));
+
+    return result;
   }
 
   static async createCodespace(name, userId) {

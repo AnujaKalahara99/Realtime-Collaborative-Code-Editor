@@ -33,6 +33,8 @@ router.post(
   validateCodespaceId,
   CodespaceController.shareCodespaceByEmail
 );
+
+router.get("/:id/inviteusers", validateCodespaceId, CodespaceController.getallinvitedusers);
 router.delete("/:id", validateCodespaceId, CodespaceController.deleteCodespace);
 router.put(
   "/accept-invitation/:invitationId",
@@ -42,5 +44,10 @@ router.put(
   "/:id/github-details",
   validateCodespaceId,
   CodespaceController.updateGitHubDetails
+);
+
+router.delete(
+  "/:codespaceId/remove-member/:email",
+  CodespaceController.removeMember
 );
 export default router;
