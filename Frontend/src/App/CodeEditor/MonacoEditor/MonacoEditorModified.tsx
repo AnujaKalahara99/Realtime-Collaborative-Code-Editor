@@ -11,6 +11,7 @@ import type { FileNode } from "../ProjectManagementPanel/file.types";
 import CollaborativeCursor from "./CollaborativeCursor";
 import { VFSBridge } from "../../../lib/vfs/vfs-bridge";
 import { VFSMonacoIntegration } from "../../../lib/integration/vfs-monaco-integration";
+import { fetchSuggestion } from "../../../lib/ai/completionClient";
 
 interface MonacoEditorProps {
   selectedFile?: FileNode | null;
@@ -54,6 +55,8 @@ export default function MonacoEditor({
   const [editorReady, setEditorReady] = useState(false);
   const editorDisposedRef = useRef(false);
   const cursorListenerDisposeRef = useRef<monaco.IDisposable | null>(null);
+  const inlineCompletionDisposeRef = useRef<monaco.IDisposable | null>(null);
+  const pendingAbortRef = useRef<AbortController | null>(null);
 
   const [language, setLanguage] = useState<string>("plaintext");
   const [fileUsers, setFileUsers] = useState<CollaborationUser[]>([]);
@@ -221,6 +224,80 @@ export default function MonacoEditor({
     );
 
     currentFileRef.current = file.id;
+
+    // Register inline completions provider for this model
+    inlineCompletionDisposeRef.current?.dispose?.();
+    inlineCompletionDisposeRef.current =
+      monaco.languages.registerInlineCompletionsProvider(
+        { pattern: "**/*" },
+        {
+          provideInlineCompletions: async (
+            model,
+            position,
+            _context,
+            token
+          ) => {
+            try {
+              const range = new monaco.Range(
+                1,
+                1,
+                position.lineNumber,
+                position.column
+              );
+              const fullPrefix = model.getValueInRange(range);
+              const maxChars = 2000; // limit payload size
+              const maxLines = 120; // limit context lines
+              // Take only the last maxLines and trim to maxChars from the end
+              const lines = fullPrefix.split(/\r?\n/);
+              const sliced = lines.slice(Math.max(0, lines.length - maxLines));
+              let prefix = sliced.join("\n");
+              if (prefix.length > maxChars) {
+                prefix = prefix.slice(prefix.length - maxChars);
+              }
+              if (!prefix || prefix.trim().length < 3) {
+                return { items: [], dispose: () => {} };
+              }
+
+              // Debounce via canceling previous request
+              pendingAbortRef.current?.abort();
+              const ac = new AbortController();
+              pendingAbortRef.current = ac;
+              token.onCancellationRequested(() => ac.abort());
+
+              // Short debounce to coalesce rapid keystrokes
+              await new Promise((r) => setTimeout(r, 120));
+
+              const languageId = (model as any).getLanguageId?.() as
+                | string
+                | undefined;
+              const suggestion = await fetchSuggestion(
+                {
+                  prefix,
+                  language: languageId,
+                  max_tokens: 32,
+                  temperature: 0.2,
+                },
+                ac.signal
+              );
+              if (!suggestion) return { items: [], dispose: () => {} };
+
+              const item: monaco.languages.InlineCompletion = {
+                insertText: suggestion,
+                range: new monaco.Range(
+                  position.lineNumber,
+                  position.column,
+                  position.lineNumber,
+                  position.column
+                ),
+              };
+              return { items: [item], dispose: () => {} };
+            } catch {
+              return { items: [], dispose: () => {} };
+            }
+          },
+          freeInlineCompletions: () => {},
+        }
+      );
   };
 
   const handleEditorDidMount = (
