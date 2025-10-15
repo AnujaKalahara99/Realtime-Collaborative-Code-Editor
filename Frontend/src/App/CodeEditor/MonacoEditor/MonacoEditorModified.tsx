@@ -57,6 +57,9 @@ export default function MonacoEditor({
   const cursorListenerDisposeRef = useRef<monaco.IDisposable | null>(null);
   const inlineCompletionDisposeRef = useRef<monaco.IDisposable | null>(null);
   const pendingAbortRef = useRef<AbortController | null>(null);
+  const aiSuggestionsEnabledRef = useRef<boolean>(true);
+  const [aiSuggestionsEnabled, setAiSuggestionsEnabled] =
+    useState<boolean>(true);
 
   const [language, setLanguage] = useState<string>("plaintext");
   const [fileUsers, setFileUsers] = useState<CollaborationUser[]>([]);
@@ -267,6 +270,13 @@ export default function MonacoEditor({
             token
           ) => {
             try {
+              // Exit early if AI suggestions are disabled
+              if (!aiSuggestionsEnabledRef.current) {
+                console.log("Returrrrrrrrrrrrrrrrrrrrrrrrrrrrrn");
+
+                return { items: [], dispose: () => {} };
+              }
+
               const range = new monaco.Range(
                 1,
                 1,
@@ -433,6 +443,41 @@ export default function MonacoEditor({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                // Update both the ref and state
+                aiSuggestionsEnabledRef.current =
+                  !aiSuggestionsEnabledRef.current;
+                setAiSuggestionsEnabled(aiSuggestionsEnabledRef.current);
+                console.log(aiSuggestionsEnabledRef.current);
+              }}
+              className={`px-2 py-1 text-xs rounded flex items-center gap-1 
+                ${
+                  aiSuggestionsEnabled // Use state for rendering
+                    ? `bg-blue-500 text-white`
+                    : `bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300`
+                }`}
+              title={
+                aiSuggestionsEnabled // Use state for rendering
+                  ? "Disable AI suggestions"
+                  : "Enable AI suggestions"
+              }
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-3 w-3"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              AI {aiSuggestionsEnabled ? "On" : "Off"}{" "}
+              {/* Use state for rendering */}
+            </button>
             {/* Connection status */}
             <div
               className={`w-2 h-2 rounded-full ${

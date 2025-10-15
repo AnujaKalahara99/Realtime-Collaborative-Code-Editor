@@ -37,27 +37,6 @@ const ROUTES = [
       },
     },
   },
-  // Allow unauthenticated AI suggest if desired (optional). If you want auth, remove this route.
-  {
-    url: "/ai",
-    auth: false,
-    creditCheck: false,
-    rateLimit: {
-      windowMs: 60 * 1000,
-      limit: 200,
-    },
-    proxy: {
-      target:
-        process.env.NODE_ENV === "production"
-          ? "http://codespace-service:5000/api"
-          : "http://localhost:5000/api",
-      changeOrigin: true,
-      pathRewrite: {
-        ["^/ai/suggest"]: "/suggest",
-        ["^/ai"]: "",
-      },
-    },
-  },
   {
     url: "/free",
     auth: false,
