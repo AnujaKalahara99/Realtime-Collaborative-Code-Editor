@@ -41,7 +41,7 @@ const CompilerPanel = ({ selectedFile }: CompilerPanelProps) => {
     (compilationMode === "single" && selectedFile);
 
   return (
-    <div className={`h-full ${theme.surface} ${theme.text}`}>
+    <div className={`h-full flex flex-col ${theme.surface} ${theme.text}`}>
       {/* Header */}
       <div
         className={`${theme.surfaceSecondary} px-4 py-3 border-b ${theme.border}`}
@@ -50,7 +50,7 @@ const CompilerPanel = ({ selectedFile }: CompilerPanelProps) => {
       </div>
 
       {/* Content */}
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-4 overflow-x-clip overflow-y-auto Simple-Scrollbar flex-1">
         {/* Compilation Mode Section */}
         <div className="space-y-3">
           <label
@@ -183,7 +183,7 @@ const CompilerPanel = ({ selectedFile }: CompilerPanelProps) => {
                 Output
               </div>
               <div
-                className={`${theme.surface} px-3 py-8 text-xs ${theme.textMuted} text-center`}
+                className={`${theme.surface} px-3 py-3 text-xs ${theme.textMuted} text-center`}
               >
                 {compilerLoading
                   ? "Running code..."

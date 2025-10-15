@@ -400,4 +400,65 @@ export class CodespaceService {
       throw err;
     }
   }
+
+  static async updateGitHubDetails(
+    codespaceId,
+    userId,
+    githubRepo,
+    githubAccessToken
+  ) {
+    // Check permissions first - only allow admin or owner to update GitHub details
+    await this.checkUserPermission(codespaceId, userId, ["admin", "owner"]);
+
+    try {
+      // Update the workspaces table with GitHub details
+      const { data, error } = await supabase
+        .from("workspaces")
+        .update({
+          github_repo: githubRepo,
+          github_access_token: githubAccessToken,
+        })
+        .eq("id", codespaceId)
+        .select("id, name, created_at, github_repo")
+        .single();
+
+      if (error) {
+        console.error("Error updating GitHub details:", error);
+        const updateError = new Error(
+          `Failed to update GitHub details: ${error.message}`
+        );
+        updateError.statusCode = 500;
+        updateError.code = "UPDATE_GITHUB_FAILED";
+        throw updateError;
+      }
+
+      return {
+        id: data.id,
+        name: data.name,
+        lastModified: new Date(data.created_at).toLocaleString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        githubRepo: data.github_repo,
+      };
+    } catch (err) {
+      console.error("Error in updateGitHubDetails:", err);
+
+      // Re-throw the error if it's already structured
+      if (err.statusCode && err.code) {
+        throw err;
+      }
+
+      // Otherwise create a structured error
+      const serviceError = new Error(
+        `Failed to update GitHub details: ${err.message}`
+      );
+      serviceError.statusCode = 500;
+      serviceError.code = "GITHUB_UPDATE_FAILED";
+      throw serviceError;
+    }
+  }
 }

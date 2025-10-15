@@ -38,4 +38,9 @@ router.put(
   "/accept-invitation/:invitationId",
   CodespaceController.acceptInvitation
 );
+router.put(
+  "/:id/github-details",
+  validateCodespaceId,
+  CodespaceController.updateGitHubDetails
+);
 export default router;

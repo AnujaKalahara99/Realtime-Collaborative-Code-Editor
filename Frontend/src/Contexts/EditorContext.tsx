@@ -110,6 +110,12 @@ interface EditorCollaborationContextType {
   }) => Promise<void>;
   clearCompilerResult: () => void;
 
+  // GitHub integration
+  updateGitHubDetails: (
+    githubRepo: string,
+    githubAccessToken?: string
+  ) => Promise<boolean>;
+
   // Lifecycle
   destroy: () => void;
 }
@@ -144,6 +150,7 @@ const initialContext: EditorCollaborationContextType = {
   compilerResult: null,
   runCode: async () => {},
   clearCompilerResult: () => {},
+  updateGitHubDetails: async () => false,
   destroy: () => {},
 };
 
@@ -1014,6 +1021,78 @@ export const EditorCollaborationProvider: React.FC<{
     setCompilerResult(null);
   }, []);
 
+  // GitHub integration function
+  const updateGitHubDetails = useCallback(
+    async (
+      githubRepo: string,
+      githubAccessToken?: string
+    ): Promise<boolean> => {
+      if (!codespace) {
+        toast.error("Error", "No active codespace", { duration: 3000 });
+        return false;
+      }
+
+      try {
+        const payload = {
+          githubRepo: githubRepo.trim(),
+          githubAccessToken: githubAccessToken || null,
+        };
+
+        console.log(payload);
+
+        const response = await fetch(
+          `${CODESPACE_API_URL}/${codespace.id}/github-details`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              ...getAuthHeader(),
+            },
+            body: JSON.stringify(payload),
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          toast.error(
+            "GitHub Integration Failed",
+            errorData.error || "Failed to update GitHub details",
+            { duration: 4000 }
+          );
+          return false;
+        }
+
+        const result = await response.json();
+
+        // Update the local state with the new GitHub repo
+        setCodespace((prevState) => {
+          if (!prevState) return null;
+          return {
+            ...prevState,
+            gitHubRepo: result.workspace.githubRepo || "",
+          };
+        });
+
+        toast.success(
+          "GitHub Integration Updated",
+          "GitHub repository details have been updated successfully",
+          { duration: 4000 }
+        );
+
+        return true;
+      } catch (error) {
+        console.error("Error updating GitHub details:", error);
+        toast.error(
+          "Error",
+          "Failed to update GitHub details. Please try again.",
+          { duration: 4000 }
+        );
+        return false;
+      }
+    },
+    [codespace, getAuthHeader, toast]
+  );
+
   const contextValue: EditorCollaborationContextType = {
     codespace,
     loading,
@@ -1045,6 +1124,7 @@ export const EditorCollaborationProvider: React.FC<{
     runCode,
     clearCompilerResult,
     destroy,
+    updateGitHubDetails,
   };
 
   return (

@@ -201,4 +201,38 @@ export class CodespaceController {
       next(error);
     }
   }
+
+  static async updateGitHubDetails(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { githubRepo, githubAccessToken } = req.body;
+
+      if (!githubRepo || !githubRepo.trim()) {
+        return res.status(400).json({
+          error: "GitHub repository path is required",
+          code: "MISSING_GITHUB_REPO",
+        });
+      }
+
+      const result = await CodespaceService.updateGitHubDetails(
+        id,
+        req.user.id,
+        githubRepo,
+        githubAccessToken
+      );
+
+      res.json({
+        message: "GitHub details updated successfully",
+        workspace: result,
+      });
+    } catch (error) {
+      if (error.statusCode) {
+        return res.status(error.statusCode).json({
+          error: error.message,
+          code: error.code,
+        });
+      }
+      next(error);
+    }
+  }
 }

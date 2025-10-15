@@ -546,3 +546,50 @@ export const getSessionById = async (sessionId) => {
     throw error;
   }
 };
+
+/**
+ * Gets GitHub access token and repo URL from the workspace table
+ *
+ * @param {string} sessionId - The session ID
+ * @returns {Promise<Object|null>} - Returns object with token and repoUrl or null
+ */
+export async function getGitHubAccessToken(sessionId) {
+  try {
+    const sessionDetails = await getSessionById(sessionId);
+
+    if (!sessionDetails || !sessionDetails.workspace_id) {
+      console.log(`No workspace found for session ${sessionId}`);
+      return null;
+    }
+
+    // Get GitHub details from workspace table
+    const { data, error } = await supabase
+      .from("workspaces")
+      .select("github_repo, github_access_token")
+      .eq("id", sessionDetails.workspace_id)
+      .single();
+
+    if (error) {
+      console.error(
+        `Error fetching GitHub details for workspace ${sessionDetails.workspace_id}:`,
+        error
+      );
+      return null;
+    }
+
+    if (!data || (!data.github_repo && !data.github_access_token)) {
+      console.log(
+        `No GitHub details found for workspace ${sessionDetails.workspace_id}`
+      );
+      return null;
+    }
+
+    return {
+      token: data.github_access_token || "",
+      repoUrl: data.github_repo || "",
+    };
+  } catch (error) {
+    console.error("Error retrieving GitHub access token:", error);
+    return null;
+  }
+}

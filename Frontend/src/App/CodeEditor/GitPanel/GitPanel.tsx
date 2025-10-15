@@ -4,6 +4,8 @@ import BranchSelector from "./BranchSelector";
 import CommitHistory from "./CommitHistory";
 // import CommitTree from "./CommitTree";
 import CommitForm from "./CommitForm";
+import GitHubIntegrationButton from "./GitHubIntegrationButton";
+import GitHubIntegrationModal from "./GitHubIntegrationModal";
 
 const GitPanel = () => {
   const { theme } = useTheme();
@@ -11,6 +13,7 @@ const GitPanel = () => {
   // Loading states
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isGitHubModalOpen, setIsGitHubModalOpen] = useState(false);
 
   // Initialize Git state on component mount
   useEffect(() => {
@@ -34,6 +37,9 @@ const GitPanel = () => {
       <div className={`p-4 ${theme.border} border-b`}>
         <BranchSelector />
       </div>
+
+      {/* GitHub Integration Section */}
+      <GitHubIntegrationButton onOpenModal={() => setIsGitHubModalOpen(true)} />
 
       <div className="flex-grow overflow-auto p-4 Simple-Scrollbar">
         {isLoading && (
@@ -83,6 +89,12 @@ const GitPanel = () => {
       <div className="p-4">
         <CommitForm />
       </div>
+
+      {/* GitHub Integration Modal */}
+      <GitHubIntegrationModal
+        isOpen={isGitHubModalOpen}
+        onClose={() => setIsGitHubModalOpen(false)}
+      />
     </div>
   );
 };

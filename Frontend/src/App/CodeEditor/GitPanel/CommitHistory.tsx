@@ -88,7 +88,7 @@ const CommitItem = ({ commit, onRollback, isLoading }: CommitItemProps) => {
       <div
         className={`text-xs ${theme.textMuted} flex justify-between items-center`}
       >
-        <span>Anuja Kalhara</span>
+        <span>commit</span>
         <span className="flex items-center">
           <Clock className="w-3 h-3 mr-1" />
           {formatDateTime(commit.createdAt)}

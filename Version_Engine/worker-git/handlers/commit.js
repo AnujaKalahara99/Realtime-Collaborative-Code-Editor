@@ -8,6 +8,7 @@ import {
   saveCommitToDatabase,
   getBranchById,
   loadSessionFiles,
+  getGitHubAccessToken,
 } from "../utils/database.js";
 import os from "os";
 
@@ -50,8 +51,9 @@ const handleCommit = async (sessionId, message, branchId) => {
       await getGitFolderFromStorage(sessionId, gitRepoPath);
     }
 
+    let branchName = "main";
     if (branchId) {
-      const branchName = await getBranchById(branchId);
+      branchName = await getBranchById(branchId);
       // Check if branch exists
       try {
         await execPromise(`git rev-parse --verify ${branchName}`, {
@@ -76,6 +78,42 @@ const handleCommit = async (sessionId, message, branchId) => {
       throw new Error("Could not extract commit hash from git output");
     }
     const commitHash = commitHashMatch[2];
+
+    // Push to GitHub if requested and token is available
+    const tokenData = await getGitHubAccessToken(sessionId);
+
+    if (tokenData && tokenData.repoUrl !== "" && tokenData.token !== "") {
+      if (!tokenData.repoUrl) {
+        return {
+          success: false,
+          message: "GitHub repository URL not configured",
+        };
+      }
+
+      const repoUrlWithToken = tokenData.repoUrl.replace(
+        "https://",
+        `https://${tokenData.token}@`
+      );
+
+      try {
+        await execPromise("git remote get-url origin", { cwd: gitRepoPath });
+        // If remote exists, set the new URL
+        await execPromise(`git remote set-url origin "${repoUrlWithToken}"`, {
+          cwd: gitRepoPath,
+        });
+      } catch (error) {
+        // Remote doesn't exist, add it
+        await execPromise(`git remote add origin "${repoUrlWithToken}"`, {
+          cwd: gitRepoPath,
+        });
+      }
+
+      await execPromise(`git push -u origin ${branchName}`, {
+        cwd: gitRepoPath,
+        // Hide token from logs
+        env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+      });
+    }
 
     await saveGitFolderToStorage(sessionId, gitRepoPath);
 
@@ -114,5 +152,69 @@ const handleCommit = async (sessionId, message, branchId) => {
     };
   }
 };
+
+/**
+ * Attempts to push to GitHub if an access token is available
+ *
+ * @param {string} sessionId - The session ID
+ * @param {string} repoPath - Path to the local git repository
+ * @param {string} branchName - Name of the branch to push
+ * @returns {Promise<Object>} - Result of the push operation
+ */
+async function pushToGitHubIfPossible(sessionId, repoPath, branchName) {
+  try {
+    // Get GitHub token from database
+    const tokenData = await getGitHubAccessToken(sessionId);
+
+    if (!tokenData || !tokenData.token) {
+      console.log("No GitHub access token found for session", sessionId);
+      return {
+        success: false,
+        message: "No GitHub access token available",
+      };
+    }
+
+    // Check if remote already exists
+    try {
+      await execPromise("git remote get-url origin", { cwd: repoPath });
+    } catch (error) {
+      // Remote doesn't exist, add it
+      if (!tokenData.repoUrl) {
+        return {
+          success: false,
+          message: "GitHub repository URL not configured",
+        };
+      }
+
+      // Format: https://{token}@github.com/username/repo.git
+      const repoUrlWithToken = tokenData.repoUrl.replace(
+        "https://",
+        `https://${tokenData.token}@`
+      );
+
+      await execPromise(`git remote add origin "${repoUrlWithToken}"`, {
+        cwd: repoPath,
+      });
+    }
+
+    // Push to GitHub
+    await execPromise(`git push -u origin ${branchName}`, {
+      cwd: repoPath,
+      // Hide token from logs
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+    });
+
+    return {
+      success: true,
+      message: `Successfully pushed to GitHub branch ${branchName}`,
+    };
+  } catch (error) {
+    console.error("Error pushing to GitHub:", error);
+    return {
+      success: false,
+      message: `Failed to push to GitHub: ${error.message}`,
+    };
+  }
+}
 
 export default handleCommit;
