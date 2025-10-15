@@ -34,11 +34,19 @@ router.post(
   CodespaceController.shareCodespaceByEmail
 );
 
-router.get("/:id/inviteusers", validateCodespaceId, CodespaceController.getallinvitedusers);
+router.get(
+  "/:id/inviteusers",
+  validateCodespaceId,
+  CodespaceController.getallinvitedusers
+);
 router.delete("/:id", validateCodespaceId, CodespaceController.deleteCodespace);
 router.put(
   "/accept-invitation/:invitationId",
   CodespaceController.acceptInvitation
+);
+router.get(
+  "/accept-invitation-email/:invitationId",
+  CodespaceController.acceptInvitationEmail
 );
 router.put(
   "/:id/github-details",

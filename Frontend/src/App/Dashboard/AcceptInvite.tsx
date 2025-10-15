@@ -15,6 +15,16 @@ const getToken = () => {
   return sessionData?.access_token || "";
 };
 
+const getLoginMail = () => {
+  const storageKey = `sb-${
+    import.meta.env.VITE_SUPABASE_PROJECT_ID
+  }-auth-token`;
+  const sessionDataString = localStorage.getItem(storageKey);
+  const sessionData = JSON.parse(sessionDataString || "null");
+  console.log("getLoginMail sessionData:", sessionData);
+  return sessionData?.user?.email || "";
+};
+
 const CollaboratePage: React.FC = () => {
   const CODESPACE_API_URL = `${import.meta.env.VITE_BACKEND_URL}/codespaces`;
 
@@ -22,14 +32,38 @@ const CollaboratePage: React.FC = () => {
   const { invitationId } = useParams<{ invitationId: string }>();
   const { theme } = useTheme();
   const { refreshCodespaces } = useCodespaceContext();
+  const [invitationEmail, setInvitationEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowContent(true), 100);
+
+    const getInvitationEmail = async (invitationId: string) => {
+      try {
+        const response = await fetch(
+          `${CODESPACE_API_URL}/accept-invitation-email/${invitationId}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: getToken(),
+            },
+          }
+        );
+        setInvitationEmail(response.ok ? (await response.json()).email : null);
+      } catch (error) {
+        console.error("Error fetching invitation email:", error);
+      }
+    };
+
+    if (invitationId) {
+      getInvitationEmail(invitationId);
+    }
+
     return () => clearTimeout(timer);
-  }, []);
+  }, [CODESPACE_API_URL, invitationId]);
 
   const handleProceed = async () => {
     if (!invitationId) {
@@ -82,6 +116,88 @@ const CollaboratePage: React.FC = () => {
       console.error("Error during API call:", err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loginEmail = getLoginMail();
+  const handleLoginRedirect = () => {
+    localStorage.setItem("invitationId", invitationId || "");
+    navigate("/login", { state: { invitationId } });
+  };
+
+  const renderActionButton = () => {
+    if (!loginEmail) {
+      return (
+        <button
+          onClick={handleLoginRedirect}
+          className={`
+            w-full px-4 py-2 rounded-md text-sm font-medium
+            text-white bg-blue-600 hover:bg-blue-700
+            transition-colors duration-200
+            flex items-center justify-center gap-2
+          `}
+        >
+          <ArrowRight className="w-4 h-4" />
+          Login with invitation email
+        </button>
+      );
+    } else if (loginEmail === invitationEmail) {
+      return (
+        <button
+          onClick={handleProceed}
+          disabled={isLoading || !invitationId}
+          className={`
+            w-full px-4 py-2 rounded-md text-sm font-medium
+            text-white bg-blue-600 hover:bg-blue-700
+            disabled:opacity-50 disabled:cursor-not-allowed
+            transition-colors duration-200
+            flex items-center justify-center gap-2
+            ${isLoading ? "cursor-wait" : ""}
+          `}
+        >
+          {isLoading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              Processing...
+            </>
+          ) : (
+            <>
+              <ArrowRight className="w-4 h-4" />
+              Proceed
+            </>
+          )}
+        </button>
+      );
+    } else {
+      return (
+        <div className="space-y-3">
+          <div
+            className={`p-3 ${theme.surface} border border-yellow-500 rounded-md mb-3`}
+          >
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+              <p className={`text-sm ${theme.text}`}>
+                You're logged in as{" "}
+                <span className="font-semibold">{loginEmail}</span>, but this
+                invitation is for{" "}
+                <span className="font-semibold">{invitationEmail}</span>
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleLoginRedirect}
+            className={`
+              w-full px-4 py-2 rounded-md text-sm font-medium
+              text-white bg-blue-600 hover:bg-blue-700
+              transition-colors duration-200
+              flex items-center justify-center gap-2
+            `}
+          >
+            <ArrowRight className="w-4 h-4" />
+            Login with invitation email
+          </button>
+        </div>
+      );
     }
   };
 
@@ -139,6 +255,23 @@ const CollaboratePage: React.FC = () => {
               button below to join the workspace and start coding together.
             </p>
 
+            {invitationEmail && (
+              <div
+                className={`p-3 ${theme.surface} border ${theme.border} rounded-md mb-3`}
+              >
+                <p
+                  className={`text-xs ${theme.textSecondary} mb-2 uppercase tracking-wide`}
+                >
+                  Invitation Email
+                </p>
+                <code
+                  className={`text-sm font-mono ${theme.text} block break-all`}
+                >
+                  {invitationEmail}
+                </code>
+              </div>
+            )}
+
             {invitationId && (
               <div
                 className={`p-3 ${theme.surface} border ${theme.border} rounded-md`}
@@ -158,32 +291,7 @@ const CollaboratePage: React.FC = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="space-y-3">
-            <button
-              onClick={handleProceed}
-              disabled={isLoading || !invitationId}
-              className={`
-              w-full px-4 py-2 rounded-md text-sm font-medium
-              text-white bg-blue-600 hover:bg-blue-700
-              disabled:opacity-50 disabled:cursor-not-allowed
-              transition-colors duration-200
-              flex items-center justify-center gap-2
-              ${isLoading ? "cursor-wait" : ""}
-            `}
-            >
-              {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <ArrowRight className="w-4 h-4" />
-                  Accept Invitation
-                </>
-              )}
-            </button>
-          </div>
+          <div className="space-y-3">{renderActionButton()}</div>
 
           {/* Status indicator */}
           <div className={`mt-4 pt-4 border-t ${theme.border}`}>

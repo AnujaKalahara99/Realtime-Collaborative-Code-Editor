@@ -49,7 +49,7 @@ export class CodespaceService {
       .select("id")
       .eq("email", email)
       .single();
-    if (profileError && profileError.code !== 'PGRST116') throw profileError; // PGRST116: No rows found
+    if (profileError && profileError.code !== "PGRST116") throw profileError; // PGRST116: No rows found
 
     // If profile exists, remove from workspace_members
     if (profile && profile.id) {
@@ -64,13 +64,11 @@ export class CodespaceService {
     return { success: true };
   }
 
-
   static async getCodespaceDetails(userId, codespaceId) {
     const { data, error } = await supabase.rpc("get_codespace_details", {
       p_user_id: userId,
       p_workspace_id: codespaceId,
     });
-    
 
     if (error) throw error;
 
@@ -87,7 +85,6 @@ export class CodespaceService {
       sessions: row.sessions,
     };
   }
-
 
   static async getAllInvitedUsers(codespaceId) {
     const { data, error } = await supabase
@@ -393,6 +390,24 @@ export class CodespaceService {
       return { invitation };
     } catch (err) {
       console.error("Error in shareCodespaceByEmail:", err);
+      throw err;
+    }
+  }
+
+  static async acceptInvitationEmail(invitationId) {
+    try {
+      const { data: invitation, error: fetchError } = await supabase
+        .from("invitations")
+        .select("email")
+        .eq("id", invitationId)
+        .single();
+      if (fetchError || !invitation) {
+        throw new Error("Invitation not found");
+      }
+
+      return { email: invitation.email.trim() };
+    } catch (err) {
+      console.error("Error in acceptInvitation Email:", err);
       throw err;
     }
   }

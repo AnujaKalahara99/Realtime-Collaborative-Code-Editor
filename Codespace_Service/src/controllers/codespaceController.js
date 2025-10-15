@@ -15,7 +15,7 @@ export class CodespaceController {
     }
   }
 
-static async getallinvitedusers(req, res, next) {
+  static async getallinvitedusers(req, res, next) {
     try {
       const { id } = req.params;
       const invitedUsers = await CodespaceService.getAllInvitedUsers(id);
@@ -28,8 +28,7 @@ static async getallinvitedusers(req, res, next) {
     }
   }
 
-
-static async removeMember(req, res, next) {
+  static async removeMember(req, res, next) {
     try {
       const { codespaceId, email } = req.params;
       await CodespaceService.removeMember(codespaceId, email);
@@ -39,7 +38,7 @@ static async removeMember(req, res, next) {
       });
     } catch (error) {
       if (error.statusCode) {
-        return res.status(error.statusCode).json({    
+        return res.status(error.statusCode).json({
           error: error.message,
           code: error.code,
         });
@@ -47,7 +46,6 @@ static async removeMember(req, res, next) {
       next(error);
     }
   }
-
 
   static async createCodespace(req, res, next) {
     try {
@@ -207,6 +205,26 @@ static async removeMember(req, res, next) {
         message: "Invitation accepted successfully",
         invitation: result.invitation,
         member: result.member,
+      });
+    } catch (error) {
+      if (error.statusCode) {
+        return res.status(error.statusCode).json({
+          error: error.message,
+          code: error.code,
+        });
+      }
+      next(error);
+    }
+  }
+
+  static async acceptInvitationEmail(req, res, next) {
+    try {
+      const { invitationId } = req.params;
+
+      const result = await CodespaceService.acceptInvitationEmail(invitationId);
+
+      res.json({
+        email: result.email,
       });
     } catch (error) {
       if (error.statusCode) {
