@@ -3,7 +3,7 @@ import { useTheme } from "../../Contexts/ThemeProvider";
 import Avatar from "../../components/Avatar";
 import { useNavigate } from "react-router";
 import { useEditorCollaboration } from "../../Contexts/EditorContext";
-import React, { useState } from "react";
+import { useState } from "react";
 import axios from "axios";
 
 const getToken = () => {
