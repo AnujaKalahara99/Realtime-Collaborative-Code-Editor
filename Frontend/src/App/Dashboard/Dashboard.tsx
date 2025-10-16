@@ -9,7 +9,7 @@ import EmptyState from "./EmptyState";
 import CreateCodespaceModal from "./CreateCodespaceModal";
 import { type ViewMode } from "./codespace.types";
 import { useNavigate } from "react-router";
-
+import React from 'react';
 type Props = {
   session: Session;
 };

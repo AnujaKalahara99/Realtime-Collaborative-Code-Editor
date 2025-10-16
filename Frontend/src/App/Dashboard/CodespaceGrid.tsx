@@ -16,7 +16,7 @@ function CodespaceGrid({ searchQuery, viewMode, onOpenCreateModal }: Props) {
 
   // Filter codespaces based on search query with null check
   const filteredCodespaces = codespaces.filter((codespace) =>
-    codespace?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    codespace?.name?.toLowerCase().includes(searchQuery?.toLowerCase() || "")
   );
 
   if (loading) {

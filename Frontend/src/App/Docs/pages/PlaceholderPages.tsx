@@ -21,42 +21,84 @@ export default function PlaceholderPage({
       <p className={`text-lg ${theme.textSecondary} mb-8`}>{description}</p>
       <div className={`${theme.surfaceSecondary} p-8 rounded-lg text-left`}>
         {title === "Real-time Collaboration" && (
-          <p className={theme.textSecondary}>
-            Collaborate with your team in real-time. See live cursors, edits, and
-            comments as they happen. Perfect for pair programming and team
-            projects.
-          </p>
+          <div>
+            <p className={theme.textSecondary}>
+              Collaborate with your team in real-time. See live cursors, edits, and
+              comments as they happen. Perfect for pair programming and team
+              projects.
+            </p>
+            <ul className={`list-disc list-inside space-y-2 ${theme.textSecondary}`}>
+              <li>Live cursors allow you to see where your teammates are editing in real-time.</li>
+              <li>Instant synchronization ensures all changes are reflected across all collaborators.</li>
+              <li>Commenting feature enables contextual discussions directly within the code.</li>
+            </ul>
+          </div>
         )}
         {title === "Code Editor" && (
-          <p className={theme.textSecondary}>
-            Enjoy a powerful code editor with Monaco integration, offering syntax
-            highlighting, IntelliSense, and support for multiple programming
-            languages.
-          </p>
+          <div>
+            <p className={theme.textSecondary}>
+              Enjoy a powerful code editor with Monaco integration, offering syntax
+              highlighting, IntelliSense, and support for multiple programming
+              languages.
+            </p>
+            <ul className={`list-disc list-inside space-y-2 ${theme.textSecondary}`}>
+              <li>Advanced syntax highlighting for over 20 programming languages.</li>
+              <li>IntelliSense provides smart code completions and inline documentation.</li>
+              <li>Customizable themes and layouts to suit your preferences.</li>
+            </ul>
+          </div>
         )}
         {title === "Version Control" && (
-          <p className={theme.textSecondary}>
-            Manage your code versions seamlessly with Git-like features. Create
-            commits, branches, and rollbacks to keep your project history intact.
-          </p>
+          <div>
+            <p className={theme.textSecondary}>
+              Manage your code versions seamlessly with Git-like features. Create
+              commits, branches, and rollbacks to keep your project history intact.
+            </p>
+            <ul className={`list-disc list-inside space-y-2 ${theme.textSecondary}`}>
+              <li>Create and manage branches to work on features independently.</li>
+              <li>Rollback changes to previous commits with ease.</li>
+              <li>View detailed commit history to track project progress.</li>
+            </ul>
+          </div>
         )}
         {title === "Project Management" && (
-          <p className={theme.textSecondary}>
-            Organize your project files and folders effortlessly with an
-            intuitive file explorer. Stay on top of your tasks and deadlines.
-          </p>
+          <div>
+            <p className={theme.textSecondary}>
+              Organize your project files and folders effortlessly with an
+              intuitive file explorer. Stay on top of your tasks and deadlines.
+            </p>
+            <ul className={`list-disc list-inside space-y-2 ${theme.textSecondary}`}>
+              <li>Drag-and-drop functionality for easy file organization.</li>
+              <li>Integrated task management to track deadlines and milestones.</li>
+              <li>Search and filter options to quickly locate files.</li>
+            </ul>
+          </div>
         )}
         {title === "AI Assistant" && (
-          <p className={theme.textSecondary}>
-            Leverage the power of AI to get code suggestions, explanations, and
-            debugging assistance directly within your editor.
-          </p>
+          <div>
+            <p className={theme.textSecondary}>
+              Leverage the power of AI to get code suggestions, explanations, and
+              debugging assistance directly within your editor.
+            </p>
+            <ul className={`list-disc list-inside space-y-2 ${theme.textSecondary}`}>
+              <li>Receive context-aware code suggestions to speed up development.</li>
+              <li>Get detailed explanations for complex code snippets.</li>
+              <li>Debug your code with AI-powered insights and recommendations.</li>
+            </ul>
+          </div>
         )}
         {title === "Live Chat" && (
-          <p className={theme.textSecondary}>
-            Communicate with your team in real-time using the integrated chat
-            feature. Share ideas, discuss code, and resolve issues instantly.
-          </p>
+          <div>
+            <p className={theme.textSecondary}>
+              Communicate with your team in real-time using the integrated chat
+              feature. Share ideas, discuss code, and resolve issues instantly.
+            </p>
+            <ul className={`list-disc list-inside space-y-2 ${theme.textSecondary}`}>
+              <li>Instant messaging for quick communication.</li>
+              <li>Share code snippets and files directly in the chat.</li>
+              <li>Keep a history of discussions for future reference.</li>
+            </ul>
+          </div>
         )}
         {title === "Managing Codespaces" && (
           <div>
