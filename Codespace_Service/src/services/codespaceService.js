@@ -347,7 +347,7 @@ export class CodespaceService {
 
       // Compose email
       const mailOptions = {
-        from: '"Realtime Code Editor" <m.mannage@gmail.com>',
+        from: '"Realtime Code Editor"',
         to: email,
         subject: "A Codespace Has Been Shared With You",
         html: `
