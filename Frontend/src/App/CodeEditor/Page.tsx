@@ -7,8 +7,8 @@ import LiveChatPanel from "./LiveChatPanel";
 import CompilerPanel from "./CompilerPanel";
 import NavigationBar from "./NavigationBar";
 import StatusBar from "./StatusBar";
-// import MonacoEditor from "./MonacoEditor/MonacoEditor";
-import MonacoEditor from "./MonacoEditor/MonacoEditorModified";
+import MonacoEditor from "./MonacoEditor/MonacoEditor";
+// import MonacoEditor from "./MonacoEditor/MonacoEditorModified";
 import { PanelSystem, type Tab } from "./PanelSystem";
 import type { FileNode } from "./ProjectManagementPanel/file.types";
 

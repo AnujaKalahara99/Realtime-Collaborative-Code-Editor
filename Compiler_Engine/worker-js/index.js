@@ -58,6 +58,7 @@ const worker = new Worker(
 
       // Cleanup
       await fs.rm(execPath, { recursive: true, force: true });
+      console.log(stdout);
 
       return {
         success: true,

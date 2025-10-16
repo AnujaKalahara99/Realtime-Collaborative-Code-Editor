@@ -226,31 +226,14 @@ export default function MonacoEditor({
         }
       );
 
-      let isUpdatingFromYJS = false;
-
-      const yjsObserver = () => {
-        const content = fileYText.toString();
-        // Only update VFS if content changed
-        if (vfsModel.getValue() !== content) {
-          isUpdatingFromYJS = true;
-          vfsModel.setValue(content);
-          vfsBridgeRef.current?.updateFileContent(file.id, content);
-          integrationRef.current?.updateDiagnostics?.();
-          isUpdatingFromYJS = false;
-        }
-      };
-
-      fileYText.observe(yjsObserver);
-      // Store disposer for next bind
-      (bindEditorToFile as any)._yjsDisposer = () =>
-        fileYText.unobserve(yjsObserver);
-
+      // REMOVE the yjsObserver completely - it's causing the conflict
+      // Instead, just update VFS when file content changes
       contentUnsubscribeRef.current = registerFileContentChange(
         file.id,
         (content) => {
-          if (!isUpdatingFromYJS) {
-            onFileContentChange?.(file.id, content);
-          }
+          vfsBridgeRef.current?.updateFileContent(file.id, content);
+          integrationRef.current?.updateDiagnostics?.();
+          onFileContentChange?.(file.id, content);
         }
       );
     }, 0);
@@ -272,8 +255,6 @@ export default function MonacoEditor({
             try {
               // Exit early if AI suggestions are disabled
               if (!aiSuggestionsEnabledRef.current) {
-                console.log("Returrrrrrrrrrrrrrrrrrrrrrrrrrrrrn");
-
                 return { items: [], dispose: () => {} };
               }
 

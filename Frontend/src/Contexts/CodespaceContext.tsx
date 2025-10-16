@@ -53,6 +53,15 @@ export const CodespaceProvider: React.FC<{
     session?.user?.email ||
     "Anonymous";
 
+  const getUserName = () => {
+    const storageKey = `sb-${
+      import.meta.env.VITE_SUPABASE_PROJECT_ID
+    }-auth-token`;
+    const sessionDataString = localStorage.getItem(storageKey);
+    const sessionData = JSON.parse(sessionDataString || "null");
+    return sessionData?.access_token || "";
+  };
+
   const handleApiRequest = useCallback(
     async (
       endpoint: string,
@@ -203,7 +212,7 @@ export const CodespaceProvider: React.FC<{
     const result = await handleApiRequest(
       `${CODESPACE_API_URL}/${id}/sharebyemail`,
       "POST",
-      { email: email.trim(), role: role.trim() },
+      { email: email.trim(), role: role.trim(), senderName: getUserName() },
       "Failed to share codespace"
     );
 

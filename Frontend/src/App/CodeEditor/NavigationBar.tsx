@@ -15,6 +15,19 @@ const getToken = () => {
   return sessionData?.access_token || "";
 };
 
+const getUserName = () => {
+  const storageKey = `sb-${
+    import.meta.env.VITE_SUPABASE_PROJECT_ID
+  }-auth-token`;
+  const sessionDataString = localStorage.getItem(storageKey);
+  const sessionData = JSON.parse(sessionDataString || "null");
+  return (
+    sessionData?.user?.user_metadata?.full_name ||
+    sessionData?.user?.email ||
+    ""
+  );
+};
+
 type InvitedUser = {
   email: string;
   role: string;
@@ -261,6 +274,7 @@ const NavigationBar = () => {
                           body: JSON.stringify({
                             email: inviteEmail.trim(),
                             role: inviteRole.trim(),
+                            senderName: getUserName(),
                           }),
                         }
                       );

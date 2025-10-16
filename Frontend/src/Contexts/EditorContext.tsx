@@ -416,7 +416,7 @@ export const EditorCollaborationProvider: React.FC<{
               }
             }
           });
-          console.log("Awareness changed. Connected users:", users);
+          // console.log("Awareness changed. Connected users:", users);
           setConnectedUsers(users);
         };
 

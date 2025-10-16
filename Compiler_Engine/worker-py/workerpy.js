@@ -49,7 +49,7 @@ const worker = new Worker(
       }
 
       const { stdout, stderr } = await execPromise(
-        `python ${mainFile || "main.py"}`,
+        `python3 ${mainFile || "main.py"}`,
         {
           cwd: execPath,
           timeout: 10000,

@@ -112,7 +112,7 @@ export class CodespaceController {
   static async shareCodespaceByEmail(req, res, next) {
     try {
       const { id } = req.params;
-      const { email, role } = req.body;
+      const { email, role, senderName } = req.body;
 
       if (
         !email ||
@@ -129,7 +129,8 @@ export class CodespaceController {
         id,
         email,
         req.user.id,
-        role
+        role,
+        senderName.trim()
       );
 
       res.json({
@@ -164,7 +165,7 @@ export class CodespaceController {
   static async shareCodespace(req, res, next) {
     try {
       const { id } = req.params;
-      const { email } = req.body;
+      const { email, senderName } = req.body;
 
       // Validate email format
       if (
@@ -178,7 +179,7 @@ export class CodespaceController {
         });
       }
 
-      await CodespaceService.shareCodespace(id, email);
+      await CodespaceService.shareCodespace(id, email, senderName.trim());
 
       res.json({
         message: "Codespace shared successfully",

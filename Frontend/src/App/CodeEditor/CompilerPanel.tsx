@@ -13,7 +13,6 @@ const CompilerPanel = ({ selectedFile }: CompilerPanelProps) => {
   const { theme } = useTheme();
   const { compilerLoading, compilerResult, runCode } = useEditorCollaboration();
 
-  const [mainFile, setMainFile] = useState<string>("index.js");
   const [input, setInput] = useState<string>("");
   const [compilationMode, setCompilationMode] =
     useState<CompilationMode>("single");
@@ -30,7 +29,7 @@ const CompilerPanel = ({ selectedFile }: CompilerPanelProps) => {
   const handleRun = () => {
     runCode({
       compilationMode,
-      mainFile,
+      mainFile: selectedFile?.name,
       input,
       selectedFile,
     });
@@ -77,7 +76,7 @@ const CompilerPanel = ({ selectedFile }: CompilerPanelProps) => {
 
         {/* Configuration Section */}
         <div className="space-y-3">
-          {compilationMode === "project" && (
+          {/* {compilationMode === "project" && (
             <div>
               <label
                 className={`block text-xs font-medium ${theme.textMuted} mb-2`}
@@ -88,11 +87,11 @@ const CompilerPanel = ({ selectedFile }: CompilerPanelProps) => {
                 type="text"
                 value={mainFile}
                 onChange={(e) => setMainFile(e.target.value)}
-                placeholder="index.js"
+                placeholder=""
                 className={`w-full px-3 py-2 text-xs border rounded ${theme.surface} ${theme.text} ${theme.border} focus:outline-none focus:ring-1 focus:ring-blue-500`}
               />
             </div>
-          )}
+          )} */}
 
           <div>
             <label
@@ -118,11 +117,7 @@ const CompilerPanel = ({ selectedFile }: CompilerPanelProps) => {
             {compilationMode === "single" ? "Current File:" : "Entry Point:"}
           </div>
           <div className="text-xs font-medium">
-            {compilationMode === "single"
-              ? selectedFile?.name
-                ? `${selectedFile.name} (${language})`
-                : "No file selected"
-              : `${mainFile} (${language})`}
+            {`${selectedFile?.name} (${language})`}
           </div>
         </div>
 

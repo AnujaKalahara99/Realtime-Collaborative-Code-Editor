@@ -276,7 +276,13 @@ export class CodespaceService {
     return data;
   }
 
-  static async shareCodespaceByEmail(codespaceId, email, userid, role) {
+  static async shareCodespaceByEmail(
+    codespaceId,
+    email,
+    userid,
+    role,
+    senderEmail
+  ) {
     const trimmedCodespaceId = codespaceId.trim();
     if (!trimmedCodespaceId) throw new Error("Codespace ID is required");
     if (!email || !email.trim()) throw new Error("Email is required");
@@ -339,58 +345,70 @@ export class CodespaceService {
         },
       });
 
+      // const transporter = nodemailer.createTransport({
+      //   host: "smtp.sendgrid.net",
+      //   port: 587,
+      //   secure: false,
+      //   auth: {
+      //     user: process.env.SENDGRID_API_USER,
+      //     pass: process.env.SENDGRID_API_KEY,
+      //   },
+      //   from: "hello@rtc-editor.work.gd",
+      // });
+
       // Construct share link using codespaceId
       // const shareLink = `http://localhost:5173/codespace/sharebyemail/${invitation.id}`;
       const shareLink = `https://rtc-editor.netlify.app/codespace/sharebyemail/${invitation.id}`;
       // const shareLink = `https://68aee7a468a50f41d684ab8b--rtc-editor.netlify.app/codespace/sharebyemail/${invitation.id}`;
 
+      const senderName = senderEmail.split("@")[0] || "A friend";
+
       // Compose email
       const mailOptions = {
-        from: '"Realtime Code Editor" <m.mannage@gmail.com>',
+        // from: '"RTC Editor" <hello@rtc-editor.work.gd>',
+        from: '"RTC Editor" <editorrtc@gmail.com>',
         to: email,
-        subject: "A Codespace Has Been Shared With You",
+        subject: "Join a Codespace – Invitation from RTC Editor",
+        text: `Hi ${email.split("@")[0]},
+
+${senderName} invited you to join a Codespace as a ${role}.
+
+Click here to join: ${shareLink}
+
+This link expires in 7 days. If you weren't expecting this, you can ignore this email.
+
+Thanks,
+The RTC Editor Team
+`,
         html: `
-         <html>
-    <body style="font-family: Arial, sans-serif; background: #0f172a; padding: 40px; color: #f1f5f9; margin: 0;">
-      <div style="max-width: 600px; margin: auto; background: #1e293b; padding: 28px; border-radius: 10px; border: 1px solid #334155;">
-        
-        <h2 style="color: #f1f5f9; font-size: 22px; font-weight: bold; margin-bottom: 20px; text-align: center;">
-          You've been invited to a Codespace
-        </h2>
-        
-        <p style="font-size: 15px; color: #cbd5e1;">Hi ${
-          email.split("@")[0]
-        },</p>
-        
-        <p style="font-size: 15px; color: #cbd5e1; line-height: 1.6;">
-          You've been invited to collaborate on a codespace as a 
-          <strong style="color: #60a5fa;">${role}</strong>.
-        </p>
+<html>
+  <body style="font-family: Arial, sans-serif; background: #f9f9f9; padding: 30px; color: #111; line-height: 1.5;">
+    <div style="max-width: 600px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+      <h2 style="text-align: center; color: #333;">Hi ${
+        email.split("@")[0]
+      },</h2>
 
-        <div style="text-align: center; margin: 28px 0;">
-          <a href="${shareLink}" 
-             style="background: #2563eb; color: #fff; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; display: inline-block;">
-             Join Codespace
-          </a>
-        </div>
+      <p>${senderName} invited you to join a Codespace as a <strong>${role}</strong>.</p>
 
-        <p style="font-size: 13px; color: #94a3b8;">If you can’t click the button, copy this link:</p>
-        <p style="font-size: 13px; color: #60a5fa; word-break: break-all;">${shareLink}</p>
+      <p style="text-align: center; margin: 20px 0;">
+        <a href="${shareLink}" style="background: #007bff; color: #fff; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: bold;">Join Codespace</a>
+      </p>
 
-        <p style="font-size: 12px; color: #64748b; margin-top: 20px; text-align: center;">
-          This invitation expires in 7 days.
-        </p>
-      </div>
-    </body>
-  </html>
-      
-      `,
+      <p>If the button doesn’t work, copy and paste this link into your browser:</p>
+      <p style="word-break: break-word; color: #007bff;">${shareLink}</p>
+
+      <p style="font-size: 12px; color: #555;">This invitation will expire in 7 days. You received this email because ${senderName} shared a Codespace with you.</p>
+
+      <p style="font-size: 12px; color: #555;">If you don’t want to receive these emails, you can <a href="mailto:unsubscribe@rtc-editor.work.gd?subject=unsubscribe" style="color:#007bff;">unsubscribe</a>.</p>
+    </div>
+  </body>
+</html>
+  `,
         headers: {
-          "X-Priority": "1",
-          Importance: "high",
+          "X-Mailer": "Nodemailer (SendGrid)",
+          "List-Unsubscribe":
+            "<mailto:unsubscribe@rtc-editor.work.gd?subject=unsubscribe>",
         },
-        // Add a text alternative for better spam scores
-        text: `You've been invited to collaborate on a codespace as a ${role}. Join at: ${shareLink}`,
       };
 
       const info = await transporter.sendMail(mailOptions);

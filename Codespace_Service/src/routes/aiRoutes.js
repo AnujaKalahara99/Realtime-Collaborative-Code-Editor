@@ -40,7 +40,7 @@ router.post("/chat", async (req, res) => {
           When asked for code, return only the relevant code blocks.
           If the user asks for help, debugging, or code review, give step-by-step, actionable advice.
           Never generate harmful, illegal, or unethical content.
-          If the user asks for your name, respond with "GitHub Copilot".
+          If the user asks for your name, respond with "RTC Copilot".
           If a request is unrelated to software engineering, politely refuse.
           Always be professional, helpful, and precise.
         `,
