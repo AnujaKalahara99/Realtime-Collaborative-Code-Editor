@@ -309,6 +309,32 @@ console.log(greet("Developer"));`}
           </Link>
         </div>
       </section>
+
+      <section className="my-8">
+        <div className="mt-4">
+          <img
+            src="/collaborate2.png"
+            alt="Collaborate Features Screenshot"
+            className="rounded shadow-md"
+          />
+        </div>
+        <ul className={`list-disc list-inside space-y-2 ${theme.textSecondary}`}>
+          <li>
+            Users can share messages within the codespace for seamless
+            communication.
+          </li>
+          <li>
+            Collaborators can edit the same codespace file simultaneously.
+          </li>
+          <li>
+            Compile code and leverage auto AI suggestions for enhanced
+            productivity.
+          </li>
+          <li>
+            Utilize the RTC chatbot for real-time assistance and collaboration.
+          </li>
+        </ul>
+      </section>
     </div>
   );
 }
