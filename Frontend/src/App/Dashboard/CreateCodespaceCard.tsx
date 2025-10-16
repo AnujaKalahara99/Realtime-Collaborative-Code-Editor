@@ -1,4 +1,5 @@
 import { Plus } from "lucide-react";
+import React from "react";
 import { useTheme } from "../../Contexts/ThemeProvider";
 import { type ViewMode } from "./codespace.types";
 

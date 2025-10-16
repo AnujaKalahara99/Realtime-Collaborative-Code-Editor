@@ -34,7 +34,7 @@ describe("AIChatResponse", () => {
     const result = await AIChatResponse(mockMessages);
 
     expect(convertToModelMessages).toHaveBeenCalledWith(mockMessages);
-    expect(google).toHaveBeenCalledWith("gemini-1.5-pro");
+    expect(google).toHaveBeenCalledWith("gemini-2.5-flash");
     expect(streamText).toHaveBeenCalledWith({
       model: "gemini-model",
       messages: convertedMessages,

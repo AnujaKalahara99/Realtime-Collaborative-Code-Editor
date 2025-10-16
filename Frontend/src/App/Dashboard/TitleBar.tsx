@@ -3,6 +3,7 @@ import { Code2, LogOut } from "lucide-react";
 import { useTheme } from "../../Contexts/ThemeProvider";
 import { useNavigate } from "react-router";
 import { type Session } from "@supabase/supabase-js";
+import React from 'react';
 import ThemeToggleButton from "../../components/ThemeToggleBtn";
 const TitleBar = ({ Session }: { Session: Session }) => {
   const navigate = useNavigate();

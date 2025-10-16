@@ -12,6 +12,7 @@ jest.mock("../services/supabaseClient.js", () => ({
       eq: jest.fn(),
       single: jest.fn(),
     })),
+    rpc: jest.fn(),
   },
 }));
 
@@ -86,6 +87,27 @@ describe("CodespaceService", () => {
             }),
           };
         }
+      });
+
+      // Mock the supabase.rpc function for createCodespace
+      supabase.rpc.mockImplementation((procedureName, params) => {
+        if (procedureName === "create_codespace") {
+          return Promise.resolve({
+            data: [
+              {
+                workspace_id: "1",
+                workspace_name: params.p_workspace_name,
+                workspace_created_at: "2023-01-01T00:00:00Z",
+                role: "owner",
+                repo_id: null,
+                branch_id: null,
+                session_id: null,
+              },
+            ],
+            error: null,
+          });
+        }
+        return Promise.reject(new Error("Unknown procedure"));
       });
 
       const result = await CodespaceService.createCodespace("WS", "user1");

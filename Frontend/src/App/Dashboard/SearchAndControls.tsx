@@ -1,6 +1,7 @@
 import { Search, Grid, Menu } from "lucide-react";
 import { useTheme } from "../../Contexts/ThemeProvider";
 import { type ViewMode } from "./codespace.types";
+import React from 'react';
 
 interface Props {
   searchQuery: string;

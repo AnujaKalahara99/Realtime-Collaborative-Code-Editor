@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { useTheme } from "../../../Contexts/ThemeProvider";
 import { useCodespaceContext } from "../../../Contexts/CodespaceContext";
 import Dashboard from "../Dashboard";
+import React from 'react';
 
 // Mocks
 jest.mock("../../../Contexts/ThemeProvider", () => ({ useTheme: jest.fn() }));

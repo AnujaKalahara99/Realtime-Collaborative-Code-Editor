@@ -1,6 +1,8 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
+import React from 'react';
 import CodespaceGrid from "../CodespaceGrid";
+import { ThemeProvider } from '../../../Contexts/ThemeProvider';
 
 // Mock CodespaceCard and CreateCodespaceCard to isolate grid logic
 jest.mock("../CodespaceCard", () => (props: any) => (
@@ -47,11 +49,23 @@ jest.mock("../../../Contexts/CodespaceContext", () => ({
   }),
 }));
 
+// Wrap tests with ThemeProvider
+const WrappedCodespaceGrid = () => (
+  <ThemeProvider>
+    <CodespaceGrid />
+  </ThemeProvider>
+);
+
+// Replace all render calls with renderWithTheme
+const renderWithTheme = (ui) => {
+  return render(<ThemeProvider>{ui}</ThemeProvider>);
+};
+
 describe("CodespaceGrid", () => {
   test("renders all codespaces and create card", () => {
     const onOpenCreateModal = jest.fn();
-    render(
-      <CodespaceGrid
+    renderWithTheme(
+      <WrappedCodespaceGrid
         searchQuery=""
         viewMode="grid"
         onOpenCreateModal={onOpenCreateModal}
@@ -64,8 +78,8 @@ describe("CodespaceGrid", () => {
   });
 
   test("filters codespaces by search query", () => {
-    render(
-      <CodespaceGrid
+    renderWithTheme(
+      <WrappedCodespaceGrid
         searchQuery="alp"
         viewMode="grid"
         onOpenCreateModal={() => {}}
@@ -81,7 +95,7 @@ describe("CodespaceGrid", () => {
       useCodespaceContext: () => ({ codespaces: [], loading: true }),
     }));
     const CodespaceGridLoading = require("../CodespaceGrid").default;
-    render(
+    renderWithTheme(
       <CodespaceGridLoading
         searchQuery=""
         viewMode="grid"
@@ -94,8 +108,8 @@ describe("CodespaceGrid", () => {
 
   test("calls onOpenCreateModal when create card is clicked", () => {
     const onOpenCreateModal = jest.fn();
-    render(
-      <CodespaceGrid
+    renderWithTheme(
+      <WrappedCodespaceGrid
         searchQuery=""
         viewMode="grid"
         onOpenCreateModal={onOpenCreateModal}

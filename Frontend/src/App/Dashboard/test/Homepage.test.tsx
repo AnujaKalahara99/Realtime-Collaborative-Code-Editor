@@ -3,6 +3,7 @@ import "@testing-library/jest-dom";
 import { MemoryRouter } from "react-router-dom";
 import { useTheme } from "../../../Contexts/ThemeProvider";
 import CodeEditorHomepage from "../../Home/Homepage";
+import React from 'react';
 
 // Mock useTheme
 jest.mock("../../../Contexts/ThemeProvider", () => ({

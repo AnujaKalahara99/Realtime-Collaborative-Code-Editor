@@ -1,8 +1,10 @@
+import React from 'react';
 import { render, screen } from "@testing-library/react";
 import {
   EditorCollaborationProvider,
   useEditorCollaboration,
 } from "../EditorContext";
+import { ToastProvider } from "../ToastContext";
 
 describe("EditorCollaborationProvider", () => {
   const TestComponent = () => {
@@ -20,9 +22,11 @@ describe("EditorCollaborationProvider", () => {
 
   it("provides default context values", () => {
     render(
-      <EditorCollaborationProvider AuthSession={null}>
-        <TestComponent />
-      </EditorCollaborationProvider>
+      <ToastProvider>
+        <EditorCollaborationProvider AuthSession={null}>
+          <TestComponent />
+        </EditorCollaborationProvider>
+      </ToastProvider>
     );
     expect(screen.getByTestId("loading").textContent).toBe("true");
     expect(screen.getByTestId("connected").textContent).toBe("false");

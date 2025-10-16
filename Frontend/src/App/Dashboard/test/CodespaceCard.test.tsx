@@ -25,10 +25,13 @@ beforeAll(() => {
   });
 });
 
+import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { MemoryRouter } from "react-router-dom";
+import { ToastProvider } from "../../../Contexts/ToastContext";
 import CodespaceCard from "../CodespaceCard";
+import { useCodespaceContext } from "../../../Contexts/CodespaceContext";
 
 // Mock ThemeProvider and CodespaceContext defaults
 jest.mock("../../../Contexts/ThemeProvider", () => ({
@@ -47,11 +50,10 @@ jest.mock("../../../Contexts/ThemeProvider", () => ({
   }),
 }));
 jest.mock("../../../Contexts/CodespaceContext", () => ({
-  useCodespaceContext: () => ({
+  useCodespaceContext: jest.fn(() => ({
     deleteCodespace: jest.fn(),
     shareCodespaceByEmail: jest.fn(),
-    editCodespace: jest.fn(),
-  }),
+  })),
 }));
 
 describe("CodespaceCard", () => {
@@ -77,7 +79,9 @@ describe("CodespaceCard", () => {
   test("renders codespace name and role", () => {
     render(
       <MemoryRouter>
-        <CodespaceCard codespace={codespace} viewMode={viewMode} />
+        <ToastProvider>
+          <CodespaceCard codespace={codespace} viewMode={viewMode} />
+        </ToastProvider>
       </MemoryRouter>
     );
     expect(screen.getByText("My Codespace")).toBeInTheDocument();
@@ -88,7 +92,9 @@ describe("CodespaceCard", () => {
   test("shows and hides menu, triggers Edit modal", async () => {
     render(
       <MemoryRouter>
-        <CodespaceCard codespace={codespace} viewMode={viewMode} />
+        <ToastProvider>
+          <CodespaceCard codespace={codespace} viewMode={viewMode} />
+        </ToastProvider>
       </MemoryRouter>
     );
     const menuBtn = screen.getAllByRole("button")[0];
@@ -105,7 +111,9 @@ describe("CodespaceCard", () => {
   test("shows and hides Share modal", async () => {
     render(
       <MemoryRouter>
-        <CodespaceCard codespace={codespace} viewMode={viewMode} />
+        <ToastProvider>
+          <CodespaceCard codespace={codespace} viewMode={viewMode} />
+        </ToastProvider>
       </MemoryRouter>
     );
     const menuBtn = screen.getAllByRole("button")[0];
@@ -121,7 +129,9 @@ describe("CodespaceCard", () => {
   test("shows and hides Delete menu", () => {
     render(
       <MemoryRouter>
-        <CodespaceCard codespace={codespace} viewMode={viewMode} />
+        <ToastProvider>
+          <CodespaceCard codespace={codespace} viewMode={viewMode} />
+        </ToastProvider>
       </MemoryRouter>
     );
     const menuBtn = screen.getAllByRole("button")[0];
@@ -135,10 +145,7 @@ describe("CodespaceCard", () => {
       .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(false);
     jest
-      .spyOn(
-        require("../../../Contexts/CodespaceContext"),
-        "useCodespaceContext"
-      )
+      .spyOn(useCodespaceContext, "useCodespaceContext")
       .mockReturnValue({
         deleteCodespace: jest.fn(),
         shareCodespaceByEmail: jest.fn(),
@@ -147,7 +154,9 @@ describe("CodespaceCard", () => {
 
     render(
       <MemoryRouter>
-        <CodespaceCard codespace={codespace} viewMode={viewMode} />
+        <ToastProvider>
+          <CodespaceCard codespace={codespace} viewMode={viewMode} />
+        </ToastProvider>
       </MemoryRouter>
     );
 
@@ -173,10 +182,7 @@ describe("CodespaceCard", () => {
   test("share codespace (success)", async () => {
     const shareCodespaceByEmail = jest.fn().mockResolvedValue(true);
     jest
-      .spyOn(
-        require("../../../Contexts/CodespaceContext"),
-        "useCodespaceContext"
-      )
+      .spyOn(useCodespaceContext, "useCodespaceContext")
       .mockReturnValue({
         deleteCodespace: jest.fn(),
         shareCodespaceByEmail,
@@ -185,7 +191,9 @@ describe("CodespaceCard", () => {
 
     render(
       <MemoryRouter>
-        <CodespaceCard codespace={codespace} viewMode={viewMode} />
+        <ToastProvider>
+          <CodespaceCard codespace={codespace} viewMode={viewMode} />
+        </ToastProvider>
       </MemoryRouter>
     );
     fireEvent.click(screen.getAllByRole("button")[0]);
@@ -208,10 +216,7 @@ describe("CodespaceCard", () => {
   test("delete codespace", async () => {
     const deleteCodespace = jest.fn().mockResolvedValue(true);
     jest
-      .spyOn(
-        require("../../../Contexts/CodespaceContext"),
-        "useCodespaceContext"
-      )
+      .spyOn(useCodespaceContext, "useCodespaceContext")
       .mockReturnValue({
         deleteCodespace,
         shareCodespaceByEmail: jest.fn(),
@@ -220,7 +225,9 @@ describe("CodespaceCard", () => {
 
     render(
       <MemoryRouter>
-        <CodespaceCard codespace={codespace} viewMode={viewMode} />
+        <ToastProvider>
+          <CodespaceCard codespace={codespace} viewMode={viewMode} />
+        </ToastProvider>
       </MemoryRouter>
     );
     fireEvent.click(screen.getAllByRole("button")[0]);
@@ -231,7 +238,9 @@ describe("CodespaceCard", () => {
   test("navigates to codeeditor on card click", () => {
     render(
       <MemoryRouter>
-        <CodespaceCard codespace={codespace} viewMode={viewMode} />
+        <ToastProvider>
+          <CodespaceCard codespace={codespace} viewMode={viewMode} />
+        </ToastProvider>
       </MemoryRouter>
     );
     fireEvent.click(screen.getByText("My Codespace"));
@@ -241,7 +250,9 @@ describe("CodespaceCard", () => {
   test("renders in list view", () => {
     render(
       <MemoryRouter>
-        <CodespaceCard codespace={codespace} viewMode="list" />
+        <ToastProvider>
+          <CodespaceCard codespace={codespace} viewMode="list" />
+        </ToastProvider>
       </MemoryRouter>
     );
     expect(screen.getByText("My Codespace")).toBeInTheDocument();

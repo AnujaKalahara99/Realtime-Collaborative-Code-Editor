@@ -30,9 +30,9 @@ export default {
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.js'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   transform: {
-    '^.+\\.(ts|tsx|js|jsx)$': ['babel-jest', { configFile: './babel.config.cjs' }],
+    '^.+\\.(ts|tsx|js|jsx|mjs)$': ['babel-jest', { configFile: './babel.config.cjs' }],
   },
   transformIgnorePatterns: [
-    '/node_modules/(?!(babel-plugin-transform-import-meta)/)',
+    '/node_modules/(?!(babel-plugin-transform-import-meta|some-other-dependency)/)',
   ],
 };

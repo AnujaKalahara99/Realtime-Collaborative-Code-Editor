@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import TitleBar from "../TitleBar";
+import React from 'react';
 
 jest.mock("react-router", () => ({
   useNavigate: () => jest.fn(),

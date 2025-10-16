@@ -154,16 +154,42 @@ describe("CodespaceController", () => {
   });
 
   describe("getCodespaceById", () => {
+    // Add mock for getCodespaceDetails
+    CodespaceService.getCodespaceDetails = jest.fn((userId, workspaceId) => {
+      if (workspaceId === "cs1") {
+        return Promise.resolve({
+          id: "cs1",
+          name: "CS 1",
+          created_at: "2025-10-15T12:00:00Z",
+          role: "admin",
+          owner: "user1",
+          githubrepo: null,
+          sessions: [],
+        });
+      }
+      const error = new Error("Codespace not found");
+      error.statusCode = 404;
+      error.code = "CODESPACE_NOT_FOUND";
+      throw error;
+    });
+
     it("should return codespace if found", async () => {
       const req = { user: { id: "user1" }, params: { id: "cs1" } };
       const res = mockResponse();
 
-      CodespaceService.getUserCodespaceMembership.mockResolvedValue({});
-      CodespaceService.getUserCodespaces.mockResolvedValue([{ id: "cs1", name: "CS 1" }]);
-
       await CodespaceController.getCodespaceById(req, res, mockNext);
 
-      expect(res.json).toHaveBeenCalledWith({ codespace: { id: "cs1", name: "CS 1" } });
+      expect(res.json).toHaveBeenCalledWith({
+        codespace: {
+          id: "cs1",
+          name: "CS 1",
+          created_at: "2025-10-15T12:00:00Z",
+          role: "admin",
+          owner: "user1",
+          githubrepo: null,
+          sessions: [],
+        },
+      });
     });
 
     it("should return 404 if codespace not found", async () => {

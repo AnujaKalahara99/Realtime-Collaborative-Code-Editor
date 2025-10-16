@@ -17,6 +17,23 @@ jest.mock("react-router", () => ({
   useNavigate: () => jest.fn(),
 }));
 
+import React from 'react';
+import { ToastProvider } from '../../../Contexts/ToastContext';
+
+// Replace require() with import for dynamically mocked components
+import ProfilePageLoading from '../profile';
+import ProfilePageError from '../profile';
+import ProfilePageLoaded from '../profile';
+
+beforeAll(() => {
+  Object.defineProperty(import.meta, 'env', {
+    value: {
+      VITE_SUPABASE_URL: 'https://your-supabase-url.supabase.co',
+      VITE_SUPABASE_ANON_KEY: 'your-anon-key',
+    },
+  });
+});
+
 describe("ProfilePage", () => {
   afterEach(() => {
     jest.resetModules();
@@ -26,8 +43,11 @@ describe("ProfilePage", () => {
     jest.doMock("../../../Contexts/ProfileContext", () => ({
       useProfile: () => ({ profileData: {}, loading: true, error: null }),
     }));
-    const ProfilePageLoading = require("../profile").default;
-    render(<ProfilePageLoading />);
+    render(
+      <ToastProvider>
+        <ProfilePageLoading />
+      </ToastProvider>
+    );
     expect(screen.getByText(/Loading profile/i)).toBeInTheDocument();
   });
 
@@ -35,8 +55,11 @@ describe("ProfilePage", () => {
     jest.doMock("../../../Contexts/ProfileContext", () => ({
       useProfile: () => ({ profileData: {}, loading: false, error: "Failed" }),
     }));
-    const ProfilePageError = require("../profile").default;
-    render(<ProfilePageError />);
+    render(
+      <ToastProvider>
+        <ProfilePageError />
+      </ToastProvider>
+    );
     expect(screen.getByText(/Error: Failed/i)).toBeInTheDocument();
     expect(screen.getByText(/Retry/i)).toBeInTheDocument();
   });
@@ -60,8 +83,11 @@ describe("ProfilePage", () => {
         error: null,
       }),
     }));
-    const ProfilePageLoaded = require("../profile").default;
-    render(<ProfilePageLoaded />);
+    render(
+      <ToastProvider>
+        <ProfilePageLoaded />
+      </ToastProvider>
+    );
     // Name is rendered as 'John Doe' in one element
     expect(
       screen.getByText(

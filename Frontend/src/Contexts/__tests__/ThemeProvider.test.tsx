@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { ThemeProvider, useTheme } from "../ThemeProvider";
 import { act } from "react";
+import React from 'react';
 const ThemeConsumer = () => {
   const { theme, isDark, toggleTheme } = useTheme();
   return (
@@ -14,10 +15,16 @@ const ThemeConsumer = () => {
 
 describe("ThemeProvider extra coverage", () => {
   it("provides theme context and toggles theme", async () => {
-    render(
+    const WrappedComponent = ({ children }) => (
       <ThemeProvider>
-        <ThemeConsumer />
+        {children}
       </ThemeProvider>
+    );
+
+    render(
+      <WrappedComponent>
+        <ThemeConsumer />
+      </WrappedComponent>
     );
     // Initial state
     expect(screen.getByTestId("theme-mode").textContent).toBe("dark");

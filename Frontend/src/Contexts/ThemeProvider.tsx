@@ -1,4 +1,5 @@
 import { useState, createContext, useContext, useEffect } from "react";
+import React from 'react';
 
 type Theme = {
   background: string;

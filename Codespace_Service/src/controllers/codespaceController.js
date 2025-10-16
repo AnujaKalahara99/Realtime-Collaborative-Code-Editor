@@ -149,14 +149,23 @@ export class CodespaceController {
 
   static async getCodespaceById(req, res, next) {
     try {
+      console.log("Fetching codespace details for user:", req.user.id, "and workspace:", req.params.id);
       const codespace = await CodespaceService.getCodespaceDetails(
         req.user.id,
         req.params.id
       );
+      console.log("Fetched codespace details:", codespace);
       res.json({
         codespace,
       });
     } catch (error) {
+      console.error("Error in getCodespaceById:", error);
+      if (error.statusCode) {
+        return res.status(error.statusCode).json({
+          error: error.message,
+          code: error.code || "UNKNOWN_ERROR",
+        });
+      }
       next(error);
     }
   }
