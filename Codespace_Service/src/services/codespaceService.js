@@ -49,7 +49,7 @@ export class CodespaceService {
       .select("id")
       .eq("email", email)
       .single();
-    if (profileError && profileError.code !== 'PGRST116') throw profileError; // PGRST116: No rows found
+    if (profileError && profileError.code !== "PGRST116") throw profileError; // PGRST116: No rows found
 
     // If profile exists, remove from workspace_members
     if (profile && profile.id) {
@@ -64,13 +64,11 @@ export class CodespaceService {
     return { success: true };
   }
 
-
   static async getCodespaceDetails(userId, codespaceId) {
     const { data, error } = await supabase.rpc("get_codespace_details", {
       p_user_id: userId,
       p_workspace_id: codespaceId,
     });
-    
 
     if (error) throw error;
 
@@ -87,7 +85,6 @@ export class CodespaceService {
       sessions: row.sessions,
     };
   }
-
 
   static async getAllInvitedUsers(codespaceId) {
     const { data, error } = await supabase
@@ -331,6 +328,8 @@ export class CodespaceService {
         throw new Error(`Failed to insert invitation: ${insertError.message}`);
       }
 
+      console.log("Waitinggggggg tooooo Shareeeee Maiiiiill");
+
       // Configure SMTP transport
       const transporter = nodemailer.createTransport({
         service: "Gmail",
@@ -386,13 +385,38 @@ export class CodespaceService {
   </html>
       
       `,
+        headers: {
+          "X-Priority": "1",
+          Importance: "high",
+        },
+        // Add a text alternative for better spam scores
+        text: `You've been invited to collaborate on a codespace as a ${role}. Join at: ${shareLink}`,
       };
 
-      await transporter.sendMail(mailOptions);
+      const info = await transporter.sendMail(mailOptions);
+      console.log("Maillllllllllllllllll", info);
 
       return { invitation };
     } catch (err) {
       console.error("Error in shareCodespaceByEmail:", err);
+      throw err;
+    }
+  }
+
+  static async acceptInvitationEmail(invitationId) {
+    try {
+      const { data: invitation, error: fetchError } = await supabase
+        .from("invitations")
+        .select("email")
+        .eq("id", invitationId)
+        .single();
+      if (fetchError || !invitation) {
+        throw new Error("Invitation not found");
+      }
+
+      return { email: invitation.email.trim() };
+    } catch (err) {
+      console.error("Error in acceptInvitation Email:", err);
       throw err;
     }
   }
@@ -465,6 +489,67 @@ export class CodespaceService {
     } catch (err) {
       console.error("Error in acceptInvitation:", err);
       throw err;
+    }
+  }
+
+  static async updateGitHubDetails(
+    codespaceId,
+    userId,
+    githubRepo,
+    githubAccessToken
+  ) {
+    // Check permissions first - only allow admin or owner to update GitHub details
+    await this.checkUserPermission(codespaceId, userId, ["admin", "owner"]);
+
+    try {
+      // Update the workspaces table with GitHub details
+      const { data, error } = await supabase
+        .from("workspaces")
+        .update({
+          github_repo: githubRepo,
+          github_access_token: githubAccessToken,
+        })
+        .eq("id", codespaceId)
+        .select("id, name, created_at, github_repo")
+        .single();
+
+      if (error) {
+        console.error("Error updating GitHub details:", error);
+        const updateError = new Error(
+          `Failed to update GitHub details: ${error.message}`
+        );
+        updateError.statusCode = 500;
+        updateError.code = "UPDATE_GITHUB_FAILED";
+        throw updateError;
+      }
+
+      return {
+        id: data.id,
+        name: data.name,
+        lastModified: new Date(data.created_at).toLocaleString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        githubRepo: data.github_repo,
+      };
+    } catch (err) {
+      console.error("Error in updateGitHubDetails:", err);
+
+      // Re-throw the error if it's already structured
+      if (err.statusCode && err.code) {
+        throw err;
+      }
+
+      // Otherwise create a structured error
+      const serviceError = new Error(
+        `Failed to update GitHub details: ${err.message}`
+      );
+      serviceError.statusCode = 500;
+      serviceError.code = "GITHUB_UPDATE_FAILED";
+      throw serviceError;
     }
   }
 }

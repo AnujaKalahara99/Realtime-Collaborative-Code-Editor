@@ -1,14 +1,15 @@
-
 import { Sun, Moon, ArrowLeft, Share2 } from "lucide-react";
 import { useTheme } from "../../Contexts/ThemeProvider";
 import Avatar from "../../components/Avatar";
 import { useNavigate } from "react-router";
 import { useEditorCollaboration } from "../../Contexts/EditorContext";
-import React, { useState } from "react";
+import { useState } from "react";
 import axios from "axios";
 
 const getToken = () => {
-  const storageKey = `sb-${import.meta.env.VITE_SUPABASE_PROJECT_ID}-auth-token`;
+  const storageKey = `sb-${
+    import.meta.env.VITE_SUPABASE_PROJECT_ID
+  }-auth-token`;
   const sessionDataString = localStorage.getItem(storageKey);
   const sessionData = JSON.parse(sessionDataString || "null");
   return sessionData?.access_token || "";
@@ -24,7 +25,8 @@ type InvitedUser = {
 const NavigationBar = () => {
   const { theme, toggleTheme, isDark } = useTheme();
   const navigate = useNavigate();
-  const { isConnected, connectedUsers, codespace, activeSessionIndex } = useEditorCollaboration();
+  const { isConnected, connectedUsers, codespace, activeSessionIndex } =
+    useEditorCollaboration();
 
   const [showShareModal, setShowShareModal] = useState(false);
   const [invitedUsers, setInvitedUsers] = useState<InvitedUser[]>([]);
@@ -36,16 +38,17 @@ const NavigationBar = () => {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("Developer");
 
-  const handleInviteUser = async () => {
-    if (!inviteEmail) return;
-    // TODO: Implement invite user API call here
-    // Example: await axios.post(...)
-    alert(`Invite sent to ${inviteEmail} as ${inviteRole}`);
-    setInviteEmail("");
-    setInviteRole("Developer");
-  };
+  // const handleInviteUser = async () => {
+  //   if (!inviteEmail) return;
+  //   // TODO: Implement invite user API call here
+  //   // Example: await axios.post(...)
+  //   alert(`Invite sent to ${inviteEmail} as ${inviteRole}`);
+  //   setInviteEmail("");
+  //   setInviteRole("Developer");
+  // };
 
-  const currentBranch = codespace?.sessions?.[activeSessionIndex]?.name || "main";
+  const currentBranch =
+    codespace?.sessions?.[activeSessionIndex]?.name || "main";
   const codespaceName = codespace?.name || "Untitled";
 
   const handleBackToDashboard = () => {
@@ -69,16 +72,15 @@ const NavigationBar = () => {
         setLoading(false);
         return;
       }
-      const apiUrl = `http://localhost:4000/codespaces/${codespaceId}/inviteusers`;
-      const res = await axios.get(
-        apiUrl,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: getToken(),
-          },
-        }
-      );
+      const apiUrl = `${
+        import.meta.env.VITE_BACKEND_URL
+      }/codespaces/${codespaceId}/inviteusers`;
+      const res = await axios.get(apiUrl, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: getToken(),
+        },
+      });
       const users: InvitedUser[] = res.data.invitedUsers || [];
       setInvitedUsers(users.filter((u) => u.accepted_at === null));
       setAcceptedUsers(users.filter((u) => u.accepted_at !== null));
@@ -181,19 +183,32 @@ const NavigationBar = () => {
 
       {/* Share Modal */}
       {showShareModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)'}}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{
+            backdropFilter: "blur(4px)",
+            WebkitBackdropFilter: "blur(4px)",
+          }}
+        >
           <div
             className={`rounded-lg shadow-lg p-0 min-w-[380px] max-w-[95vw] w-full max-w-md border-2 ${theme.surface} ${theme.border} ${theme.text}`}
             style={{
-              boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.18)',
-              filter: 'brightness(1.04)',
-              fontSize: '1.75rem',
+              boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.18)",
+              filter: "brightness(1.04)",
+              fontSize: "1.75rem",
             }}
           >
             {/* Header */}
-            <div className={`flex justify-between items-center border-b px-6 py-4 ${theme.border}`}>
+            <div
+              className={`flex justify-between items-center border-b px-6 py-4 ${theme.border}`}
+            >
               <h2 className="text-xl font-bold">Share Codespace</h2>
-              <button onClick={closeModal} className={`text-2xl ${theme.textSecondary} hover:${theme.text}`}>✕</button>
+              <button
+                onClick={closeModal}
+                className={`text-2xl ${theme.textSecondary} hover:${theme.text}`}
+              >
+                ✕
+              </button>
             </div>
             {/* Email and role form */}
             <div className="px-6 pt-4 pb-2">
@@ -203,12 +218,12 @@ const NavigationBar = () => {
                   placeholder="Enter email address"
                   className={`flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme.surface} ${theme.text} placeholder-gray-400 ${theme.border}`}
                   value={inviteEmail}
-                  onChange={e => setInviteEmail(e.target.value)}
+                  onChange={(e) => setInviteEmail(e.target.value)}
                 />
                 <select
                   className={`border rounded px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme.surface} ${theme.text} ${theme.border}`}
                   value={inviteRole}
-                  onChange={e => setInviteRole(e.target.value)}
+                  onChange={(e) => setInviteRole(e.target.value)}
                 >
                   <option value="Developer">Developer</option>
                   <option value="Admin">Admin</option>
@@ -216,7 +231,9 @@ const NavigationBar = () => {
                 <button
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium text-sm shadow"
                   onClick={async () => {
-                    const match = window.location.pathname.match(/codeeditor\/(.*?)(\/|$)/);
+                    const match = window.location.pathname.match(
+                      /codeeditor\/(.*?)(\/|$)/
+                    );
                     const codespaceId = match ? match[1] : null;
                     if (!codespaceId) {
                       setError("Could not determine codespace ID from URL");
@@ -229,7 +246,9 @@ const NavigationBar = () => {
                     setError(null);
                     setLoading(true);
                     try {
-                      const CODESPACE_API_URL = `${import.meta.env.VITE_BACKEND_URL}/codespaces`;
+                      const CODESPACE_API_URL = `${
+                        import.meta.env.VITE_BACKEND_URL
+                      }/codespaces`;
                       const token = getToken();
                       const response = await fetch(
                         `${CODESPACE_API_URL}/${codespaceId}/sharebyemail`,
@@ -239,18 +258,27 @@ const NavigationBar = () => {
                             "Content-Type": "application/json",
                             Authorization: token,
                           },
-                          body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole.trim() }),
+                          body: JSON.stringify({
+                            email: inviteEmail.trim(),
+                            role: inviteRole.trim(),
+                          }),
                         }
                       );
                       if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({}));
-                        setError(`Server error: ${errorData.message || response.status}`);
+                        const errorData = await response
+                          .json()
+                          .catch(() => ({}));
+                        setError(
+                          `Server error: ${
+                            errorData.message || response.status
+                          }`
+                        );
                       } else {
                         setInviteEmail("");
                         setInviteRole("Developer");
                         fetchInvitedUsers();
                       }
-                    } catch (err) {
+                    } catch {
                       setError("Failed to share codespace");
                     } finally {
                       setLoading(false);
@@ -264,15 +292,18 @@ const NavigationBar = () => {
             </div>
             {/* People with access */}
             <div className="px-6 pb-2">
-              <div className="text-sm font-medium mb-2 mt-2">People with access</div>
+              <div className="text-sm font-medium mb-2 mt-2">
+                People with access
+              </div>
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <div className="flex items-center justify-center mb-2">
-                    <svg className="animate-spin h-10 w-10 text-blue-500 mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                    </svg>
-                    <span className="text-2xl font-semibold text-blue-500">Loading...</span>
+                    <div className="flex justify-center items-center">
+                      <div
+                        role="status"
+                        className={`${theme.text} animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary`}
+                      ></div>
+                    </div>
                   </div>
                 </div>
               ) : error ? (
@@ -280,22 +311,37 @@ const NavigationBar = () => {
               ) : (
                 <ul>
                   {[...acceptedUsers, ...invitedUsers].map((user, idx) => (
-                    <li key={user.email + idx} className="flex items-center gap-3 py-2 border-b last:border-b-0">
-                      <Avatar name={user.email} src={user.avatar_url} size="small" />
+                    <li
+                      key={user.email + idx}
+                      className="flex items-center gap-3 py-2 border-b last:border-b-0"
+                    >
+                      <Avatar
+                        name={user.email}
+                        src={user.avatar_url}
+                        size="small"
+                      />
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">{user.email}</div>
-                        <div className="text-xs text-gray-500 truncate">{user.role === 'Owner' ? 'Owner' : user.role}</div>
+                        <div className="font-medium text-sm truncate">
+                          {user.email}
+                        </div>
+                        <div className="text-xs text-gray-500 truncate">
+                          {user.role === "Owner" ? "Owner" : user.role}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="text-xs text-gray-500">
                           {user.accepted_at ? (
-                            <span>{user.role === 'Owner' ? 'Owner' : user.role}</span>
+                            <span>
+                              {user.role === "Owner" ? "Owner" : user.role}
+                            </span>
                           ) : (
-                            <span className="italic text-yellow-600">Invited</span>
+                            <span className="italic text-yellow-600">
+                              Invited
+                            </span>
                           )}
                         </div>
                         {/* Remove button, not shown for Owner */}
-                        {user.role !== 'Owner' && (
+                        {user.role !== "Owner" && (
                           <button
                             className={`ml-2 px-2 py-1 text-xs ${theme.surfaceSecondary} ${theme.text} rounded ${theme.hover}`}
                             title="Remove user"
@@ -304,17 +350,25 @@ const NavigationBar = () => {
                               setError(null);
                               try {
                                 // Extract codespaceId from the current URL (pattern: /codeeditor/:codespaceId)
-                                const match = window.location.pathname.match(/codeeditor\/(.*?)(\/|$)/);
+                                const match = window.location.pathname.match(
+                                  /codeeditor\/(.*?)(\/|$)/
+                                );
                                 const codespaceId = match ? match[1] : null;
                                 if (!codespaceId) {
-                                  setError("Could not determine codespace ID from URL");
+                                  setError(
+                                    "Could not determine codespace ID from URL"
+                                  );
                                   setLoading(false);
                                   return;
                                 }
-                                const CODESPACE_API_URL = `${import.meta.env.VITE_BACKEND_URL}/codespaces`;
+                                const CODESPACE_API_URL = `${
+                                  import.meta.env.VITE_BACKEND_URL
+                                }/codespaces`;
                                 const token = getToken();
                                 const response = await fetch(
-                                  `${CODESPACE_API_URL}/${codespaceId}/remove-member/${encodeURIComponent(user.email)}`,
+                                  `${CODESPACE_API_URL}/${codespaceId}/remove-member/${encodeURIComponent(
+                                    user.email
+                                  )}`,
                                   {
                                     method: "DELETE",
                                     headers: {
@@ -324,12 +378,18 @@ const NavigationBar = () => {
                                   }
                                 );
                                 if (!response.ok) {
-                                  const errorData = await response.json().catch(() => ({}));
-                                  setError(`Remove failed: ${errorData.message || response.status}`);
+                                  const errorData = await response
+                                    .json()
+                                    .catch(() => ({}));
+                                  setError(
+                                    `Remove failed: ${
+                                      errorData.message || response.status
+                                    }`
+                                  );
                                 } else {
                                   fetchInvitedUsers();
                                 }
-                              } catch (err) {
+                              } catch {
                                 setError("Failed to remove user");
                               } finally {
                                 setLoading(false);
@@ -343,7 +403,9 @@ const NavigationBar = () => {
                     </li>
                   ))}
                   {acceptedUsers.length === 0 && invitedUsers.length === 0 && (
-                    <li className="text-gray-500 text-sm py-2">No invited users found.</li>
+                    <li className="text-gray-500 text-sm py-2">
+                      No invited users found.
+                    </li>
                   )}
                 </ul>
               )}

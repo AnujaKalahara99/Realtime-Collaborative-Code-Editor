@@ -11,6 +11,7 @@ import type { FileNode } from "../ProjectManagementPanel/file.types";
 import CollaborativeCursor from "./CollaborativeCursor";
 import { VFSBridge } from "../../../lib/vfs/vfs-bridge";
 import { VFSMonacoIntegration } from "../../../lib/integration/vfs-monaco-integration";
+import { fetchSuggestion } from "../../../lib/ai/completionClient";
 
 interface MonacoEditorProps {
   selectedFile?: FileNode | null;
@@ -54,6 +55,11 @@ export default function MonacoEditor({
   const [editorReady, setEditorReady] = useState(false);
   const editorDisposedRef = useRef(false);
   const cursorListenerDisposeRef = useRef<monaco.IDisposable | null>(null);
+  const inlineCompletionDisposeRef = useRef<monaco.IDisposable | null>(null);
+  const pendingAbortRef = useRef<AbortController | null>(null);
+  const aiSuggestionsEnabledRef = useRef<boolean>(true);
+  const [aiSuggestionsEnabled, setAiSuggestionsEnabled] =
+    useState<boolean>(true);
 
   const [language, setLanguage] = useState<string>("plaintext");
   const [fileUsers, setFileUsers] = useState<CollaborationUser[]>([]);
@@ -250,6 +256,87 @@ export default function MonacoEditor({
     }, 0);
 
     currentFileRef.current = file.id;
+
+    // Register inline completions provider for this model
+    inlineCompletionDisposeRef.current?.dispose?.();
+    inlineCompletionDisposeRef.current =
+      monaco.languages.registerInlineCompletionsProvider(
+        { pattern: "**/*" },
+        {
+          provideInlineCompletions: async (
+            model,
+            position,
+            _context,
+            token
+          ) => {
+            try {
+              // Exit early if AI suggestions are disabled
+              if (!aiSuggestionsEnabledRef.current) {
+                console.log("Returrrrrrrrrrrrrrrrrrrrrrrrrrrrrn");
+
+                return { items: [], dispose: () => {} };
+              }
+
+              const range = new monaco.Range(
+                1,
+                1,
+                position.lineNumber,
+                position.column
+              );
+              const fullPrefix = model.getValueInRange(range);
+              const maxChars = 2000; // limit payload size
+              const maxLines = 120; // limit context lines
+              // Take only the last maxLines and trim to maxChars from the end
+              const lines = fullPrefix.split(/\r?\n/);
+              const sliced = lines.slice(Math.max(0, lines.length - maxLines));
+              let prefix = sliced.join("\n");
+              if (prefix.length > maxChars) {
+                prefix = prefix.slice(prefix.length - maxChars);
+              }
+              if (!prefix || prefix.trim().length < 3) {
+                return { items: [], dispose: () => {} };
+              }
+
+              // Debounce via canceling previous request
+              pendingAbortRef.current?.abort();
+              const ac = new AbortController();
+              pendingAbortRef.current = ac;
+              token.onCancellationRequested(() => ac.abort());
+
+              // Short debounce to coalesce rapid keystrokes
+              await new Promise((r) => setTimeout(r, 120));
+
+              const languageId = (model as any).getLanguageId?.() as
+                | string
+                | undefined;
+              const suggestion = await fetchSuggestion(
+                {
+                  prefix,
+                  language: languageId,
+                  max_tokens: 32,
+                  temperature: 0.2,
+                },
+                ac.signal
+              );
+              if (!suggestion) return { items: [], dispose: () => {} };
+
+              const item: monaco.languages.InlineCompletion = {
+                insertText: suggestion,
+                range: new monaco.Range(
+                  position.lineNumber,
+                  position.column,
+                  position.lineNumber,
+                  position.column
+                ),
+              };
+              return { items: [item], dispose: () => {} };
+            } catch {
+              return { items: [], dispose: () => {} };
+            }
+          },
+          freeInlineCompletions: () => {},
+        }
+      );
   };
 
   const handleEditorDidMount = (
@@ -356,6 +443,41 @@ export default function MonacoEditor({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                // Update both the ref and state
+                aiSuggestionsEnabledRef.current =
+                  !aiSuggestionsEnabledRef.current;
+                setAiSuggestionsEnabled(aiSuggestionsEnabledRef.current);
+                console.log(aiSuggestionsEnabledRef.current);
+              }}
+              className={`px-2 py-1 text-xs rounded flex items-center gap-1 
+                ${
+                  aiSuggestionsEnabled // Use state for rendering
+                    ? `bg-blue-500 text-white`
+                    : `bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300`
+                }`}
+              title={
+                aiSuggestionsEnabled // Use state for rendering
+                  ? "Disable AI suggestions"
+                  : "Enable AI suggestions"
+              }
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-3 w-3"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              AI {aiSuggestionsEnabled ? "On" : "Off"}{" "}
+              {/* Use state for rendering */}
+            </button>
             {/* Connection status */}
             <div
               className={`w-2 h-2 rounded-full ${

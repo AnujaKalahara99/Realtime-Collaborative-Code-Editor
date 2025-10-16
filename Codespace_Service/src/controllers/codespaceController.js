@@ -15,7 +15,7 @@ export class CodespaceController {
     }
   }
 
-static async getallinvitedusers(req, res, next) {
+  static async getallinvitedusers(req, res, next) {
     try {
       const { id } = req.params;
       const invitedUsers = await CodespaceService.getAllInvitedUsers(id);
@@ -28,8 +28,7 @@ static async getallinvitedusers(req, res, next) {
     }
   }
 
-
-static async removeMember(req, res, next) {
+  static async removeMember(req, res, next) {
     try {
       const { codespaceId, email } = req.params;
       await CodespaceService.removeMember(codespaceId, email);
@@ -39,7 +38,7 @@ static async removeMember(req, res, next) {
       });
     } catch (error) {
       if (error.statusCode) {
-        return res.status(error.statusCode).json({    
+        return res.status(error.statusCode).json({
           error: error.message,
           code: error.code,
         });
@@ -47,7 +46,6 @@ static async removeMember(req, res, next) {
       next(error);
     }
   }
-
 
   static async createCodespace(req, res, next) {
     try {
@@ -126,7 +124,6 @@ static async removeMember(req, res, next) {
           code: "INVALID_EMAIL",
         });
       }
-      //console.log("Sharing codespace by email:", id, email, req.user.id);
 
       const result = await CodespaceService.shareCodespaceByEmail(
         id,
@@ -219,19 +216,73 @@ static async removeMember(req, res, next) {
     }
   }
 
+  static async acceptInvitationEmail(req, res, next) {
+    try {
+      const { invitationId } = req.params;
+
+      const result = await CodespaceService.acceptInvitationEmail(invitationId);
+
+      res.json({
+        email: result.email,
+      });
+    } catch (error) {
+      if (error.statusCode) {
+        return res.status(error.statusCode).json({
+          error: error.message,
+          code: error.code,
+        });
+      }
+      next(error);
+    }
+  }
+
   static async createSession(req, res, next) {
     try {
       const { codespaceId, branchName } = req.body;
-      const codespace = await CodespaceService.createBranchWithSession(
+      const session = await CodespaceService.createBranchWithSession(
         codespaceId,
         branchName
       );
 
       res.status(201).json({
-        codespace,
+        session,
         message: "Session created successfully",
       });
     } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateGitHubDetails(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { githubRepo, githubAccessToken } = req.body;
+
+      if (!githubRepo || !githubRepo.trim()) {
+        return res.status(400).json({
+          error: "GitHub repository path is required",
+          code: "MISSING_GITHUB_REPO",
+        });
+      }
+
+      const result = await CodespaceService.updateGitHubDetails(
+        id,
+        req.user.id,
+        githubRepo,
+        githubAccessToken
+      );
+
+      res.json({
+        message: "GitHub details updated successfully",
+        workspace: result,
+      });
+    } catch (error) {
+      if (error.statusCode) {
+        return res.status(error.statusCode).json({
+          error: error.message,
+          code: error.code,
+        });
+      }
       next(error);
     }
   }

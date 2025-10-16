@@ -1,0 +1,176 @@
+import React, { useState, useEffect } from "react";
+import { useTheme } from "../../../Contexts/ThemeProvider";
+import { useEditorCollaboration } from "../../../Contexts/EditorContext";
+
+interface GitHubIntegrationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const GitHubIntegrationModal: React.FC<GitHubIntegrationModalProps> = ({
+  isOpen,
+  onClose,
+}) => {
+  const { theme } = useTheme();
+  const { codespace, updateGitHubDetails } = useEditorCollaboration();
+
+  const [githubRepo, setGithubRepo] = useState("");
+  const [githubToken, setGithubToken] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Initialize form with existing values when opened
+  useEffect(() => {
+    if (isOpen && codespace?.gitHubRepo) {
+      setGithubRepo(codespace.gitHubRepo);
+    }
+  }, [isOpen, codespace]);
+
+  const handleGitHubIntegration = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const success = await updateGitHubDetails(githubRepo, githubToken);
+      if (success) {
+        onClose();
+        // Clear the token after successful integration for security
+        setGithubToken("");
+      }
+    } catch (err) {
+      console.error("Failed to update GitHub details:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{
+        backdropFilter: "blur(4px)",
+        WebkitBackdropFilter: "blur(4px)",
+      }}
+    >
+      <div
+        className={`rounded-lg shadow-lg p-0 min-w-[380px] max-w-[95vw] w-full max-w-md border-2 ${theme.surface} ${theme.border} ${theme.text}`}
+        style={{
+          boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.18)",
+          filter: "brightness(1.04)",
+        }}
+      >
+        {/* Header */}
+        <div
+          className={`flex justify-between items-center border-b px-6 py-4 ${theme.border}`}
+        >
+          <h2 className="text-xl font-bold">GitHub Repository Integration</h2>
+          <button
+            onClick={onClose}
+            className={`text-2xl ${theme.textSecondary} hover:${theme.text}`}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Form Content */}
+        <div className="px-6 pt-4 pb-2">
+          <p className={`mb-4 text-sm ${theme.textMuted}`}>
+            Only the owner and admins of this project can update GitHub details.
+          </p>
+
+          <form onSubmit={handleGitHubIntegration}>
+            <div className="mb-4">
+              <label className={`block text-sm font-medium mb-1 ${theme.text}`}>
+                Repository URL
+                <span className="text-red-500 ml-1">*</span>
+              </label>
+              <input
+                type="text"
+                value={githubRepo}
+                onChange={(e) => setGithubRepo(e.target.value)}
+                placeholder="Github Repo Link"
+                className={`w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme.surface} ${theme.text} placeholder-gray-400 ${theme.border}`}
+                required
+              />
+              <p className={`text-xs mt-1 ${theme.textMuted}`}>
+                {"Format: https://github.com/<<userName>>/<<repo>>.git"}
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className={`block text-sm font-medium mb-1 ${theme.text}`}>
+                Personal Access Token
+                <span className="text-red-500 ml-1">*</span>
+              </label>
+              <input
+                type="password"
+                value={githubToken}
+                onChange={(e) => setGithubToken(e.target.value)}
+                placeholder="github_pat_xxxxxx"
+                className={`w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme.surface} ${theme.text} placeholder-gray-400 ${theme.border}`}
+                required
+              />
+              <p className={`text-xs mt-1 ${theme.textMuted}`}>
+                Token must have repo scope access for repository operations
+              </p>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end space-x-3 pb-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className={`px-4 py-2 rounded-md text-sm ${theme.surfaceSecondary} ${theme.text} ${theme.hover}`}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={
+                  isSubmitting || !githubRepo.trim() || !githubToken.trim()
+                }
+                className={`flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium text-sm shadow ${
+                  isSubmitting || !githubRepo.trim() || !githubToken.trim()
+                    ? "opacity-70 cursor-not-allowed"
+                    : ""
+                }`}
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center">
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Saving...
+                  </span>
+                ) : (
+                  "Update"
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default GitHubIntegrationModal;

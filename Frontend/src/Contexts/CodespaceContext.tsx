@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import { type Session } from "@supabase/supabase-js";
 import { type Codespace } from "../App/Dashboard/codespace.types";
 import { formatDateTime, getTokenFromStorage } from "../utility/utility";
@@ -15,6 +21,7 @@ interface CodespaceContextType {
     role: string
   ) => Promise<boolean>;
   editCodespace: (id: string, newName: string) => Promise<boolean>;
+  refreshCodespaces: () => Promise<void>;
 }
 
 const initialCodespaceContext: CodespaceContextType = {
@@ -25,6 +32,7 @@ const initialCodespaceContext: CodespaceContextType = {
   deleteCodespace: async () => false,
   shareCodespaceByEmail: async () => false,
   editCodespace: async () => false,
+  refreshCodespaces: async () => {},
 };
 
 const CodespaceContext = createContext<CodespaceContextType>(
@@ -45,91 +53,98 @@ export const CodespaceProvider: React.FC<{
     session?.user?.email ||
     "Anonymous";
 
-  const getToken = () => {
-    if (session?.access_token) return session.access_token;
-    return getTokenFromStorage();
-  };
+  const handleApiRequest = useCallback(
+    async (
+      endpoint: string,
+      method: string,
+      body?: object,
+      errorMessage = "API request failed"
+    ) => {
+      if (!session) {
+        setError("You must be logged in");
+        return { success: false };
+      }
 
-  useEffect(() => {
+      setLoading(true);
+
+      const getToken = () => {
+        if (session?.access_token) return session.access_token;
+        return getTokenFromStorage();
+      };
+
+      try {
+        const token = getToken();
+        if (!token) {
+          setError("No authentication token available");
+          setLoading(false);
+          return { success: false };
+        }
+
+        const headers: HeadersInit = {
+          Authorization: token,
+          "Content-Type": "application/json",
+        };
+
+        const requestOptions: RequestInit = {
+          method,
+          headers,
+          ...(body && { body: JSON.stringify(body) }),
+        };
+
+        const response = await fetch(endpoint, requestOptions);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          setError(`Server error: ${errorData.message || response.status}`);
+          setLoading(false);
+          return { success: false };
+        }
+
+        const data = await response.json().catch(() => ({}));
+        setLoading(false);
+        return { success: true, data };
+      } catch {
+        //console.error(errorMessage, error);
+        setError(errorMessage);
+        setLoading(false);
+        return { success: false };
+      }
+    },
+    [session]
+  );
+
+  const fetchCodespaces = useCallback(async () => {
     if (!session) {
       setError("No active session. Please log in.");
       return;
     }
 
-    const fetchCodespaces = async () => {
-      const result = await handleApiRequest(
-        CODESPACE_API_URL,
-        "GET",
-        undefined,
-        "Failed to fetch codespaces"
-      );
+    const result = await handleApiRequest(
+      CODESPACE_API_URL,
+      "GET",
+      undefined,
+      "Failed to fetch codespaces"
+    );
 
-      if (result.success && result.data?.codespaces) {
-        const codespaceList = result.data.codespaces.map((item: Codespace) => ({
-          id: item.id,
-          name: item.name,
-          role: item.role,
-          lastModified: formatDateTime(item.lastModified),
-          owner: userName,
-        }));
-        setCodespaces(codespaceList);
-      }
-    };
+    if (result.success && result.data?.codespaces) {
+      const codespaceList = result.data.codespaces.map((item: Codespace) => ({
+        id: item.id,
+        name: item.name,
+        role: item.role,
+        lastModified: formatDateTime(item.lastModified),
+        owner: userName,
+      }));
+      setCodespaces(codespaceList);
+    }
+  }, [CODESPACE_API_URL, handleApiRequest, session, userName]);
 
+  useEffect(() => {
     fetchCodespaces();
-  }, [session]);
+  }, [fetchCodespaces]);
 
-  const handleApiRequest = async (
-    endpoint: string,
-    method: string,
-    body?: object,
-    errorMessage = "API request failed"
-  ) => {
-    if (!session) {
-      setError("You must be logged in");
-      return { success: false };
-    }
-
-    setLoading(true);
-
-    try {
-      const token = getToken();
-      if (!token) {
-        setError("No authentication token available");
-        setLoading(false);
-        return { success: false };
-      }
-
-      const headers: HeadersInit = {
-        Authorization: token,
-        "Content-Type": "application/json",
-      };
-
-      const requestOptions: RequestInit = {
-        method,
-        headers,
-        ...(body && { body: JSON.stringify(body) }),
-      };
-
-      const response = await fetch(endpoint, requestOptions);
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        setError(`Server error: ${errorData.message || response.status}`);
-        setLoading(false);
-        return { success: false };
-      }
-
-      const data = await response.json().catch(() => ({}));
-      setLoading(false);
-      return { success: true, data };
-    } catch (error) {
-      //console.error(errorMessage, error);
-      setError(errorMessage);
-      setLoading(false);
-      return { success: false };
-    }
-  };
+  const refreshCodespaces = useCallback(async () => {
+    await fetchCodespaces();
+  }, [fetchCodespaces]);
 
   const createCodespace = async (workspaceName: string): Promise<boolean> => {
     if (!workspaceName.trim()) {
@@ -230,6 +245,7 @@ export const CodespaceProvider: React.FC<{
         deleteCodespace,
         shareCodespaceByEmail,
         editCodespace,
+        refreshCodespaces,
       }}
     >
       {children}
