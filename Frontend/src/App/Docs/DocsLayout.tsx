@@ -21,6 +21,7 @@ interface NavSection {
 interface NavItem {
   title: string;
   path: string;
+  description?: string; // Added optional description property
 }
 
 const navigationSections: NavSection[] = [
@@ -45,15 +46,39 @@ const navigationSections: NavSection[] = [
       {
         title: "Real-time Collaboration",
         path: "/docs/features/real-time-collaboration",
+        description:
+          "Collaborate with your team in real-time, share code, and work together seamlessly.",
       },
-      { title: "Code Editor", path: "/docs/features/code-editor" },
-      { title: "Version Control", path: "/docs/features/version-control" },
+      {
+        title: "Code Editor",
+        path: "/docs/features/code-editor",
+        description:
+          "A powerful code editor with syntax highlighting, autocompletion, and debugging tools.",
+      },
+      {
+        title: "Version Control",
+        path: "/docs/features/version-control",
+        description:
+          "Manage your code versions, create branches, and collaborate using Git.",
+      },
       {
         title: "Project Management",
         path: "/docs/features/project-management",
+        description:
+          "Tools for managing projects, tracking tasks, and organizing workflows.",
       },
-      { title: "AI Assistant", path: "/docs/features/ai-assistant" },
-      { title: "Live Chat", path: "/docs/features/live-chat" },
+      {
+        title: "AI Assistant",
+        path: "/docs/features/ai-assistant",
+        description:
+          "Leverage AI for code suggestions, error detection, and productivity boosts.",
+      },
+      {
+        title: "Live Chat",
+        path: "/docs/features/live-chat",
+        description:
+          "Communicate with your team directly within the platform using live chat.",
+      },
     ],
   },
   {
@@ -83,10 +108,10 @@ const navigationSections: NavSection[] = [
         title: "Virtual File System",
         path: "/docs/advanced/virtual-file-system",
       },
-      {
-        title: "In-browser Bundling",
-        path: "/docs/advanced/in-browser-bundling",
-      },
+      // {
+      //   title: "In-browser Bundling",
+      //   path: "/docs/advanced/in-browser-bundling",
+      // },
     ],
   },
 ];

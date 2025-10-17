@@ -5,6 +5,8 @@ import { useNavigate } from "react-router";
 import { useEditorCollaboration } from "../../Contexts/EditorContext";
 import { useState } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
+import { useToast } from "../../Contexts/ToastContext";
 
 const getToken = () => {
   const storageKey = `sb-${
@@ -27,6 +29,7 @@ const NavigationBar = () => {
   const navigate = useNavigate();
   const { isConnected, connectedUsers, codespace, activeSessionIndex } =
     useEditorCollaboration();
+  const { showToast } = useToast();
 
   const [showShareModal, setShowShareModal] = useState(false);
   const [invitedUsers, setInvitedUsers] = useState<InvitedUser[]>([]);
@@ -243,6 +246,18 @@ const NavigationBar = () => {
                       setError("Please enter an email address");
                       return;
                     }
+                    const currentUserRole = codespace?.role || "Developer"; // Default to Developer if role is undefined
+
+                    if (currentUserRole === "Developer") {
+                      showToast({
+                        type: "error",
+                        title: "Permission Denied",
+                        message: "Developers are not allowed to share codespaces.",
+                      });
+                      setLoading(false);
+                      return;
+                    }
+
                     setError(null);
                     setLoading(true);
                     try {
@@ -365,6 +380,18 @@ const NavigationBar = () => {
                                   import.meta.env.VITE_BACKEND_URL
                                 }/codespaces`;
                                 const token = getToken();
+                                const currentUserRole = codespace?.role || "Developer"; // Default to Developer if role is undefined
+
+                                if (currentUserRole !== "owner") {
+                                  showToast({
+                                    type: "error",
+                                    title: "Permission Denied",
+                                    message: "Only the owner can remove members from the codespace.",
+                                  });
+                                  setLoading(false);
+                                  return;
+                                }
+
                                 const response = await fetch(
                                   `${CODESPACE_API_URL}/${codespaceId}/remove-member/${encodeURIComponent(
                                     user.email

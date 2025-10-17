@@ -199,6 +199,12 @@ export const CodespaceProvider: React.FC<{
       setError("Invalid email address");
       return false;
     }
+    // Check if the user is an Admin or Owner
+    const userRole = codespaces.find((c) => c.id === id)?.role;
+    if (userRole !== "Admin" && userRole !== "Owner") {
+      setError("Only Admins or Owners can share codespaces by email.");
+      return false;
+    }
 
     const result = await handleApiRequest(
       `${CODESPACE_API_URL}/${id}/sharebyemail`,
