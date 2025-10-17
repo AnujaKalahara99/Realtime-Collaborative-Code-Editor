@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { Editor } from "@monaco-editor/react";
+import { Editor, loader } from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
 import { MonacoBinding } from "y-monaco";
 import {
@@ -9,7 +9,10 @@ import {
 import { useTheme } from "../../../Contexts/ThemeProvider";
 import type { FileNode } from "../ProjectManagementPanel/file.types";
 import CollaborativeCursor from "./CollaborativeCursor";
-// import { fetchSuggestion } from "../../../lib/ai/completionClient";
+import { fetchSuggestion } from "../../../lib/ai/completionClient";
+
+// Ensure @monaco-editor/react uses the same Monaco instance where we register providers
+loader.config({ monaco });
 
 interface MonacoEditorProps {
   selectedFile?: FileNode | null;
@@ -45,6 +48,8 @@ export default function MonacoEditor({
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const currentBindingRef = useRef<MonacoBinding | null>(null);
   const currentFileRef = useRef<string | null>(null);
+  const inlineCompletionDisposeRef = useRef<monaco.IDisposable | null>(null);
+  const pendingAbortRef = useRef<AbortController | null>(null);
   const contentUnsubscribeRef = useRef<(() => void) | null>(null);
   const aiSuggestionsEnabledRef = useRef<boolean>(true);
   const [aiSuggestionsEnabled, setAiSuggestionsEnabled] =
@@ -184,6 +189,86 @@ export default function MonacoEditor({
       );
 
       currentFileRef.current = file.id;
+
+      inlineCompletionDisposeRef.current?.dispose?.();
+      inlineCompletionDisposeRef.current =
+        monaco.languages.registerInlineCompletionsProvider(
+          { pattern: "**/*" },
+          {
+            provideInlineCompletions: async (
+              model,
+              position,
+              _context,
+              token
+            ) => {
+              try {
+                // Exit early if AI suggestions are disabled
+                if (!aiSuggestionsEnabledRef.current) {
+                  return { items: [], dispose: () => {} };
+                }
+
+                const range = new monaco.Range(
+                  1,
+                  1,
+                  position.lineNumber,
+                  position.column
+                );
+                const fullPrefix = model.getValueInRange(range);
+                const maxChars = 2000; // limit payload size
+                const maxLines = 120; // limit context lines
+                // Take only the last maxLines and trim to maxChars from the end
+                const lines = fullPrefix.split(/\r?\n/);
+                const sliced = lines.slice(
+                  Math.max(0, lines.length - maxLines)
+                );
+                let prefix = sliced.join("\n");
+                if (prefix.length > maxChars) {
+                  prefix = prefix.slice(prefix.length - maxChars);
+                }
+                if (!prefix || prefix.trim().length < 3) {
+                  return { items: [], dispose: () => {} };
+                }
+
+                // Debounce via canceling previous request
+                pendingAbortRef.current?.abort();
+                const ac = new AbortController();
+                pendingAbortRef.current = ac;
+                token.onCancellationRequested(() => ac.abort());
+
+                // Short debounce to coalesce rapid keystrokes
+                await new Promise((r) => setTimeout(r, 120));
+
+                const languageId = (model as any).getLanguageId?.() as
+                  | string
+                  | undefined;
+                const suggestion = await fetchSuggestion(
+                  {
+                    prefix,
+                    language: languageId,
+                    max_tokens: 32,
+                    temperature: 0.2,
+                  },
+                  ac.signal
+                );
+                if (!suggestion) return { items: [], dispose: () => {} };
+
+                const item: monaco.languages.InlineCompletion = {
+                  insertText: suggestion,
+                  range: new monaco.Range(
+                    position.lineNumber,
+                    position.column,
+                    position.lineNumber,
+                    position.column
+                  ),
+                };
+                return { items: [item], dispose: () => {} };
+              } catch {
+                return { items: [], dispose: () => {} };
+              }
+            },
+            freeInlineCompletions: () => {},
+          }
+        );
     } catch (error) {
       console.error(`Failed to bind editor to file ${file.id}:`, error);
     }
