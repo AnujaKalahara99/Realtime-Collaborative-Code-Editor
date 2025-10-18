@@ -148,8 +148,6 @@ export function ChatSpace() {
           <div className="space-y-3">
             {messages.map((msg: Message) => {
               const isCurrentUser = msg.user === currentUser?.name;
-              console.log(currentUser);
-
               const isDeleteConfirmOpen = showDeleteConfirm === msg.id;
 
               return (

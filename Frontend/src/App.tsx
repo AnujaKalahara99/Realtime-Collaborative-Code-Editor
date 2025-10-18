@@ -22,8 +22,6 @@ function App() {
   const lastTokenRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    console.log("App mounted");
-
     // supabase.auth.getSession().then(({ data: { session } }) => {
     //   setSession(session ?? null);
     //   if (session) upsertProfile(session.user);
@@ -35,7 +33,6 @@ function App() {
       const currentToken = session?.access_token;
 
       if (lastTokenRef.current !== currentToken) {
-        console.log("Session updated:", session);
         lastTokenRef.current = currentToken;
         setSession(session ?? null);
         if (session) upsertProfile(session.user);

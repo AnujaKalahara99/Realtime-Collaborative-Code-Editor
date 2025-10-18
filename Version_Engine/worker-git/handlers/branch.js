@@ -21,7 +21,6 @@ const execPromise = promisify(exec);
  */
 const handleBranch = async (data) => {
   const { sessionId, branchName } = data;
-  console.log(`Creating branch '${branchName}' for session: ${sessionId}`);
   const gitRepoPath = os.homedir() + `/repo`;
 
   try {

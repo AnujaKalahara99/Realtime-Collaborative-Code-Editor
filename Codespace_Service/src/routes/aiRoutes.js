@@ -50,7 +50,6 @@ router.post("/chat", async (req, res) => {
       res.setHeader("Transfer-Encoding", "chunked");
 
       for await (const chunk of result.textStream) {
-        console.log(chunk);
         res.write(chunk);
       }
 
@@ -235,7 +234,6 @@ ${prefix}`;
         suggestion = suggestion.replace(/\/\/.*$/gm, "");
         suggestion = suggestion.replace(/\/\*[\s\S]*?\*\//g, "");
 
-        console.log("Processed suggestion:", suggestion);
         return res.json({ suggestion });
       } catch (e) {
         clearTimeout(overallTimer);

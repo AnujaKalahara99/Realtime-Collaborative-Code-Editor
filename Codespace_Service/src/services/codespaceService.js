@@ -334,8 +334,6 @@ export class CodespaceService {
         throw new Error(`Failed to insert invitation: ${insertError.message}`);
       }
 
-      console.log("Waitinggggggg tooooo Shareeeee Maiiiiill");
-
       // Configure SMTP transport
       const transporter = nodemailer.createTransport({
         service: "Gmail",
@@ -412,7 +410,6 @@ The RTC Editor Team
       };
 
       const info = await transporter.sendMail(mailOptions);
-      console.log("Maillllllllllllllllll", info);
 
       return { invitation };
     } catch (err) {

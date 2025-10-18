@@ -430,7 +430,6 @@ export default function MonacoEditor({
                 aiSuggestionsEnabledRef.current =
                   !aiSuggestionsEnabledRef.current;
                 setAiSuggestionsEnabled(aiSuggestionsEnabledRef.current);
-                console.log(aiSuggestionsEnabledRef.current);
               }}
               className={`px-2 py-1 text-xs rounded flex items-center gap-1 
                 ${

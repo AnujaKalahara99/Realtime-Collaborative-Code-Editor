@@ -284,10 +284,7 @@ export const EditorCollaborationProvider: React.FC<{
   // YJS Initialization
   const initializeYJS = (roomId: string) => {
     cleanupYJS();
-    console.log("Initializing YJS with room ID:", roomId);
-
     const newDoc = new Y.Doc();
-    console.log(WS_URL, roomId);
 
     const newProvider = new WebsocketProvider(WS_URL, roomId, newDoc);
     const newFileSystemMap: Y.Map<FileNode[]> = newDoc.getMap("fileSystem");
@@ -295,7 +292,6 @@ export const EditorCollaborationProvider: React.FC<{
 
     docRef.current = newDoc;
     providerRef.current = newProvider;
-    console.log("YJS provider status:", newProvider);
 
     setAwareness(newProvider.awareness);
     setFileSystemMap(newFileSystemMap);
@@ -329,8 +325,6 @@ export const EditorCollaborationProvider: React.FC<{
     newProvider.ws?.addEventListener("message", (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
-        console.log(data);
-
         if (data.type === "versioning-event") {
           const { command, status } = data;
 
@@ -388,7 +382,6 @@ export const EditorCollaborationProvider: React.FC<{
       console.log("Setting up user awareness");
 
       if (AuthSession?.user) {
-        console.log("User found:", AuthSession.user);
         const user = AuthSession.user;
         newProvider.awareness.setLocalStateField("user", {
           name: user.user_metadata.full_name || user.email,
@@ -1037,8 +1030,6 @@ export const EditorCollaborationProvider: React.FC<{
           githubRepo: githubRepo.trim(),
           githubAccessToken: githubAccessToken || null,
         };
-
-        console.log(payload);
 
         const response = await fetch(
           `${CODESPACE_API_URL}/${codespace.id}/github-details`,

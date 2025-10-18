@@ -11,7 +11,6 @@ const getToken = () => {
   }-auth-token`;
   const sessionDataString = localStorage.getItem(storageKey);
   const sessionData = JSON.parse(sessionDataString || "null");
-  console.log("getToken sessionData:", sessionData);
   return sessionData?.access_token || "";
 };
 
@@ -21,7 +20,6 @@ const getLoginMail = () => {
   }-auth-token`;
   const sessionDataString = localStorage.getItem(storageKey);
   const sessionData = JSON.parse(sessionDataString || "null");
-  console.log("getLoginMail sessionData:", sessionData);
   return sessionData?.user?.email || "";
 };
 
@@ -99,7 +97,6 @@ const CollaboratePage: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log("API response22:", data.invitation.workspace_id);
 
       await refreshCodespaces();
 

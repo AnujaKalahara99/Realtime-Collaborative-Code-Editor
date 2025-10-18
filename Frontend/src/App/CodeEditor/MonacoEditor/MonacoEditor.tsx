@@ -120,8 +120,6 @@ export default function MonacoEditor({
     const model = editor.getModel();
     if (!model) return;
 
-    console.log(`Binding editor to file: ${file.id}`);
-
     // Destroy previous binding and content subscription
     if (currentBindingRef.current) {
       currentBindingRef.current.destroy();
@@ -143,7 +141,6 @@ export default function MonacoEditor({
       const modelContent = model.getValue();
 
       if (modelContent !== yjsContent) {
-        console.log(`Updating model content for file ${file.id}`);
         model.setValue(yjsContent);
       }
 
@@ -360,7 +357,6 @@ export default function MonacoEditor({
                 aiSuggestionsEnabledRef.current =
                   !aiSuggestionsEnabledRef.current;
                 setAiSuggestionsEnabled(aiSuggestionsEnabledRef.current);
-                console.log(aiSuggestionsEnabledRef.current);
               }}
               className={`px-2 py-1 text-xs rounded flex items-center gap-1 
                 ${

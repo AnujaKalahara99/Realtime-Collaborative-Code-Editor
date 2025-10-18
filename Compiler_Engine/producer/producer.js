@@ -68,14 +68,12 @@ app.listen(PORT, "0.0.0.0", () => {
 async function notifyWSServer(sessionId, command, status) {
   try {
     console.log(`Notifying WS server: ${sessionId} ${command} ${status}`);
-    console.log(process.env.WS_SERVER_URL + "/notify");
 
     const response = await axios.post(process.env.WS_SERVER_URL + "/notify", {
       sessionId,
       command,
       status,
     });
-    console.log("WS server response:", response.data);
   } catch (error) {
     console.error("Failed to notify WS server:", error.message);
   }

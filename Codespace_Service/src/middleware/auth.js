@@ -4,7 +4,6 @@ export const extractUser = (req, res, next) => {
     const userEmail = req.headers["x-user-email"];
     const userId = req.headers["x-user-id"];
     const userRole = req.headers["x-user-role"];
-    console.log(`User headers: ${userEmail}, ${userId}, ${userRole}`);
 
     if (!userId || !userEmail) {
       return res.status(401).json({

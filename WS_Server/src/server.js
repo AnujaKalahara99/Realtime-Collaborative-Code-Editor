@@ -79,9 +79,6 @@ async function handleVersioningNotification(sessionId, command, status) {
     }
 
     doc.conns.forEach((_, ws) => {
-      console.log(
-        `Notifying client about versioning event: ${ws} ${command} ${status}`
-      );
       if (ws.readyState === 1) {
         ws.send(
           JSON.stringify({
@@ -97,11 +94,6 @@ async function handleVersioningNotification(sessionId, command, status) {
 }
 
 async function handleCompilerNotification(sessionId, command, status) {
-  console.log(
-    `Received compiler notification for ${sessionId}`,
-    command,
-    status
-  );
   const doc = docs.get(sessionId);
   if (!doc) return;
 

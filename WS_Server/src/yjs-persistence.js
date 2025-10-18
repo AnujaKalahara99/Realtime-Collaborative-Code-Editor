@@ -72,11 +72,6 @@ export class YjsPersistence {
               content = new TextDecoder().decode(await fileData.arrayBuffer());
             }
           }
-          console.log(
-            `${forceRefresh ? "[FORCED REFRESH] " : ""}Loaded file: ${
-              meta.file_path
-            } with content: ${content}`
-          );
 
           files.push({
             id: meta.id,
@@ -397,12 +392,6 @@ export class YjsPersistence {
               batchIndex + 1
             } complete: ${successful} successful, ${failed} failed`
           );
-
-          results.forEach((result) => {
-            if (result.status === "fulfilled" && result.value.success) {
-              console.log(`✅ Uploaded file to storage: ${result.value.path}`);
-            }
-          });
         }
       }
 
