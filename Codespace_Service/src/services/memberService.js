@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient.js";
+import { CodespaceService } from "./codespaceService.js";
 
 export class MemberService {
   static async getCodespaceMembers(codespaceId, userId) {
