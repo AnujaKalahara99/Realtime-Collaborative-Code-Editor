@@ -54,6 +54,12 @@ function CodespaceCard({ codespace, viewMode }: Props) {
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    if (codespace.role !== "owner") {
+      toast.error("Only the owner can delete this codespace.");
+      return;
+    }
+
     await deleteCodespace(codespace.id);
     setShowMenu(false);
     toast.success("Codespace deleted successfully!");
@@ -92,6 +98,11 @@ function CodespaceCard({ codespace, viewMode }: Props) {
   };
 
   const submitShare = async () => {
+    if (codespace.role === "Developer") {
+      toast.error("Developers are not allowed to share codespaces by email.");
+      return;
+    }
+
     if (emailInput.trim()) {
       await shareCodespaceByEmail(codespace.id, emailInput.trim(), roleInput);
       setEmailInput("");
