@@ -248,6 +248,7 @@ const CodeEditorHomepage: React.FC = () => {
                 </button>
 
                 <button
+                onClick={() => window.open('https://youtu.be/ml0Lpk_-n4w', '_blank')}
                   className={`flex items-center justify-center px-6 py-3 border ${borderClass} ${textClass} rounded-md font-medium hover:${secondarySurfaceClass} transition-colors`}
                 >
                   <Play className="mr-2 w-4 h-4" />
