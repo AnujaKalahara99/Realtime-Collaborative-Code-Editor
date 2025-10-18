@@ -107,18 +107,7 @@ export default function FirstCodespace() {
                   "Python ML Project")
                 </p>
               </div>
-              <div>
-                <p className="font-semibold mb-1">Description</p>
-                <p className="text-sm">
-                  Optional description to help identify the project's purpose
-                </p>
-              </div>
-              <div>
-                <p className="font-semibold mb-1">Primary Language</p>
-                <p className="text-sm">
-                  Select the main programming language you'll be using
-                </p>
-              </div>
+              
             </div>
           </div>
 
@@ -288,10 +277,7 @@ console.log(greeting("Developer"));`}
                 <strong className={theme.text}>Developer</strong> - Can edit and
                 commit
               </li>
-              <li>
-                <strong className={theme.text}>Learner</strong> - View-only
-                access
-              </li>
+             
             </ul>
           </li>
           <li>

@@ -340,7 +340,7 @@ export default function BasicConcepts() {
               </ul>
             </div>
 
-            <div
+            {/* <div
               className={`${theme.surfaceSecondary} p-4 rounded border-l-4 border-green-500`}
             >
               <h3 className={`font-semibold ${theme.text} mb-2`}>🟢 Learner</h3>
@@ -353,7 +353,7 @@ export default function BasicConcepts() {
                 <li>Cannot edit files or commit</li>
                 <li>Perfect for students and observers</li>
               </ul>
-            </div>
+            </div> */}
           </div>
         </div>
       </section>

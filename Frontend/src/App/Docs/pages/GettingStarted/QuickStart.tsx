@@ -49,13 +49,23 @@ export default function QuickStart() {
           <p>3. Enter your email and create a password</p>
           <p>4. Verify your email address</p>
         </div>
-
+       <img
+                src="/images/signup.png"
+                alt="signup"
+                className="rounded shadow-md my-6"
+              />
         <InfoBox type="info">
           <p>
-            You can also sign up using OAuth providers like Google or GitHub for
+            You can also sign up using OAuth providers like Google
             faster onboarding.
           </p>
         </InfoBox>
+         <img
+                src="/images/googlelogin.png"
+                alt="signup"
+                className="rounded shadow-md my-6"
+              />
+              
       </section>
 
       <section className="my-8">
@@ -78,19 +88,17 @@ export default function QuickStart() {
               <strong className={theme.text}>Name:</strong> Give your workspace
               a descriptive name
             </li>
-            <li>
-              <strong className={theme.text}>Description:</strong> Optional
-              description of the project
-            </li>
-            <li>
-              <strong className={theme.text}>Language:</strong> Select your
-              primary programming language
-            </li>
+
           </ul>
           <p>
             4. Click <strong className={theme.text}>Create</strong>
           </p>
         </div>
+         <img
+                src="/images/createcodespace.png"
+                alt="Git Features Screenshot"
+                className="rounded shadow-md my-6"
+              />
       </section>
 
       <section className="my-8">
@@ -159,6 +167,11 @@ function greet(name) {
 
 console.log(greet("Developer"));`}
         />
+         <img
+                src="/images/files.png"
+                alt="Git Features Screenshot"
+                className="rounded shadow-md my-6"
+              />
       </section>
 
       <section className="my-8">
@@ -174,18 +187,16 @@ console.log(greet("Developer"));`}
           <p>2. Enter your collaborator's email address</p>
           <p>3. Choose their role:</p>
           <ul className="list-disc list-inside ml-6 space-y-1">
+            
             <li>
-              <strong className={theme.text}>Admin:</strong> Full control
-              (create, edit, delete, manage members)
+              <strong className={theme.text}>Admin:</strong> Can edit code
+              and commit changes, share codespaces
             </li>
             <li>
-              <strong className={theme.text}>Developer:</strong> Can edit code
-              and commit changes
+              <strong className={theme.text}>Developer:</strong> Can edit code and
+              commit changes
             </li>
-            <li>
-              <strong className={theme.text}>Learner:</strong> View-only access
-              (great for students)
-            </li>
+            
           </ul>
           <p>
             4. Click <strong className={theme.text}>Send Invitation</strong>
@@ -199,6 +210,11 @@ console.log(greet("Developer"));`}
             real-time!
           </p>
         </InfoBox>
+         <img
+                src="/images/invite.png"
+                alt="Git Features Screenshot"
+                className="rounded shadow-md my-6"
+              />
       </section>
 
       <section className="my-8">
@@ -236,6 +252,11 @@ console.log(greet("Developer"));`}
             <li>Start working on your feature independently!</li>
           </ol>
         </div>
+         <img
+                src="/images/git.png"
+                alt="Git Features Screenshot"
+                className="rounded shadow-md my-6"
+              />
       </section>
 
       <section className="my-8">
@@ -272,6 +293,11 @@ console.log(greet("Developer"));`}
             </p>
           </div>
         </div>
+         {/* <img
+                src="/images/git2.png"
+                alt="Git Features Screenshot"
+                className="rounded shadow-md"
+              /> */}
       </section>
 
       <section className="my-8">
@@ -308,6 +334,7 @@ console.log(greet("Developer"));`}
             <span className={theme.text}>→</span>
           </Link>
         </div>
+        
       </section>
     </div>
   );
