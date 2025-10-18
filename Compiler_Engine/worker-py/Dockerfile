@@ -10,10 +10,6 @@ WORKDIR /app
 
 COPY package*.json ./
 
-ENV SUPABASE_URL='https://kafnsbymonfgbjwzwngz.supabase.co'
-ENV SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImthZm5zYnltb25mZ2Jqd3p3bmd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MjcxMDUsImV4cCI6MjA2OTEwMzEwNX0.o2HtzKtDP19_JLLAJkKwyRIxzGsB_AD57or4469Onwo'
-ENV REDIS_PORT=6377
-
 RUN npm install
 
 COPY . .

@@ -11,13 +11,19 @@ services:
       - "5005:5005"
     depends_on:
       - redis
+    env_file:
+      - ./producer/.env
 
   worker-js:
     build: ./worker-js
     depends_on:
       - redis
+    env_file:
+      - ./worker-js/.env
 
   worker-py:
     build: ./worker-py
     depends_on:
       - redis
+    env_file:
+      - ./worker-py/.env
