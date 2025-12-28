@@ -6,6 +6,14 @@ Experience seamless, real-time code editing and teamwork—just like collaborati
 > **Try it Live:**  
 > The Real-Time Collaborative Code Editor is cloud hosted and ready to use at [https://rtc-editor.netlify.app/](https://rtc-editor.netlify.app/)
 
+## Demo Video
+
+[![Watch the Demo](docs/readme_data/ytthumbnail.png)](https://youtu.be/ml0Lpk_-n4w)
+
+_Click the thumbnail above to watch a full demonstration of the Real-Time Collaborative Code Editor_
+
+<br/>
+
 ![Hero Image](docs/readme_data/hero-image.png)
 
 ![Dashboard](docs/readme_data/brave_screenshot_localhost.png)
@@ -70,8 +78,7 @@ The system implements a microservices architecture with independent, scalable se
 ## Self-Hosting
 
 > Want to host your own instance? We provide comprehensive documentation for self-hosting the Real-Time Collaborative Code Editor.
-> <br/>
-> **[Complete Self-Hosting Guide](SELF_HOSTING.md)**
+> <br/> > **[Complete Self-Hosting Guide](SELF_HOSTING.md)**
 
 The guide covers:
 
